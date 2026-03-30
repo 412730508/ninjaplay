@@ -1,0 +1,116 @@
+/* 血條樣式 */
+.health-bars {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: space-between;
+  width: 600px;
+  z-index: 100;
+}
+
+.player-health {
+  width: 280px;
+}
+
+.player-health.left {
+  text-align: left;
+}
+
+.player-health.right {
+  text-align: right;
+}
+
+.health-label {
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+}
+
+.health-bar-container {
+  width: 100%;
+  height: 20px;
+  background: rgba(0,0,0,0.5);
+  border: 2px solid #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.health-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #4CAF50, #81C784);
+  transition: width 0.3s ease, background 0.3s ease;
+  border-radius: 8px;
+}
+
+/* 血量低時的顏色變化 */
+.health-bar.low {
+  background: linear-gradient(90deg, #FF9800, #FFB74D);
+}
+
+.health-bar.critical {
+  background: linear-gradient(90deg, #F44336, #EF5350);
+  animation: pulse 0.5s infinite alternate;
+}
+
+@keyframes pulse {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+
+/* 🛡️ 防禦護盾動畫 */
+@keyframes shield-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes shield-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(100, 181, 246, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(100, 181, 246, 1);
+  }
+}
+
+@keyframes text-orbit {
+  0% {
+    transform: rotate(0deg) translateX(60px) rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg) translateX(60px) rotate(-360deg);
+  }
+}
+
+/* 防禦狀態指示器 */
+.defending-indicator {
+  position: absolute;
+  pointer-events: none;
+  animation: shield-pulse 1.5s ease-in-out infinite;
+}
+
+/* 防禦文字環繞 */
+.defend-text {
+  position: absolute;
+  font-size: 12px;
+  font-weight: bold;
+  color: #64b5f6;
+  text-shadow: 
+    0 0 5px rgba(100, 181, 246, 0.8),
+    0 0 10px rgba(100, 181, 246, 0.6),
+    0 0 15px rgba(100, 181, 246, 0.4);
+  white-space: nowrap;
+  animation: text-orbit 8s linear infinite;
+  opacity: 0.9;
+}

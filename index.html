@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- 🔍 SEO優化標題 -->
+    <title>火柴人魔法亂鬥 | 免費線上忍者格鬥遊戲 - Stickman Magic Battle</title>
+    
+    <!-- 🎨 修復：Favicon 和圖標 -->
+    <!--
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./android-chrome-512x512.png">
+    <link rel="manifest" href="./site.webmanifest">
+    -->
+    
+    <!-- 🔍 SEO元標籤 -->
+    <meta name="description" content="火柴人魔法亂鬥 - 免費線上多人忍者格鬥遊戲！7大流派忍者，獨特技能，華麗特效。支援雙人對戰，即開即玩，無需下載！">
+    <meta name="keywords" content="火柴人,魔法,亂鬥,忍者,格鬥遊戲,線上遊戲,免費遊戲,雙人對戰,stickman,ninja,battle,game">
+    <meta name="author" content="火柴人魔法亂鬥開發團隊">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="zh-TW">
+    
+    <!-- 🔍 Open Graph (社群分享) -->
+    <meta property="og:title" content="火柴人魔法亂鬥 - 免費線上忍者格鬥遊戲">
+    <meta property="og:description" content="7大流派忍者，各具獨特技能！風影、火焰、水影、雷擊、岩甲、暗影、靈忍者等你挑戰！">
+    <meta property="og:type" content="game">
+    <meta property="og:url" content="https://yoursite.com/stickman-magic-battle">
+    <meta property="og:site_name" content="火柴人魔法亂鬥">
+    <meta property="og:locale" content="zh_TW">
+    
+    <!-- 🔍 Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="火柴人魔法亂鬥 - 免費線上忍者格鬥遊戲">
+    <meta name="twitter:description" content="7大流派忍者，各具獨特技能！即開即玩，無需下載！">
+    
+    <!-- 🔍 結構化數據 (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Game",
+      "name": "火柴人魔法亂鬥",
+      "alternateName": "Stickman Magic Battle",
+      "description": "免費線上忍者格鬥遊戲，7大流派忍者各具獨特技能，支援雙人對戰",
+      "genre": ["格鬥遊戲", "動作遊戲", "忍者遊戲"],
+      "gamePlatform": ["網頁瀏覽器", "PC", "手機"],
+      "applicationCategory": "Game",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "TWD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "1000"
+      }
+    }
+    </script>
+    
+    <link rel="stylesheet" href="ninjaStyles.css">
+    
+    <!-- 🔍 Canonical URL -->
+    <link rel="canonical" href="https://yoursite.com/stickman-magic-battle">
+</head>
+<body>
+    <!-- 選角特效粒子Canvas -->
+    <canvas id="selectionParticleCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999;"></canvas>
+    
+    <!-- 🔍 添加語義化HTML結構 -->
+    <header>
+        <h1 class="ninja-title">🥷 火柴人魔法亂鬥 🥷</h1>
+        <p class="game-subtitle">七大流派忍者對決，誰是最強戰士？</p>
+    </header>
+
+    <!-- 技能介紹按鈕 -->
+    <button class="skill-guide-btn" onclick="openSkillGuide()" title="查看忍者技能介紹" aria-label="技能介紹">📖</button>
+    
+    <!-- 技能介紹表覆蓋層 -->
+    <div class="skill-guide-overlay" id="skillGuideOverlay">
+        <div class="skill-guide-content">
+            <button class="close-guide-btn" onclick="closeSkillGuide()">×</button>
+            <div class="skill-guide-header">
+                <h1 class="skill-guide-title">🥷 忍者技能大全 🥷</h1>
+                <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0 0;">掌握每位忍者的獨特技能，成為最強的忍者大師！</p>
+            </div>
+            <div class="characters-grid" id="charactersGuideGrid"></div>
+        </div>
+    </div>
+
+    <!-- � 彩蛋影片門片動畫覆蓋層 -->
+    <div id="easterEggOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; overflow:hidden; background:#000;">
+      <canvas id="easterEggCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%;"></canvas>
+    </div>
+
+    <!-- �🎮 界面 1：英雄選擇 -->
+    <div id="characterSelect" class="game-screen">
+        <h2 class="screen-title">⚔️ 選擇你的忍者 ⚔️</h2>
+        <div class="selection-hero">
+            <div class="selection-hero-copy">
+                <span class="selection-kicker">Roster Control</span>
+                <p>改成單一角色名單後，整個選角畫面不再重複渲染兩份角色卡。你只需要在中央挑人，左右兩側則專注顯示玩家配置與最終結果。</p>
+            </div>
+            <div class="selection-hero-status">
+                <div class="selection-count-card">
+                    <span class="count-label">已鎖定忍者</span>
+                    <strong id="selectionCount">0/2</strong>
+                </div>
+                <p>提示：先選玩家欄位，再從中央角色池點選。滑鼠懸停才會展開技能。</p>
+            </div>
+        </div>
+        <div class="character-selection">
+            <div class="player-section player-one selection-side">
+                <div class="player-panel-header">
+                    <div>
+                        <span class="player-kicker">Player 1</span>
+                        <h3>近戰先鋒配置</h3>
+                    </div>
+                    <button class="slot-toggle-btn" id="player1Toggle" onclick="setActiveSelectionPlayer('player1')">選擇玩家 1</button>
+                </div>
+                <div class="selected-character-display" id="player1Selected">
+                    <div class="placeholder">請選擇忍者</div>
+                </div>
+                <div class="panel-tip">紅方面板固定顯示已選角色與關鍵技能。</div>
+            </div>
+            <div class="selection-roster-panel">
+                <div class="player-panel-header roster-panel-header">
+                    <div>
+                        <span class="player-kicker">Shared Roster</span>
+                        <h3>中央角色池</h3>
+                    </div>
+                    <div class="active-selection-indicator">
+                        <span class="active-selection-label">目前操作</span>
+                        <strong id="activeSelectionLabel">玩家 1</strong>
+                    </div>
+                </div>
+                <div class="panel-tip active-selection-prompt" id="activeSelectionPrompt">先為玩家 1 選擇忍者，完成後會自動切換到玩家 2。</div>
+                <div class="character-grid roster-grid" id="characterRoster"></div>
+            </div>
+            <div class="player-section player-two selection-side">
+                <div class="player-panel-header">
+                    <div>
+                        <span class="player-kicker">Player 2</span>
+                        <h3>反制與爆發配置</h3>
+                    </div>
+                    <button class="slot-toggle-btn" id="player2Toggle" onclick="setActiveSelectionPlayer('player2')">選擇玩家 2</button>
+                </div>
+                <div class="selected-character-display" id="player2Selected">
+                    <div class="placeholder">請選擇忍者</div>
+                </div>
+                <div class="panel-tip">藍方面板可隨時切回重新指定，不需要整頁來回捲動。</div>
+            </div>
+        </div>
+        
+        <div class="screen-controls">
+            <button class="ninja-btn" onclick="randomSelectBoth()">
+                🎲 隨機選角 🎲
+            </button>
+            <button class="ninja-btn secondary" id="cpuModeBtn" onclick="toggleCpuMode()">
+                🤖 Play vs CPU: Off
+            </button>
+            <button class="ninja-btn" id="selectMapBtn" disabled>
+                🗺️ 下一步：選擇戰場 🗺️
+            </button>
+            <button class="ninja-btn" id="startGameBtn" disabled>
+                ⚔️ 開始忍者決戰 ⚔️
+            </button>
+        </div>
+        
+        <div class="selection-status">
+            <p>完成兩側選角後可直接開戰，或先前往地圖頁預覽場地。</p>
+        </div>
+    </div>
+    
+    <!-- 🗺️ 界面 2：地圖選擇 -->
+    <div id="mapSelect" class="game-screen hidden">
+        <h2 class="screen-title">🌍 選擇決戰場地 🌍</h2>
+        <div class="selected-ninjas-summary">
+            <div class="ninja-preview" id="ninja1Preview">
+                <div class="ninja-icon">🥷</div>
+                <div class="ninja-name">玩家1</div>
+            </div>
+            <div class="vs-text">VS</div>
+            <div class="ninja-preview" id="ninja2Preview">
+                <div class="ninja-icon">🥷</div>
+                <div class="ninja-name">玩家2</div>
+            </div>
+        </div>
+        
+        <div class="map-selection">
+            <div class="map-grid" id="mapGrid"></div>
+        </div>
+        
+        <div class="screen-controls">
+            <button class="ninja-btn secondary" onclick="backToCharacterSelect()">
+                🔙 重新選擇忍者
+            </button>
+            <button class="ninja-btn" id="startBattleBtn" disabled>
+                ⚔️ 開始忍者決戰 ⚔️
+            </button>
+        </div>
+        
+        <div class="selection-status">
+            <p>🗺️ 地圖: <span id="selectedMapName">未選擇</span></p>
+        </div>
+    </div>
+    
+    <!-- ⚔️ 界面 3：戰鬥 -->
+    <div id="gameArea" class="game-screen hidden">
+        <!-- 🔧 整合戰鬥UI - 緊湊布局 -->
+        <div class="battle-interface">
+            <!-- 戰鬥頂部信息 -->
+            <div class="battle-header-compact">
+                <div class="battle-info">
+                    <span id="currentMapDisplay">戰場：青翠草原</span>
+                </div>
+                <div class="battle-timer" id="battleTimer">
+                    <span>⏰ 00:00</span>
+                </div>
+                <div class="battle-controls">
+                    <button class="ninja-btn-small" onclick="pauseGame()">⏸️</button>
+                    <button class="ninja-btn-small" onclick="backToMapSelect()">🗺️</button>
+                    <button class="ninja-btn-small" onclick="backToCharacterSelect()">🔄</button>
+                </div>
+            </div>
+
+            <!-- 🔧 技能冷卻UI - 緊貼畫布上方 -->
+            <div class="combat-ui">
+                <!-- 玩家1技能欄 -->
+                <div class="player-skills-left">
+                    <div class="player-label">玩家1</div>
+                    <div class="skills-row">
+                        <div class="skill-circle attack ready" id="p1Attack">
+                            <div class="attack-icon">⚔️</div>
+                            <div class="skill-hotkey attack-hotkey">W</div>
+                        </div>
+                        <div class="skill-circle ready" id="p1Normal">
+                            <div class="skill-icon">🌪️</div>
+                            <div class="skill-hotkey">F</div>
+                        </div>
+                        <div class="skill-circle ultimate ready" id="p1Ultimate">
+                            <div class="skill-icon">⚔️</div>
+                            <div class="skill-hotkey">R</div>
+                        </div>
+                        <div class="skill-circle defend ready" id="p1Defend">
+                            <div class="defend-icon">🛡️</div>
+                            <div class="skill-hotkey defend-hotkey">S</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 中央戰鬥信息 -->
+                <div class="battle-center">
+                    <div class="vs-indicator">⚔️ VS ⚔️</div>
+                </div>
+
+                <!-- 玩家2技能欄 -->
+                <div class="player-skills-right">
+                    <div class="player-label" id="player2BattleLabel">玩家2</div>
+                    <div class="skills-row">
+                        <div class="skill-circle attack ready" id="p2Attack">
+                            <div class="attack-icon">⚔️</div>
+                            <div class="skill-hotkey attack-hotkey">↑</div>
+                        </div>
+                        <div class="skill-circle ready" id="p2Normal">
+                            <div class="skill-icon">🌪️</div>
+                            <div class="skill-hotkey">K</div>
+                        </div>
+                        <div class="skill-circle ultimate ready" id="p2Ultimate">
+                            <div class="skill-icon">⚔️</div>
+                            <div class="skill-hotkey">P</div>
+                        </div>
+                        <div class="skill-circle defend ready" id="p2Defend">
+                            <div class="defend-icon">🛡️</div>
+                            <div class="skill-hotkey defend-hotkey">↓</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔧 遊戲畫布 - 緊貼UI下方 -->
+        <canvas id="gameCanvas" width="1400" height="700"></canvas>
+        
+        <!-- 🔧 控制說明 - 收合版本 -->
+        <div class="controls-compact">
+            <div class="control-hint">
+                <span><strong>玩家1:</strong> WASD移動 + FR技能</span>
+                <span id="player2ControlHint"><strong>玩家2:</strong> 方向鍵移動 + KP技能</span>
+                <span><strong>防禦:</strong> S(玩家1) / ↓(玩家2) - 2秒CD</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔍 添加遊戲描述區塊 -->
+    <section class="game-description hidden" id="gameDescription">
+        <h2>關於火柴人魔法亂鬥</h2>
+        <div class="description-content">
+            <h3>🥷 七大忍者流派</h3>
+            <ul>
+                <li><strong>風影忍者</strong> - 疾風如電，閃避大師</li>
+                <li><strong>火焰忍者</strong> - 爆炎衝刺，烈焰印記</li>
+                <li><strong>水影忍者</strong> - 水幕護盾，控制專家</li>
+                <li><strong>雷擊忍者</strong> - 極速連擊，閃電之力</li>
+                <li><strong>岩甲忍者</strong> - 地裂震撼，防禦堡壘</li>
+                <li><strong>暗影忍者</strong> - 黑刃突襲，影子分身戰術</li>
+                <li><strong>靈忍者</strong> - 靈天審判，神聖治療</li>
+            </ul>
+            
+            <h3>🎮 遊戲特色</h3>
+            <ul>
+                <li>✨ 華麗技能特效，視覺震撼</li>
+                <li>⚔️ 平衡的戰鬥系統</li>
+                <li>🎭 精緻火柴人動畫</li>
+                <li>🗺️ 四大戰鬥場地</li>
+                <li>🎯 即開即玩，無需下載</li>
+                <li>👥 雙人本地對戰</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- 🔍 添加頁腳 -->
+    <footer class="game-footer">
+        <p>&copy; 2024 火柴人魔法亂鬥 | 免費線上忍者格鬥遊戲</p>
+        <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
+    </footer>
+
+    <!-- 🔍 Google Analytics 代碼位置 -->
+    <!-- 在這裡添加你的 GA 代碼 -->
+    
+    <script src="characters.js"></script>
+    <script src="particleSystem.js"></script>
+    <script src="mapSystem.js"></script>
+    <script src="stickmanAnimator.js"></script>
+    <script src="gameEngine.js"></script>
+    <script src="aiController.js"></script>
+    <script>
+        // 全局遊戲引擎實例
+        let game = null;
+        let cpuController = null;
+        
+        // 全局狀態管理
+        let gameState = {
+            currentScreen: 'characterSelect',
+            selectedCharacters: { player1: null, player2: null },
+            activeSelectionPlayer: 'player1',
+            selectedMap: null,
+            battleStartTime: null,
+            versusCpu: false
+        };
+        
+        const elementMap = {
+            fujin: 'wind',
+            katon: 'fire', 
+            suijin: 'water',
+            raijin: 'thunder',
+            doton: 'earth',
+            kage: 'shadow',
+            rei: 'spirit',
+            dokusei: 'poison',
+            taijutsu: 'beast',
+            ranger: 'nature',
+            warlock: 'blood',
+            ronin: 'blade',
+            beastmaster: 'beast',
+            scorpion: 'venom',
+            adjudicator: 'justice',
+            exileblade: 'wind',
+            puppeteer: 'puppet',
+            azure_disciple: 'lightning',
+            shamisen: 'sound'
+        };
+        
+        const skillIcons = {
+            fujin: { normal: '🌪️', ultimate: '🌀' },
+            katon: { normal: '🔥', ultimate: '💥' },
+            suijin: { normal: '🛡️', ultimate: '🐉' },
+            raijin: { normal: '⚡', ultimate: '👊' },
+            doton: { normal: '🗿', ultimate: '💥' },
+            kage: { normal: '🗡️', ultimate: '👥' },
+            rei: { normal: '💣', ultimate: '✨' },
+            dokusei: { normal: '💉', ultimate: '🌿' },
+            taijutsu: { normal: '💪', ultimate: '💀' },
+            ranger: { normal: '🔮', ultimate: '👻' },
+            warlock: { normal: '🩸', ultimate: '💀' },
+            ronin: { normal: '⚔️', ultimate: '🌀' },
+            beastmaster: { normal: '🐙', ultimate: '🪨' },
+            scorpion: { normal: '🦂', ultimate: '⛓️' },
+            adjudicator: { normal: '⚖️', ultimate: '🔨' },
+            exileblade: { normal: '🌬️', ultimate: '💀' },
+            puppeteer: { normal: '🎭', ultimate: '💨' },
+            azure_disciple: { normal: '⚡', ultimate: '🌩️' },
+            shamisen: { normal: '🎼', ultimate: '🎵' }
+        };
+
+        const characterIcons = {
+            fujin: '🌪️',
+            katon: '🔥',
+            suijin: '🌊',
+            raijin: '⚡',
+            doton: '🗿',
+            kage: '🌑', 
+            rei: '👻',
+            dokusei: '☠️',
+            taijutsu: '💪',
+            ranger: '🏹',
+            warlock: '🩸',
+            ronin: '⚔️',
+            beastmaster: '🐙',
+            scorpion: '🦂',
+            adjudicator: '⚖️',
+            exileblade: '🗡️',
+            puppeteer: '🎭',
+            azure_disciple: '⚡',
+            shamisen: '🎸'
+        };
+
+        function formatCooldown(ms) {
+            return `${Math.round(ms / 1000)}秒`;
+        }
+        
+        function initCharacterSelection() {
+            const rosterGrid = document.getElementById('characterRoster');
+            rosterGrid.innerHTML = '';
+
+            Object.entries(characters).forEach(([, char]) => {
+                rosterGrid.appendChild(createCharacterCard(char));
+            });
+
+            renderSelectedCharacter('player1');
+            renderSelectedCharacter('player2');
+            updateActiveSelectionUI();
+            renderCharacterSelections();
+            updateSelectionCount();
+        }
+        
+        // 粒子效果系統
+        const selectionParticles = [];
+        let particleAnimationFrame = null;
+        
+        class SelectionParticle {
+            constructor(x, y, elementType) {
+                this.x = x;
+                this.y = y;
+                this.elementType = elementType;
+                this.life = 1.0;
+                this.age = 0;
+                
+                // 根據元素類型設置粒子屬性
+                switch(elementType) {
+                    case 'wind':
+                        this.vx = (Math.random() - 0.5) * 3;
+                        this.vy = (Math.random() - 0.5) * 3;
+                        this.size = Math.random() * 4 + 2;
+                        this.color = 'rgba(100, 181, 246, ';
+                        this.maxLife = 60;
+                        this.rotation = Math.random() * Math.PI * 2;
+                        this.rotationSpeed = (Math.random() - 0.5) * 0.2;
+                        break;
+                    case 'fire':
+                        this.vx = (Math.random() - 0.5) * 1;
+                        this.vy = -Math.random() * 2 - 1;
+                        this.size = Math.random() * 5 + 3;
+                        this.color = Math.random() > 0.5 ? 'rgba(244, 67, 54, ' : 'rgba(255, 152, 0, ';
+                        this.maxLife = 40;
+                        break;
+                    case 'water':
+                        this.vx = (Math.random() - 0.5) * 2;
+                        this.vy = Math.random() * 2 + 1;
+                        this.size = Math.random() * 4 + 2;
+                        this.color = 'rgba(33, 150, 243, ';
+                        this.maxLife = 50;
+                        this.wobble = Math.random() * Math.PI * 2;
+                        break;
+                    case 'thunder':
+                        this.vx = (Math.random() - 0.5) * 4;
+                        this.vy = (Math.random() - 0.5) * 4;
+                        this.size = Math.random() * 3 + 1;
+                        this.color = 'rgba(255, 235, 59, ';
+                        this.maxLife = 30;
+                        this.flash = Math.random();
+                        break;
+                    case 'earth':
+                        this.vx = (Math.random() - 0.5) * 1.5;
+                        this.vy = Math.random() * 1.5 + 0.5;
+                        this.size = Math.random() * 5 + 2;
+                        this.color = 'rgba(141, 110, 99, ';
+                        this.maxLife = 70;
+                        this.rotation = Math.random() * Math.PI * 2;
+                        this.rotationSpeed = (Math.random() - 0.5) * 0.1;
+                        break;
+                    case 'shadow':
+                        this.vx = (Math.random() - 0.5) * 2;
+                        this.vy = (Math.random() - 0.5) * 2;
+                        this.size = Math.random() * 6 + 3;
+                        this.color = 'rgba(66, 66, 66, ';
+                        this.maxLife = 60;
+                        this.pulse = Math.random() * Math.PI * 2;
+                        break;
+                    case 'spirit':
+                        this.vx = (Math.random() - 0.5) * 2;
+                        this.vy = -Math.random() * 1.5 - 0.5;
+                        this.size = Math.random() * 4 + 2;
+                        this.color = 'rgba(156, 39, 176, ';
+                        this.maxLife = 50;
+                        this.glow = Math.random();
+                        break;
+                    case 'poison':
+                        this.vx = (Math.random() - 0.5) * 2;
+                        this.vy = Math.random() * 1.5 + 0.5;
+                        this.size = Math.random() * 4 + 2;
+                        this.color = Math.random() > 0.5 ? 'rgba(0, 184, 148, ' : 'rgba(85, 239, 196, ';
+                        this.maxLife = 55;
+                        this.wobble = Math.random() * Math.PI * 2;
+                        break;
+                    case 'beast':
+                        this.vx = (Math.random() - 0.5) * 3;
+                        this.vy = -(Math.random() * 2 + 0.5);
+                        this.size = Math.random() * 5 + 3;
+                        this.color = Math.random() > 0.5 ? 'rgba(211, 47, 47, ' : 'rgba(255, 82, 82, ';
+                        this.maxLife = 45;
+                        this.pulse = Math.random() * Math.PI * 2;
+                        break;
+                    case 'nature':
+                        this.vx = (Math.random() - 0.5) * 2;
+                        this.vy = Math.random() * 1.5 + 0.5;
+                        this.size = Math.random() * 4 + 2;
+                        this.color = Math.random() > 0.5 ? 'rgba(76, 175, 80, ' : 'rgba(165, 214, 167, ';
+                        this.maxLife = 60;
+                        this.rotation = Math.random() * Math.PI * 2;
+                        this.rotationSpeed = (Math.random() - 0.5) * 0.15;
+                        break;
+                    case 'blood':
+                        this.vx = (Math.random() - 0.5) * 1.5;
+                        this.vy = Math.random() * 2 + 1;
+                        this.size = Math.random() * 4 + 2;
+                        this.color = Math.random() > 0.5 ? 'rgba(183, 28, 28, ' : 'rgba(229, 57, 53, ';
+                        this.maxLife = 50;
+                        break;
+                }
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.age++;
+                this.life = 1 - (this.age / this.maxLife);
+                
+                // 元素特定更新
+                if (this.elementType === 'water') {
+                    this.wobble += 0.1;
+                    this.x += Math.sin(this.wobble) * 0.5;
+                } else if (this.elementType === 'fire') {
+                    this.vy -= 0.05;
+                    this.size *= 0.98;
+                } else if (this.elementType === 'earth') {
+                    this.vy += 0.05;
+                    this.rotation += this.rotationSpeed;
+                } else if (this.elementType === 'wind') {
+                    this.rotation += this.rotationSpeed;
+                } else if (this.elementType === 'shadow') {
+                    this.pulse += 0.1;
+                } else if (this.elementType === 'poison') {
+                    this.wobble += 0.08;
+                    this.x += Math.sin(this.wobble) * 0.3;
+                    this.vy += 0.03;
+                } else if (this.elementType === 'beast') {
+                    this.pulse += 0.15;
+                    this.size *= 0.99;
+                } else if (this.elementType === 'nature') {
+                    this.rotation += this.rotationSpeed;
+                    this.x += Math.sin(this.age * 0.08) * 0.3;
+                    this.vy += 0.02;
+                } else if (this.elementType === 'blood') {
+                    this.vy += 0.05;
+                    this.size *= 0.99;
+                }
+                
+                return this.age < this.maxLife;
+            }
+            
+            draw(ctx) {
+                ctx.save();
+                
+                switch(this.elementType) {
+                    case 'wind':
+                        ctx.translate(this.x, this.y);
+                        ctx.rotate(this.rotation);
+                        ctx.strokeStyle = this.color + this.life + ')';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(-this.size, 0);
+                        ctx.lineTo(this.size, 0);
+                        ctx.stroke();
+                        break;
+                        
+                    case 'fire':
+                        ctx.fillStyle = this.color + this.life + ')';
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = 'rgba(255, 255, 150, ' + (this.life * 0.5) + ')';
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size * 0.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                        
+                    case 'water':
+                        ctx.fillStyle = this.color + this.life * 0.7 + ')';
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = 'rgba(200, 230, 255, ' + this.life + ')';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        break;
+                        
+                    case 'thunder':
+                        if (this.flash > 0.7) {
+                            ctx.strokeStyle = this.color + this.life + ')';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            const segments = 3;
+                            ctx.moveTo(this.x, this.y - this.size * 2);
+                            for(let i = 0; i < segments; i++) {
+                                ctx.lineTo(this.x + (Math.random() - 0.5) * this.size * 2, 
+                                          this.y - this.size * 2 + (i + 1) * this.size * 1.5);
+                            }
+                            ctx.stroke();
+                        } else {
+                            ctx.fillStyle = this.color + this.life + ')';
+                            ctx.beginPath();
+                            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        break;
+                        
+                    case 'earth':
+                        ctx.translate(this.x, this.y);
+                        ctx.rotate(this.rotation);
+                        ctx.fillStyle = this.color + this.life + ')';
+                        ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+                        break;
+                        
+                    case 'shadow':
+                        const pulseSize = this.size * (1 + Math.sin(this.pulse) * 0.3);
+                        ctx.fillStyle = this.color + (this.life * 0.8) + ')';
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, pulseSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                        
+                    case 'spirit':
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = this.color + '0.8)';
+                        ctx.fillStyle = this.color + this.life + ')';
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                        break;
+                    case 'poison':
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = 'rgba(0, 184, 148, 0.6)';
+                        ctx.fillStyle = this.color + (this.life * 0.8) + ')';
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                        break;
+                    case 'beast':
+                        const beastPulse = this.size * (1 + Math.sin(this.pulse) * 0.3);
+                        ctx.shadowBlur = 8;
+                        ctx.shadowColor = 'rgba(211, 47, 47, 0.6)';
+                        ctx.fillStyle = this.color + this.life + ')';
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, beastPulse, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                        break;
+                    case 'nature':
+                        ctx.translate(this.x, this.y);
+                        ctx.rotate(this.rotation);
+                        ctx.shadowBlur = 6;
+                        ctx.shadowColor = 'rgba(76, 175, 80, 0.5)';
+                        ctx.fillStyle = this.color + (this.life * 0.8) + ')';
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, this.size, this.size * 0.6, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                        break;
+                    case 'blood':
+                        ctx.shadowBlur = 8;
+                        ctx.shadowColor = 'rgba(183, 28, 28, 0.6)';
+                        ctx.fillStyle = this.color + this.life + ')';
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                        break;
+                }
+                
+                ctx.restore();
+            }
+        }
+        
+        function spawnSelectionParticles(card, elementType) {
+            const rect = card.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            // 在卡片邊緣生成粒子
+            const particleCount = 15;
+            for (let i = 0; i < particleCount; i++) {
+                const angle = (i / particleCount) * Math.PI * 2;
+                const distance = Math.max(rect.width, rect.height) / 2;
+                const x = centerX + Math.cos(angle) * distance + (Math.random() - 0.5) * 20;
+                const y = centerY + Math.sin(angle) * distance + (Math.random() - 0.5) * 20;
+                
+                selectionParticles.push(new SelectionParticle(x, y, elementType));
+            }
+        }
+        
+        function updateSelectionParticles() {
+            const canvas = document.getElementById('selectionParticleCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 更新並繪製粒子
+            for (let i = selectionParticles.length - 1; i >= 0; i--) {
+                if (!selectionParticles[i].update()) {
+                    selectionParticles.splice(i, 1);
+                } else {
+                    selectionParticles[i].draw(ctx);
+                }
+            }
+            
+            // 如果還有粒子,繼續動畫
+            if (selectionParticles.length > 0) {
+                particleAnimationFrame = requestAnimationFrame(updateSelectionParticles);
+            } else {
+                particleAnimationFrame = null;
+            }
+        }
+        
+        function startParticleAnimation() {
+            if (!particleAnimationFrame) {
+                particleAnimationFrame = requestAnimationFrame(updateSelectionParticles);
+            }
+        }
+        
+        function createCharacterCard(character) {
+            const card = document.createElement('div');
+            card.className = 'character-card';
+            card.setAttribute('data-element', elementMap[character.id]);
+            card.setAttribute('data-character-id', character.id);
+            card.onclick = () => selectCharacter(character.id, gameState.activeSelectionPlayer, card);
+
+            const passiveDescription = character.passive?.description || character.passive?.desc;
+            
+            card.innerHTML = `
+                <div class="character-card-main">
+                    <div class="character-icon-block">${characterIcons[character.id] || '🥷'}</div>
+                    <div class="character-card-copy">
+                        <div class="character-name-row">
+                            <div class="character-name">${character.name}</div>
+                            <div class="character-speed">SPD ${Math.round(character.moveSpeed / 10)}</div>
+                        </div>
+                        <div class="character-org">${character.organization}</div>
+                        <div class="character-stat-pills">
+                            <span class="stat-pill">HP ${character.hp}</span>
+                            <span class="stat-pill">ATK ${character.attackDamage}</span>
+                            <span class="stat-pill">AS ${Math.round(10000 / character.attackSpeed)}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="character-hover-hint">Hover 查看技能</div>
+                <div class="character-hover-panel">
+                    ${passiveDescription ? `
+                    <div class="hover-skill-card passive">
+                        <div class="hover-skill-head">
+                            <span class="hover-skill-icon">✦</span>
+                            <div>
+                                <div class="hover-skill-title">${character.passive.name}</div>
+                                <div class="hover-skill-meta">被動能力</div>
+                            </div>
+                        </div>
+                        <p>${passiveDescription}</p>
+                    </div>` : ''}
+                    <div class="hover-skill-card">
+                        <div class="hover-skill-head">
+                            <span class="hover-skill-icon">${skillIcons[character.id]?.normal || '⚔️'}</span>
+                            <div>
+                                <div class="hover-skill-title">${character.skills.normal.name}</div>
+                                <div class="hover-skill-meta">${character.skills.normal.type} ・ ${formatCooldown(character.skills.normal.cooldown)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hover-skill-card ultimate">
+                        <div class="hover-skill-head">
+                            <span class="hover-skill-icon">${skillIcons[character.id]?.ultimate || '💥'}</span>
+                            <div>
+                                <div class="hover-skill-title">${character.skills.ultimate.name}</div>
+                                <div class="hover-skill-meta">${character.skills.ultimate.type} ・ ${formatCooldown(character.skills.ultimate.cooldown)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function renderSelectedCharacter(playerId) {
+            const selectedDisplay = document.getElementById(`${playerId}Selected`);
+            const characterId = gameState.selectedCharacters[playerId];
+
+            if (!characterId || !characters[characterId]) {
+                selectedDisplay.innerHTML = `<div class="placeholder">${playerId === 'player1' ? '玩家 1 尚未選擇忍者' : '玩家 2 尚未選擇忍者'}</div>`;
+                return;
+            }
+
+            const char = characters[characterId];
+            selectedDisplay.innerHTML = `
+                <div class="selected-character-card">
+                    <div class="selected-character-top">
+                        <div class="selected-character-icon">${characterIcons[characterId] || '🥷'}</div>
+                        <div class="selected-char-info">
+                            <div class="char-name">${char.name}</div>
+                            <div class="char-org">${char.organization}</div>
+                        </div>
+                    </div>
+                    <div class="selected-character-metrics">
+                        <span class="selected-metric">HP ${char.hp}</span>
+                        <span class="selected-metric">ATK ${char.attackDamage}</span>
+                        <span class="selected-metric">SPD ${Math.round(char.moveSpeed / 10)}</span>
+                    </div>
+                    <div class="selected-character-skills">
+                        <span class="selected-skill-pill">${skillIcons[characterId]?.normal || '⚔️'} ${char.skills.normal.name}</span>
+                        <span class="selected-skill-pill accent">${skillIcons[characterId]?.ultimate || '💥'} ${char.skills.ultimate.name}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setActiveSelectionPlayer(playerId) {
+            gameState.activeSelectionPlayer = playerId;
+            updateActiveSelectionUI();
+            renderCharacterSelections();
+        }
+
+        function updateActiveSelectionUI() {
+            const labelMap = {
+                player1: '玩家 1',
+                player2: '玩家 2'
+            };
+
+            const activeSelectionLabel = document.getElementById('activeSelectionLabel');
+            const activeSelectionPrompt = document.getElementById('activeSelectionPrompt');
+            const player1Toggle = document.getElementById('player1Toggle');
+            const player2Toggle = document.getElementById('player2Toggle');
+            const currentLabel = labelMap[gameState.activeSelectionPlayer];
+
+            if (activeSelectionLabel) {
+                activeSelectionLabel.textContent = currentLabel;
+            }
+
+            if (activeSelectionPrompt) {
+                activeSelectionPrompt.textContent = `${currentLabel} 正在等待選角。點擊角色卡即可套用到這一側。`;
+            }
+
+            if (player1Toggle) {
+                player1Toggle.classList.toggle('active', gameState.activeSelectionPlayer === 'player1');
+            }
+
+            if (player2Toggle) {
+                player2Toggle.classList.toggle('active', gameState.activeSelectionPlayer === 'player2');
+            }
+        }
+
+        function renderCharacterSelections() {
+            document.querySelectorAll('#characterRoster .character-card').forEach(card => {
+                const characterId = card.dataset.characterId;
+                const isPlayer1 = gameState.selectedCharacters.player1 === characterId;
+                const isPlayer2 = gameState.selectedCharacters.player2 === characterId;
+                const isActiveSelection = gameState.selectedCharacters[gameState.activeSelectionPlayer] === characterId;
+
+                card.classList.remove('selected', 'selected-p1', 'selected-p2', 'selected-both', 'selected-active');
+                card.dataset.slotLabel = '';
+
+                if (isPlayer1 || isPlayer2) {
+                    card.classList.add('selected');
+                }
+                if (isPlayer1) {
+                    card.classList.add('selected-p1');
+                }
+                if (isPlayer2) {
+                    card.classList.add('selected-p2');
+                }
+                if (isPlayer1 && isPlayer2) {
+                    card.classList.add('selected-both');
+                    card.dataset.slotLabel = 'P1 • P2';
+                } else if (isPlayer1) {
+                    card.dataset.slotLabel = 'P1';
+                } else if (isPlayer2) {
+                    card.dataset.slotLabel = 'P2';
+                }
+                if (isActiveSelection) {
+                    card.classList.add('selected-active');
+                }
+            });
+        }
+        
+        function selectCharacter(characterId, playerId, cardElement) {
+            gameState.selectedCharacters[playerId] = characterId;
+            
+            // 生成選角特效粒子
+            const elementType = elementMap[characterId];
+            spawnSelectionParticles(cardElement, elementType);
+            startParticleAnimation();
+
+            renderSelectedCharacter(playerId);
+            renderCharacterSelections();
+
+            const otherPlayer = playerId === 'player1' ? 'player2' : 'player1';
+            if (!gameState.selectedCharacters[otherPlayer]) {
+                setActiveSelectionPlayer(otherPlayer);
+            } else {
+                updateActiveSelectionUI();
+            }
+            
+            updateSelectionCount();
+        }
+        
+        // 🔧 修復：簡化界面切換，移除動畫
+        function showScreen(screenName) {
+            console.log('切換到界面:', screenName); // 🔧 調試用
+            
+            // 隱藏所有界面
+            document.querySelectorAll('.game-screen').forEach(screen => {
+                screen.classList.add('hidden');
+            });
+            
+            // 顯示目標界面
+            const targetScreen = document.getElementById(screenName);
+            if (targetScreen) {
+                targetScreen.classList.remove('hidden');
+                gameState.currentScreen = screenName;
+                
+                console.log('界面已顯示:', screenName); // 🔧 調試用
+                
+                // 界面特定初始化
+                switch(screenName) {
+                    case 'characterSelect':
+                        updateSelectionCount();
+                        // 🔧 確保所有元素可見
+                        setTimeout(() => {
+                            document.querySelector('.screen-title')?.classList.add('show');
+                            document.querySelector('.character-selection')?.classList.add('show');
+                            document.querySelector('.screen-controls')?.classList.add('show');
+                        }, 100);
+                        break;
+                    case 'mapSelect':
+                        updateNinjaPreview();
+                        generateMapCards();
+                        break;
+                    case 'gameArea':
+                        startBattleTimer();
+                        break;
+                }
+            } else {
+                console.error('找不到界面:', screenName); // 🔧 調試用
+            }
+        }
+        
+        function randomSelectBoth() {
+            const charIds = Object.keys(characters);
+            const shuffled = charIds.slice().sort(() => Math.random() - 0.5);
+            const pick1 = shuffled[0];
+            const pick2 = shuffled[1];
+
+            gameState.selectedCharacters.player1 = pick1;
+            gameState.selectedCharacters.player2 = pick2;
+
+            renderSelectedCharacter('player1');
+            renderSelectedCharacter('player2');
+            renderCharacterSelections();
+            setActiveSelectionPlayer('player1');
+            updateSelectionCount();
+
+            const card1 = document.querySelector(`#characterRoster .character-card[data-character-id="${pick1}"]`);
+            const card2 = document.querySelector(`#characterRoster .character-card[data-character-id="${pick2}"]`);
+            if (card1) {
+                spawnSelectionParticles(card1, elementMap[pick1]);
+            }
+            if (card2) {
+                spawnSelectionParticles(card2, elementMap[pick2]);
+            }
+            startParticleAnimation();
+        }
+
+        function updateSelectionCount() {
+            const count = (gameState.selectedCharacters.player1 ? 1 : 0) + 
+                         (gameState.selectedCharacters.player2 ? 1 : 0);
+            document.getElementById('selectionCount').textContent = `${count}/2`;
+            
+            const selectMapBtn = document.getElementById('selectMapBtn');
+            const startGameBtn = document.getElementById('startGameBtn');
+            
+            const isComplete = count >= 2;
+            if (selectMapBtn) selectMapBtn.disabled = !isComplete;
+            if (startGameBtn) startGameBtn.disabled = !isComplete;
+        }
+        
+        function updateNinjaPreview() {
+            const ninja1 = gameState.selectedCharacters.player1;
+            const ninja2 = gameState.selectedCharacters.player2;
+            
+            if (ninja1) {
+                const preview1 = document.getElementById('ninja1Preview');
+                preview1.querySelector('.ninja-icon').textContent = characterIcons[ninja1] || '🥷';
+                preview1.querySelector('.ninja-name').textContent = characters[ninja1].name;
+            }
+            
+            if (ninja2) {
+                const preview2 = document.getElementById('ninja2Preview');
+                preview2.querySelector('.ninja-icon').textContent = characterIcons[ninja2] || '🥷';
+                preview2.querySelector('.ninja-name').textContent = characters[ninja2].name;
+            }
+        }
+        
+        function startBattleTimer() {
+            gameState.battleStartTime = Date.now();
+            updateBattleTimer();
+        }
+
+        function refreshCpuModeUI() {
+            const cpuModeBtn = document.getElementById('cpuModeBtn');
+            const player2BattleLabel = document.getElementById('player2BattleLabel');
+            const player2ControlHint = document.getElementById('player2ControlHint');
+
+            if (cpuModeBtn) {
+                cpuModeBtn.textContent = gameState.versusCpu ? '🤖 Play vs CPU: On' : '🤖 Play vs CPU: Off';
+                cpuModeBtn.classList.toggle('active', gameState.versusCpu);
+            }
+
+            if (player2BattleLabel) {
+                player2BattleLabel.textContent = gameState.versusCpu ? 'CPU' : '玩家2';
+            }
+
+            if (player2ControlHint) {
+                player2ControlHint.innerHTML = gameState.versusCpu
+                    ? '<strong>CPU:</strong> Player 2 is controlled by AI'
+                    : '<strong>玩家2:</strong> 方向鍵移動 + KP技能';
+            }
+        }
+
+        function toggleCpuMode(forceValue = null) {
+            gameState.versusCpu = typeof forceValue === 'boolean' ? forceValue : !gameState.versusCpu;
+            refreshCpuModeUI();
+        }
+
+        function attachCpuController() {
+            if (!gameState.versusCpu || !game) {
+                detachCpuController();
+                return null;
+            }
+
+            cpuController = setupCpuOpponent(game, {
+                aiPlayerId: 'player2',
+                targetPlayerId: 'player1'
+            });
+
+            return cpuController;
+        }
+
+        function detachCpuController() {
+            if (!game) {
+                cpuController = null;
+                return;
+            }
+
+            detachCpuOpponent(game);
+            cpuController = null;
+        }
+        
+        function updateBattleTimer() {
+            if (gameState.currentScreen !== 'gameArea' || !gameState.battleStartTime) return;
+            
+            const elapsed = Date.now() - gameState.battleStartTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            
+            const timerDisplay = document.getElementById('battleTimer');
+            if (timerDisplay) {
+                timerDisplay.innerHTML = `<span>⏰ ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}</span>`;
+            }
+            
+            setTimeout(updateBattleTimer, 1000);
+        }
+        
+        function goToMapSelect() {
+            // 🔥 風忍武道場強制觸發：叛風之刃 vs 風影忍者 專屬場地
+            const picks = gameState.selectedCharacters;
+            const ids = [picks.player1, picks.player2].sort();
+            if (ids[0] === 'exileblade' && ids[1] === 'fujin') {
+                // 自動選定風忍武道場，跳過地圖選擇
+                gameState.selectedMap = 'windNinjaDojo';
+                if (typeof mapSystem !== 'undefined' && mapSystem) {
+                    mapSystem.setCurrentMap('windNinjaDojo');
+                }
+                document.getElementById('selectedMapName').textContent =
+                    mapSystem.maps['windNinjaDojo'].name;
+                document.getElementById('startBattleBtn').disabled = false;
+                showScreen('mapSelect');
+                // 直接選中該卡片（如果已生成的話）
+                setTimeout(() => {
+                    const card = document.querySelector('.map-card[data-map-id="windNinjaDojo"]');
+                    if (card) card.classList.add('selected');
+                }, 100);
+                return;
+            }
+            showScreen('mapSelect');
+        }
+        
+        function backToCharacterSelect() {
+            detachCpuController();
+            gameState.selectedMap = null;
+            document.getElementById('startBattleBtn').disabled = true;
+            document.getElementById('selectedMapName').textContent = '未選擇';
+            showScreen('characterSelect');
+        }
+        
+        function startBattle() {
+            if (gameState.selectedMap && mapSystem.maps[gameState.selectedMap]) {
+                document.getElementById('currentMapDisplay').textContent = 
+                    `戰場：${mapSystem.maps[gameState.selectedMap].name}`;
+            }
+            
+            updateSkillIcons();
+            
+            // 🔧 初始化遊戲引擎（如果尚未創建）
+            if (!game) {
+                game = new NinjaGame();
+            }
+
+            detachCpuController();
+            
+            game.selectCharacters(gameState.selectedCharacters.player1, gameState.selectedCharacters.player2);
+            game.init('gameCanvas');
+            attachCpuController();
+
+            // 🎉 彩蛋判斷
+            const p1 = gameState.selectedCharacters.player1;
+            const p2 = gameState.selectedCharacters.player2;
+            const isPair = (a, b) => (p1 === a && p2 === b) || (p1 === b && p2 === a);
+            const hasOne = (a) => p1 === a || p2 === a;
+            if (isPair('exileblade', 'fujin')) {
+                playEasterEggDoors('風門對立.png', () => showScreen('gameArea'));
+            } else if (isPair('katon', 'scorpion')) {
+                playEasterEggDoors('彩蛋1.png', () => showScreen('gameArea'));
+            } else if (isPair('warlock', 'kage')) {
+                playEasterEggDoors('彩蛋2.png', () => showScreen('gameArea'));
+            } else if (hasOne('dokusei') && (hasOne('beastmaster') || hasOne('ranger'))) {
+                playEasterEggDoors('彩蛋3.png', () => showScreen('gameArea'));
+            } else if (isPair('fujin', 'suijin')) {
+                playEasterEggDoors('彩蛋4.png', () => showScreen('gameArea'));
+            } else {
+                showScreen('gameArea');
+            }
+        }
+
+        function showFujinVictoryVideo() {
+            const overlay = document.getElementById('fujinVideoOverlay');
+            const video  = document.getElementById('fujinVictoryVideo');
+            if (!overlay || !video) return;
+            overlay.style.display = 'block';
+            video.currentTime = 0;
+            video.play().catch(() => {});
+            video.onended = () => {
+                overlay.style.display = 'none';
+                // 強制跳過 15 秒執行動畫，立即進入勝利畫面
+                if (typeof game !== 'undefined' && game &&
+                    game.gameState && game.gameState.victoryAnimation) {
+                    game.gameState.victoryAnimation.startTime = Date.now() - 20000;
+                }
+            };
+        }
+
+        function playEasterEggDoors(imgSrc, onDone) {
+            const overlay = document.getElementById('easterEggOverlay');
+            const canvas = document.getElementById('easterEggCanvas');
+            overlay.style.display = 'block';
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+
+            const img = new Image();
+            img.src = imgSrc;
+            img.onload = function() {
+                // 圖片等比 contain 計算
+                const scale = Math.min(W / img.width, H / img.height);
+                const dw = img.width * scale, dh = img.height * scale;
+                const dx = (W - dw) / 2, dy = (H - dh) / 2;
+
+                // 時間表（共 2200ms）
+                // 0~600ms:    門從兩側滑入（關上）
+                // 600~900ms:  停在關上狀態
+                // 900~1500ms: 門向兩側滑出（打開）
+                // 1500~2200ms:整體淡出
+                const totalDur = 2200;
+                const startTime = performance.now();
+
+                function ease(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+                function frame(now) {
+                    const elapsed = now - startTime;
+                    ctx.clearRect(0, 0, W, H);
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(0, 0, W, H);
+
+                    // offset: 門片往外偏移量（0=關緊，dw/2=全開）
+                    let offset, alpha = 1;
+                    if (elapsed < 600) {
+                        offset = (1 - ease(elapsed / 600)) * (dw / 2);
+                    } else if (elapsed < 900) {
+                        offset = 0;
+                    } else if (elapsed < 1500) {
+                        offset = ease((elapsed - 900) / 600) * (dw / 2);
+                    } else {
+                        offset = dw / 2;
+                        alpha = Math.max(0, 1 - (elapsed - 1500) / 700);
+                    }
+
+                    ctx.globalAlpha = alpha;
+
+                    // 左半門：顯示圖片左半，整塊往左偏移 offset
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(dx - offset, dy, dw / 2, dh);
+                    ctx.clip();
+                    ctx.drawImage(img, dx - offset, dy, dw, dh);
+                    ctx.restore();
+
+                    // 右半門：顯示圖片右半，整塊往右偏移 offset
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(dx + dw / 2 + offset, dy, dw / 2, dh);
+                    ctx.clip();
+                    ctx.drawImage(img, dx + offset, dy, dw, dh);
+                    ctx.restore();
+
+                    ctx.globalAlpha = 1;
+
+                    if (elapsed < totalDur) {
+                        requestAnimationFrame(frame);
+                    } else {
+                        overlay.style.display = 'none';
+                        onDone();
+                    }
+                }
+                requestAnimationFrame(frame);
+            };
+            img.onerror = function() {
+                overlay.style.display = 'none';
+                onDone();
+            };
+        }
+        
+        // 🔧 修復：生成帶有實際背景預覽的地圖卡片
+        function generateMapCards() {
+            const mapGrid = document.getElementById('mapGrid');
+            mapGrid.innerHTML = '';
+            
+            if (typeof mapSystem === 'undefined' || !mapSystem) {
+                console.error('MapSystem not loaded');
+                return;
+            }
+            
+            Object.entries(mapSystem.maps).forEach(([id, map]) => {
+                // 🔥 風忍武道場僅在叛風之刃 vs 風影忍者時出現
+                if (id === 'windNinjaDojo') {
+                    const picks = gameState.selectedCharacters;
+                    const sortedIds = [picks.player1, picks.player2].sort();
+                    if (!(sortedIds[0] === 'exileblade' && sortedIds[1] === 'fujin')) {
+                        return; // 非指定對戰組合 → 不顯示此地圖
+                    }
+                }
+
+                const mapCard = document.createElement('div');
+                mapCard.className = 'map-card';
+                mapCard.setAttribute('data-map-id', id);
+                mapCard.onclick = () => selectMap(id, mapCard);
+                
+                // 🔧 創建地圖預覽canvas
+                const previewCanvas = document.createElement('canvas');
+                previewCanvas.width = 250;
+                previewCanvas.height = 120;
+                const previewCtx = previewCanvas.getContext('2d');
+                
+                // 🔧 渲染迷你地圖背景
+                if (map.background && typeof map.background === 'function') {
+                    previewCtx.save();
+                    // 縮放比例：從 1200x600 縮小到 250x120
+                    const scaleX = 250 / 1200;
+                    const scaleY = 120 / 600;
+                    previewCtx.scale(scaleX, scaleY);
+                    
+                    // 調用地圖的背景渲染函數
+                    map.background.call(mapSystem, previewCtx, 1200, 600);
+                    
+                    previewCtx.restore();
+                }
+                
+                // 🔧 創建地圖卡片HTML
+                const mapPreview = document.createElement('div');
+                mapPreview.className = 'map-preview';
+                mapPreview.setAttribute('data-map', id);
+                mapPreview.appendChild(previewCanvas);
+                
+                // 🔧 添加圖標覆蓋層
+                const iconOverlay = document.createElement('div');
+                iconOverlay.className = 'map-icon-overlay';
+                iconOverlay.textContent = map.icon;
+                mapPreview.appendChild(iconOverlay);
+                
+                const mapInfo = document.createElement('div');
+                mapInfo.className = 'map-info';
+                mapInfo.innerHTML = `
+                    <h3 class="map-name">${map.name}</h3>
+                    <p class="map-description">${map.description}</p>
+                `;
+                
+                mapCard.appendChild(mapPreview);
+                mapCard.appendChild(mapInfo);
+                mapGrid.appendChild(mapCard);
+            });
+            
+            console.log('地圖卡片生成完成'); // 🔧 調試用
+        }
+        
+        function selectMap(mapId, cardElement) {
+            document.querySelectorAll('.map-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            cardElement.classList.add('selected');
+            gameState.selectedMap = mapId;
+            
+            document.getElementById('selectedMapName').textContent = mapSystem.maps[mapId].name;
+            document.getElementById('startBattleBtn').disabled = false;
+            
+            if (typeof mapSystem !== 'undefined' && mapSystem) {
+                mapSystem.setCurrentMap(mapId);
+            }
+        }
+        
+        function pauseGame() {
+            if (game.gameState.paused) {
+                game.gameState.paused = false;
+                document.querySelector('[onclick="pauseGame()"]').innerHTML = '⏸️';
+            } else {
+                game.gameState.paused = true;
+                document.querySelector('[onclick="pauseGame()"]').innerHTML = '▶️';
+            }
+        }
+        
+        function backToMapSelect() {
+            detachCpuController();
+            game.gameState.winner = null;
+            game.gameState.paused = false;
+            gameState.battleStartTime = null;
+            showScreen('mapSelect');
+        }
+        
+        function updateSkillIcons() {
+            const char1 = gameState.selectedCharacters.player1;
+            const char2 = gameState.selectedCharacters.player2;
+            
+            if (char1 && characters[char1]) {
+                const character1 = characters[char1];
+                const p1NormalIcon = document.querySelector('#p1Normal .skill-icon');
+                if (p1NormalIcon) {
+                    p1NormalIcon.textContent = getSkillIcon(character1.skills.normal.code);
+                }
+                const p1UltimateIcon = document.querySelector('#p1Ultimate .skill-icon');
+                if (p1UltimateIcon) {
+                    p1UltimateIcon.textContent = getSkillIcon(character1.skills.ultimate.code);
+                }
+            }
+            
+            if (char2 && characters[char2]) {
+                const character2 = characters[char2];
+                const p2NormalIcon = document.querySelector('#p2Normal .skill-icon');
+                if (p2NormalIcon) {
+                    p2NormalIcon.textContent = getSkillIcon(character2.skills.normal.code);
+                }
+                const p2UltimateIcon = document.querySelector('#p2Ultimate .skill-icon');
+                if (p2UltimateIcon) {
+                    p2UltimateIcon.textContent = getSkillIcon(character2.skills.ultimate.code);
+                }
+            }
+        }
+        
+        function getSkillIcon(skillCode) {
+            const skillIconMap = {
+                'WND_001': '💨',  // 疾風閃
+                'WND_002': '🌀',  // 旋風斬
+                'FIR_001': '🔥',  // 爆炎衝刺
+                'FIR_002': '💥',  // 火球術
+                'WAT_001': '🛡️', // 水幕盾
+                'WAT_002': '🐉',  // 水龍彈
+                'THU_001': '⚡',  // 閃電步
+                'THU_002': '👊',  // 雷電拳
+                'ELF_001': '🔮',  // 精靈守護符
+                'ELF_002': '👻',  // 脫隱術
+                'BLD_001': '🩸',  // 鮮血枷鎖
+                'BLD_002': '💀',  // 血咒吞噬
+                'BST_001': '🐙',  // 深淵觸手
+                'BST_002': '🪨',  // 巨獸解放
+                'BST_003': '🪨',  // 巨岩投擲
+                'BST_004': '🔄',   // 解除御獸
+                'SCP_001': '🦂',  // 叛軍
+                'SCP_002': '⛓️',   // 痛苦枷鎖
+                'ADJ_001': '⚖️',   // 異議駁回
+                'ADJ_002': '🔨',   // 最終判決
+                'EXL_001': '🌬️',  // 絕風・裂空突
+                'EXL_002': '💀',    // 秘奧義・狂風百裂
+                'PUP_001': '🎭',    // 傀儡・召喚/收回
+                'PUP_002': '💨',    // 秘奧義・幻影交錯
+                'AZR_001': '⚡',    // 雷遁・天罰
+                'AZR_002': '🌩️'     // 秘奧義・萬雷蒼穹斬
+            };
+            return skillIconMap[skillCode] || '⚔️';
+        }
+
+        function startGameDirectly() {
+            const picks = gameState.selectedCharacters;
+            const ids = [picks.player1, picks.player2].sort();
+
+            // 叛風之刃 vs 風影忍者 → 強制風忍武道場
+            if (ids[0] === 'exileblade' && ids[1] === 'fujin') {
+                gameState.selectedMap = 'windNinjaDojo';
+                if (typeof mapSystem !== 'undefined' && mapSystem) {
+                    mapSystem.setCurrentMap('windNinjaDojo');
+                }
+            } else {
+                // 隨機從三張地圖中抽選一張
+                const randomMaps = ['grassland', 'forest', 'castle'];
+                const picked = randomMaps[Math.floor(Math.random() * randomMaps.length)];
+                gameState.selectedMap = picked;
+                if (typeof mapSystem !== 'undefined' && mapSystem) {
+                    mapSystem.setCurrentMap(picked);
+                }
+            }
+            startBattle();
+        }
+        
+        function openSkillGuide() {
+            const overlay = document.getElementById('skillGuideOverlay');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            generateSkillGuideContent();
+        }
+        
+        function closeSkillGuide() {
+            const overlay = document.getElementById('skillGuideOverlay');
+            overlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        function generateSkillGuideContent() {
+            const grid = document.getElementById('charactersGuideGrid');
+            grid.innerHTML = '';
+            
+            const skillDescriptions = {
+                [SKILL_CODES.WIND_DASH]: {
+                    description: '風之力量加持，瞬間向前位移並獲得短暫無敵狀態，穿越敵人時造成3點傷害。',
+                    effects: ['位移120px', '穿越傷害3', '無敵0.5秒', '冷卻3秒']
+                },
+                [SKILL_CODES.WIND_SLASH]: {
+                    description: '釋放強力旋風，對周圍範圍內的敵人造成大量傷害並擊飛300px。若成功擊飛目標，3秒內可再次按下奧義鍵將敵人拉回並追加傷害。',
+                    effects: ['範圍攻擊', '傷害15', '擊飛300px', '二段追擊3秒內可用', '拉回追加傷害8', '撞牆減速70%', '持續2秒', '冷卻12秒']
+                },
+                [SKILL_CODES.FIRE_RUSH]: {
+                    description: '爆炎之力推進，快速衝刺250px並擊暈路徑上的敵人。命中時在目標身上留下烈焰印記（被動），命中冷卻3秒，未命中10秒。',
+                    effects: ['衝刺250px', '傷害10', '眩暈0.3秒', '施加烈焰印記', '命中CD3秒', '未命中CD10秒']
+                },
+                [SKILL_CODES.FIRE_BALL]: {
+                    description: '凝聚火焰投射火球，命中敵人造成高傷害並擊退，著彈點產生爆炸波及周圍40px範圍。',
+                    effects: ['遠程攻擊', '傷害18', '爆炸範圍40px', '爆炸傷害+5', '擊退50px', '冷卻13秒']
+                },
+                [SKILL_CODES.WATER_SHIELD]: {
+                    description: '水之護盾環繞身體，3秒內減少50%受到的傷害，並獲得移速加成。護盾結束後回復60%儲存傷害值的HP。',
+                    effects: ['減傷50%', '持續3秒', '移速+25', '結束回復60%儲存傷害', '冷卻8秒']
+                },
+                [SKILL_CODES.WATER_DRAGON]: {
+                    description: '召喚水龍攻擊，命中敵人造成傷害並擊退，隨後冰凍1秒，解凍後緩速30%持續2秒。',
+                    effects: ['遠程攻擊', '傷害16', '擊退50px', '冰凍1秒', '緩速30%持續2秒', '冷卻12秒']
+                },
+                [SKILL_CODES.THUNDER_STEP]: {
+                    description: '以雷電之速瞬移到敵人背後，獲得短暫無敵時間。',
+                    effects: ['瞬移背後', '無敵0.3秒', '冷卻6秒']
+                },
+                [SKILL_CODES.THUNDER_PUNCH]: {
+                    description: '雷電加持的連續重拳，快速攻擊2次並造成強力眩暈，解除眩暈後附帶緩速效果。',
+                    effects: ['連擊2次', '每次傷害9', '眩暈1秒', '緩速30%持續1秒', '冷卻8秒']
+                },
+                [SKILL_CODES.ROCK_GUARD]: {
+                    description: '岩石護體術，完全格擋下一次攻擊並反擊5點傷害，格擋成功回復4HP。被動：所有傷害減少1點，普攻造成0.3秒眩暈。',
+                    effects: ['格擋攻擊', '持續2秒', '反擊傷害5', '格擋回復4HP', '被動減傷1點', '普攻眩暈0.3秒', '冷卻9秒']
+                },
+                [SKILL_CODES.EARTH_QUAKE]: {
+                    description: '震擊大地，對200px範圍內敵人造成眩暈和沉默效果，內圈100px額外造成高傷害。',
+                    effects: ['範圍攻擊', '內圈傷害15', '眩暈1.5秒', '外圈沉默2秒', '擊退50px', '冷卻15秒']
+                },
+                [SKILL_CODES.SHADOW_STRIKE]: {
+                    description: '暗影突襲，快速突進300px並留下影子分身。按技能鍵可回傳到影子位置，30%機率造成暴擊傷害。影子持續3秒，傷害為本體2/3。',
+                    effects: ['突進300px', '傷害12', '暴擊30%+6', '影子持續3秒', '影子傷害2/3', '冷卻10秒']
+                },
+                [SKILL_CODES.SHADOW_CLONE]: {
+                    description: '召喚5個影分身圍攻敵人，分身持續3秒，各自獨立攻擊造成傷害。成功反擊後下個黑刃突襲必定暴擊。',
+                    effects: ['召喚5個分身', '分身傷害3', '持續5秒', '冷卻12秒']
+                },
+                [SKILL_CODES.SPIRIT_BOMB]: {
+                    description: '投擲靈爆符，對敵人造成傷害並產生擊退效果。使用後自身回復4點生命值。',
+                    effects: ['遠程攻擊', '傷害15', '擊退40px', '自癒4HP', '冷卻8秒']
+                },
+                [SKILL_CODES.SPIRIT_JUDGMENT]: {
+                    description: '【神級終極技】蓄力2秒後，天降金色審判光柱。對320px大範圍內的敵人造成其當前HP 20%的傷害，並為自身回復10點基礎HP + 審判傷害45%的生命值。敵人血量越高，傷害和回復越多！',
+                    effects: [
+                        '施法2秒',
+                        '大範圍320px',
+                        '敵人當前HP 20%',
+                        '基礎回復10HP',
+                        '額外回復傷害45%',
+                        '範例：對100HP敵人造成20傷害，回復19HP',
+                        '冷卻16秒'
+                    ]
+                },
+                [SKILL_CODES.VENOM_DART]: {
+                    description: '吹管發射毒鏢，命中敵人施加毒素層數。毒鏢命中會減少荊棘陷阱0.5秒冷卻。若荊棘陷阱已部署，毒鏢傷害提升至7。',
+                    effects: ['遠程攻擊', '傷害4(強化7)', '施加毒素', '減少陷阱CD 0.5秒', '冷卻3秒']
+                },
+                [SKILL_CODES.THORN_TRAP]: {
+                    description: '在腳下佈置隱形荊棘陷阱，敵人踩中後被定身2秒並施加毒素。部署後毒鏢進入強化狀態，傷害提升至7。陷阱持續30秒。',
+                    effects: ['隱形陷阱', '定身2秒', '施加毒素', '強化毒鏢傷害7', '持續30秒', '冷卻17秒']
+                },
+                [SKILL_CODES.SAVAGE_SUPLEX]: {
+                    description: '向前衝刺150px，碰撞敵人後抓取並將其投擲到反方向100px。若敵人撞到邊界，額外造成5點傷害並暈1秒。',
+                    effects: ['衝刺150px', '傷害6', '投擲100px', '撞牆+5傷害', '撞牆暈1秒', '冷卻6秒']
+                },
+                [SKILL_CODES.ROYAL_EXECUTION]: {
+                    description: '【極級處決技】120px近距離鎖定敵人，造成15點傷害。若敵人生命值低於15%，立即處決！',
+                    effects: [
+                        '近戰範圍200px',
+                        '傷害15',
+                        '生命<15%處決',
+                        '冷卻18秒'
+                    ]
+                },
+                [SKILL_CODES.ELF_TALISMAN]: {
+                    description: '【三色輪轉守護符】按一下啟動輪轉，按兩下確認。🔥紅色=恐懼火焰區域 ⚡紫色=雷電守護反傷 ❄️藍色=雪球附魔追傷。',
+                    effects: [
+                        '🔥火焰區域5秒',
+                        '⚡反傷3+暈0.4秒+減傷2',
+                        '❄️攻擊追加雪球x3 每顆5傷害',
+                        '冷卻12秒'
+                    ]
+                },
+                [SKILL_CODES.STEALTH_DASH]: {
+                    description: '隱身突進300px，強化下一次射擊（8傷害+30%減速2秒），攻速提升至250ms持續2秒。',
+                    effects: [
+                        '突進300px',
+                        '隱身+短暫無敵',
+                        '強化射擊8傷害',
+                        '緩速30%/2秒',
+                        '攻速250ms/2秒',
+                        '冷卻9秒'
+                    ]
+                },
+                [SKILL_CODES.BLOOD_SHACKLES]: {
+                    description: '消耗10HP發射血鎖投射物，命中造成5傷害並建立牽線4秒，每秒吸取3HP，距離超過250px斷裂。',
+                    effects: [
+                        '消耗10HP施放',
+                        '命中5傷害+牽線',
+                        '每秒吸血3HP/4秒',
+                        '距離250px斷裂',
+                        '冷卻8秒'
+                    ]
+                },
+                [SKILL_CODES.BLOOD_DEVOUR]: {
+                    description: '對200px內敵人建立粗血脈連接3秒，每秒造成15傷害並回復10HP，自身減速25%，敵人觸碰邊界可斷裂。',
+                    effects: [
+                        '每秒15傷害/10回復',
+                        '持續3秒（3次tick）',
+                        '自身減速25%',
+                        '敵觸邊界可斷裂',
+                        '冷卻24秒'
+                    ]
+                },
+                [SKILL_CODES.FLASH_CUT]: {
+                    description: '瞬間向前穿透衝刺200px，穿過敵人時造成10傷害並緩速50%持續1秒。',
+                    effects: [
+                        '穿透衝刺200px',
+                        '命中10傷害',
+                        '緩速50%持1秒',
+                        '冷卻6秒'
+                    ]
+                },
+                [SKILL_CODES.IAI_FLASH]: {
+                    description: '原地蓄力0.5秒後瞬移至敵方背後，造成20點巨量傷害並觸發全螢幕反轉特效。',
+                    effects: [
+                        '蓄力0.5秒',
+                        '瞬移至敵方背後',
+                        '巨量傷害20',
+                        '全螢幕反轉特效',
+                        '冷卻16秒'
+                    ]
+                },
+                [SKILL_CODES.ABYSS_TENTACLE]: {
+                    description: '向前發射深淵觸手300px，命中後將敵人拉回自身X座標，造成傷害並附加0.3秒微暈，命中獲得2層御獸疊層。',
+                    effects: [
+                        '抓取距離300px',
+                        '拉回到自身位置',
+                        '傷害2',
+                        '暈眩0.3秒',
+                        '命中獲3層御獸疊層',
+                        '冷卻3秒'
+                    ]
+                },
+                [SKILL_CODES.BEAST_LIBERATION]: {
+                    description: '需至少4層御獸疊層才能施放，消耗2層後將敵人定身2秒並變身為巨獸型態，獲得30點護盾，體型放大1.25倍。',
+                    effects: [
+                        '施放需求≥4層',
+                        '消耗2層疊層',
+                        '定身敵人2秒',
+                        '獲得護盾30',
+                        '體型放大1.25倍',
+                        '巨獸攻擊力9/攻速1000ms/移速180',
+                        '巨岩投擲：消耗1層 延遲0.7秒 範圍120px 傷害13 冷卻5秒',
+                        '解除御獸：解除變身 恢復人型態'
+                    ]
+                },
+                [SKILL_CODES.REBEL_MINION]: {
+                    description: '召喚3名叛軍僕從，自動追蹤並攻擊敵人，持續15秒。僕從雖脆弱但數量取勝。',
+                    effects: [
+                        '召喚3體僕從',
+                        '僕從HP1',
+                        '傷害2/攻速700ms',
+                        '移速290px/s',
+                        '持續15秒',
+                        '冷卻10秒'
+                    ]
+                },
+                [SKILL_CODES.CHAIN_OF_PAIN]: {
+                    description: '對200px內的敵人釋放痛苦枷鎖，造成4傷害並將敵人定身3秒。距離不足則不消耗冷卻。',
+                    effects: [
+                        '範圍200px',
+                        '傷害4',
+                        '定身3秒',
+                        '距離不足不消耗CD',
+                        '冷卻20秒'
+                    ]
+                },
+                [SKILL_CODES.OBJECTION_PARRY]: {
+                    description: '舉起法典進入招架姿態（持續2秒）。若在此期間受到敵方攻擊，將免疫該次傷害，並以巨大法槌進行毀滅性反擊：造成18傷害、擊退150px，並附加「沉默」狀態3秒（期間敵方無法施放任何技能）。',
+                    effects: [
+                        '招架持續2秒',
+                        '反擊傷害18',
+                        '擊退150px',
+                        '沉默3秒',
+                        '冷卻10秒'
+                    ]
+                },
+                [SKILL_CODES.FINAL_VERDICT]: {
+                    description: '重槌砸向地面，以自身為中心展開半徑250px的「絕對法庭」領域，持續6秒。敵人進入時受到5點傷害並被施加審判緩速（60%→30%遞減，持續3秒，僅觸發一次）。在法庭領域內，敵方所有位移與瞬移技能皆被完全封鎖。',
+                    effects: [
+                        '領域半徑250px',
+                        '持續6秒',
+                        '進入傷害5',
+                        '審判緩速60%→30%/3秒',
+                        '封鎖位移/瞬移',
+                        '冷卻22秒'
+                    ]
+                },
+                [SKILL_CODES.EXILE_GALE_DASH]: {
+                    description: '以叛離之風加持，瞬間向前衝刺180px穿越敵人，路徑上的敵人受到12點傷害並暈眩0.5秒。',
+                    effects: [
+                        '穿透衝刺180px',
+                        '傷害12',
+                        '暈眩0.5秒',
+                        '冷卻7秒'
+                    ]
+                },
+                [SKILL_CODES.STORM_EXECUTION]: {
+                    description: '投出影苦無，命中敵人後瞬移至目標身邊展開「米」字斬處決：4道風刃交叉斬擊各造成5點傷害，最終一擊造成10點傷害並擊退150px。處決期間自身無敵、敵方無法行動。',
+                    effects: [
+                        '苦無射程400px',
+                        '苦無傷害2',
+                        '處決4斬 每斬5傷害',
+                        '終結斬10傷害',
+                        '擊退150px',
+                        '處決期間無敵',
+                        '冷卻18秒'
+                    ]
+                },
+                [SKILL_CODES.PUPPET_DEPLOY]: {
+                    description: '召喚一具傀儡在身前60px處，傀儡自動跟隨本體移動。傀儡存在時本體普攻會同時觸發傀儡攻擊（3點傷害）。再次按下收回傀儡。傀儡距離超過300px自動斷線。',
+                    effects: [
+                        '部署/收回切換',
+                        '傀儡HP 30',
+                        '傀儡普攻+3傷害',
+                        '跟隨距離80px',
+                        '斷線距離300px',
+                        '冷卻4秒'
+                    ]
+                },
+                [SKILL_CODES.PHANTOM_SWAP]: {
+                    description: '與傀儡交換位置。傀儡原位置產生毒煙霧區（半徑100px，持2秒），每0.5秒造2傷害並減速40%。本體新位置爆發千本針（120px範圍）8傷害。需要傀儡存在才能使用。',
+                    effects: [
+                        '與傀儡交換位置',
+                        '煙霧區100px/2秒',
+                        '煙霧每0.5秒2傷害',
+                        '煙霧減速40%',
+                        '千本針爆發120px',
+                        '針傷害8',
+                        '需要傀儡存在',
+                        '冷卻14秒'
+                    ]
+                },
+                [SKILL_CODES.DIVINE_SMITE]: {
+                    description: '在敵人腳下生成落雷標記（0.4秒預警），隨後劈下暗藍巨雷（40px寬），命中造成12傷害。',
+                    effects: [
+                        '敵人腳下落雷',
+                        '預警標記0.4秒',
+                        '雷擊寬40px',
+                        '傷害12',
+                        '冷卻6秒'
+                    ]
+                },
+                [SKILL_CODES.GRAND_THUNDER_SLASH]: {
+                    description: '瞬移至畫面頂端，全場漆黑閃電。3秒內在敵人附近隨機降下5道落雷，每道15傷害+擊飛。期間無敵。',
+                    effects: [
+                        '瞬移至畫面頂端',
+                        '全場黑幕+白色閃光',
+                        '降下5道隨機落雷',
+                        '每道15傷害',
+                        '落雷擊飛',
+                        '期間無敵',
+                        '冷卻19秒'
+                    ]
+                },
+                [SKILL_CODES.STACCATO_STRIKE]: {
+                    description: '以三味線猛撥弦線，在150px範圍內釋放高頻音波衝擊，命中敵人造成10點傷害並暈眩0.5秒，打斷敵方正在施放的技能。',
+                    effects: [
+                        '範圍150px',
+                        '傷害10',
+                        '暈眩0.5秒',
+                        '打斷施法',
+                        '冷卻7秒'
+                    ]
+                },
+                [SKILL_CODES.DEADLY_CANON]: {
+                    description: '【極級奧義】引導3秒，以三味線演奏致命輪唱。三重音波逐層擴散：第一波100px半徑減速+5傷害，第二波200px半徑強減速+10傷害，最終波800px全場範圍造成15傷害並擊飛所有敵人。',
+                    effects: [
+                        '引導3秒',
+                        '第一波100px 5傷害+減速30%',
+                        '第二波200px 10傷害+減速60%',
+                        '第三波800px 15傷害+擊飛',
+                        '三層逐步擴散',
+                        '冷卻18秒'
+                    ]
+                }
+            };
+            
+            Object.entries(characters).forEach(([id, char]) => {
+                const card = document.createElement('div');
+                card.className = 'character-guide-card';
+                card.setAttribute('data-element', elementMap[id]);
+                
+                card.innerHTML = `
+                    <div class="character-guide-header">
+                        <div class="character-guide-icon">${characterIcons[id]}</div>
+                        <div class="character-guide-info">
+                            <h3>${char.name}</h3>
+                            <p>${char.organization}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="character-stats-mini">
+                        <span>HP: ${char.hp}</span>
+                        <span>攻擊: ${char.attackDamage}</span>
+                        <span>速度: ${Math.round(char.moveSpeed/10)}</span>
+                        <span>攻速: ${char.attackSpeed}ms</span>
+                    </div>
+                    
+                    <div class="skills-section">
+                        ${char.passive ? `
+                        <div class="skill-item passive">
+                            <div class="skill-header">
+                                <div class="skill-icon-mini">🛡️</div>
+                                <div class="skill-name-type">
+                                    <h4>${char.passive.name}</h4>
+                                    <p class="skill-type">被動技能</p>
+                                </div>
+                            </div>
+                            <div class="skill-description">
+                                ${char.passive.description}
+                            </div>
+                        </div>
+                        ` : ''}
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <div class="skill-icon-mini">${skillIcons[id]?.normal || '⚔️'}</div>
+                                <div class="skill-name-type">
+                                    <h4>${char.skills.normal.name}</h4>
+                                    <p class="skill-type">${char.skills.normal.type}</p>
+                                </div>
+                                <div class="skill-cooldown">${char.skills.normal.cooldown/1000}秒</div>
+                            </div>
+                            <div class="skill-description">
+                                ${skillDescriptions[char.skills.normal.code]?.description || '技能描述待補充'}
+                            </div>
+                            <div class="skill-effects">
+                                ${(skillDescriptions[char.skills.normal.code]?.effects || []).map(effect => 
+                                    `<span class="skill-effect-tag">${effect}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="skill-item ultimate">
+                            <div class="skill-header">
+                                <div class="skill-icon-mini">${skillIcons[id]?.ultimate || '💥'}</div>
+                                <div class="skill-name-type">
+                                    <h4>${char.skills.ultimate.name}</h4>
+                                    <p class="skill-type">${char.skills.ultimate.type}</p>
+                                </div>
+                                <div class="skill-cooldown">${char.skills.ultimate.cooldown/1000}秒</div>
+                            </div>
+                            <div class="skill-description">
+                                ${skillDescriptions[char.skills.ultimate.code]?.description || '技能描述待補充'}
+                            </div>
+                            <div class="skill-effects">
+                                ${(skillDescriptions[char.skills.ultimate.code]?.effects || []).map(effect => 
+                                    `<span class="skill-effect-tag">${effect}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        // 事件監聽器
+        document.getElementById('skillGuideOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSkillGuide();
+            }
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSkillGuide();
+            }
+        });
+        
+        // 🔧 修復:確保 DOM 加載完成後初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM 加載完成，開始初始化...'); // 🔧 調試用
+            
+            // 初始化粒子Canvas
+            const particleCanvas = document.getElementById('selectionParticleCanvas');
+            if (particleCanvas) {
+                particleCanvas.width = window.innerWidth;
+                particleCanvas.height = window.innerHeight;
+                
+                // 視窗大小調整時更新Canvas尺寸
+                window.addEventListener('resize', () => {
+                    particleCanvas.width = window.innerWidth;
+                    particleCanvas.height = window.innerHeight;
+                });
+            }
+            
+            // 初始化角色選擇
+            initCharacterSelection();
+            
+            const selectMapBtn = document.getElementById('selectMapBtn');
+            const startBattleBtn = document.getElementById('startBattleBtn');
+            const startGameBtn = document.getElementById('startGameBtn');
+            const cpuModeBtn = document.getElementById('cpuModeBtn');
+            
+            if (selectMapBtn) {
+                selectMapBtn.onclick = goToMapSelect;
+                console.log('地圖選擇按鈕已綁定'); // 🔧 調試用
+            }
+            
+            if (startBattleBtn) {
+                startBattleBtn.onclick = startBattle;
+                console.log('開始戰鬥按鈕已綁定'); // 🔧 調試用
+            }
+            
+            if (startGameBtn) {
+                startGameBtn.onclick = startGameDirectly;
+                console.log('直接開始按鈕已綁定'); // 🔧 調試用
+            }
+
+            if (cpuModeBtn) {
+                cpuModeBtn.onclick = () => toggleCpuMode();
+            }
+
+            refreshCpuModeUI();
+            
+            // 🔧 直接顯示角色選擇界面
+            showScreen('characterSelect');
+            console.log('初始化完成！'); // 🔧 調試用
+        });
+    </script>
+</body>
+</html>
