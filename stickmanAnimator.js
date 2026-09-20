@@ -1089,14 +1089,15 @@
     ctx.strokeStyle = '#7A2D16';
     ctx.lineWidth = 3;
     ctx.beginPath();
+    // 標準角色的腳底落在角色定位點下方約 55px；重甲腿也對齊同一條地面線。
     ctx.moveTo(-8, -12);
-    ctx.lineTo(-13, 27);
+    ctx.lineTo(-13, 52);
     ctx.moveTo(8, -12);
-    ctx.lineTo(13, 27);
+    ctx.lineTo(13, 52);
     ctx.stroke();
     ctx.fillStyle = '#2A1A17';
-    ctx.fillRect(-19, 25, 15, 6);
-    ctx.fillRect(5, 25, 15, 6);
+    ctx.fillRect(-20, 50, 17, 7);
+    ctx.fillRect(4, 50, 17, 7);
 
     // 六角鍛甲軀幹與外翻肩甲。
     ctx.fillStyle = '#2A1A17';
