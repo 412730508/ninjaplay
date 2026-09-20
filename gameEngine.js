@@ -8003,8 +8003,8 @@
       [SKILL_CODES.WIND_SLASH]: 'windSlash',
       [SKILL_CODES.FIRE_RUSH]: 'fireRush',
       [SKILL_CODES.FIRE_BALL]: 'fireBall',
-      [SKILL_CODES.FORGE_FIRE_SPIN]: 'fireRush',
-      [SKILL_CODES.FLAME_GOD_BLADE]: 'windSlash',
+      [SKILL_CODES.FORGE_FIRE_SPIN]: 'forgefireSpin',
+      [SKILL_CODES.FLAME_GOD_BLADE]: 'flameGodBlade',
       [SKILL_CODES.WATER_SHIELD]: 'waterShield',
       [SKILL_CODES.WATER_DRAGON]: 'waterDragon',
       [SKILL_CODES.THUNDER_STEP]: 'thunderStep',
@@ -9290,7 +9290,14 @@
     this.cooldowns[playerId].attack = now;
     
     // ?剜?餅??嚗?瘙箄蝙?典?撅祆?瑽????恬?
-    this.playAnimation(player, player.id === 'adjudicator' ? 'gavelSmash' : 'attack');
+    this.playAnimation(
+      player,
+      player.id === 'adjudicator'
+        ? 'gavelSmash'
+        : player.id === 'forgefire'
+          ? 'forgefireSlash'
+          : 'attack'
+    );
     
     // ? ???餅?嚗撠?撠
     if (player.isRanged) {

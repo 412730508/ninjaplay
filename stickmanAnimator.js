@@ -55,6 +55,11 @@
         secondary: '#FF9800', // 璈
         accent: '#FFCDD2'     // 瘛箇?
       },
+      forgefire: { // 鍛炎忍者 - 煤黑鍛甲與熔金火焰
+        primary: '#4A1712',
+        secondary: '#FF5A1F',
+        accent: '#FFD166'
+      },
       suijin: { // 瘞游?? - ?蝟?
         primary: '#2196F3',   // ?
         secondary: '#03A9F4', // 瘛箄?
@@ -159,6 +164,16 @@
         eyeColor: '#FF4444',
         bodyPattern: 'scale_armor',
         specialEffect: 'ember_particles'
+      },
+      forgefire: { // 鍛炎忍者：雙手重刃、鍛甲與持續飛散的火星
+        headband: { color: '#5A1F17', pattern: '鍛' },
+        shoulderPads: { color: '#9B321A', size: 11 },
+        armor: { color: '#2A1A17', thickness: 12 },
+        cloak: { color: '#1A1010', transparency: 0.88 },
+        weapon: { type: 'forgefire_greatblade', color: '#FFD166' },
+        eyeColor: '#FFB000',
+        bodyPattern: 'forge_armor',
+        specialEffect: 'forge_sparks'
       },
       suijin: { // 瘞游蔣敹?
         headband: { color: '#2196F3', pattern: '??' },
@@ -315,6 +330,11 @@
       // ?怎頂??賢???
       fireRush: this.createFireRushAnimation(),
       fireBall: this.createFireBallAnimation(),
+
+      // 鍛炎忍者：雙手蓄力重斬、旋斬與巨刃落斬
+      forgefireSlash: this.createForgefireSlashAnimation(),
+      forgefireSpin: this.createForgefireSpinAnimation(),
+      flameGodBlade: this.createFlameGodBladeAnimation(),
       
       // 瘞渡頂??賢???
       waterShield: this.createWaterShieldAnimation(),
@@ -442,6 +462,65 @@
     ];
   }
   
+  // 鍛炎忍者：雙手將重刃拉至背後，再以全身重量向前劈下。
+  createForgefireSlashAnimation() {
+    const bladeRotation = [-138, -150, -164, -176, -92, -24, 26, 48, 34, 18, 6, 0];
+    const base = this.createAttackAnimation();
+    return base.map((pose, frame) => ({
+      ...pose,
+      head: { ...pose.head, y: frame < 4 ? -2 : frame < 8 ? 3 : 0 },
+      body: { ...pose.body, rotation: pose.body.rotation + (frame < 4 ? -12 : frame < 8 ? 10 : 0) },
+      leftArm: {
+        upperRotation: frame < 4 ? -95 - frame * 8 : 38 + Math.max(0, 7 - frame) * 4,
+        lowerRotation: frame < 4 ? -48 : 30
+      },
+      rightArm: {
+        upperRotation: frame < 4 ? -105 - frame * 7 : 58 + Math.max(0, 7 - frame) * 5,
+        lowerRotation: frame < 4 ? -58 : 42
+      },
+      weaponRotation: bladeRotation[frame],
+      weaponScale: 1
+    }));
+  }
+
+  // 鍛炎忍者：低身壓住重心，火焰重刃環繞身體完成一整圈。
+  createForgefireSpinAnimation() {
+    return Array(12).fill().map((_, frame) => {
+      const turn = frame * 32;
+      return {
+        head: { x: Math.sin(frame * 0.7) * 2, y: 3, rotation: turn * 0.16 },
+        body: { rotation: -18 + Math.sin(frame * 0.7) * 7 },
+        leftArm: { upperRotation: -62 + turn, lowerRotation: -36 },
+        rightArm: { upperRotation: -52 + turn, lowerRotation: -48 },
+        leftLeg: { upperRotation: -22, lowerRotation: 28 },
+        rightLeg: { upperRotation: 22, lowerRotation: 28 },
+        weaponRotation: -145 + turn,
+        weaponScale: 1.08
+      };
+    });
+  }
+
+  // 鍛炎忍者：先把巨刃高舉蓄熱，落下時放大成炎神巨刃。
+  createFlameGodBladeAnimation() {
+    const rotations = [-72, -86, -101, -118, -136, -154, -168, -42, -8, 14, 4, 0];
+    return Array(12).fill().map((_, frame) => ({
+      head: { x: 0, y: frame < 7 ? -3 : 4, rotation: frame < 7 ? -8 : 18 },
+      body: { rotation: frame < 7 ? -14 : 26 },
+      leftArm: {
+        upperRotation: frame < 7 ? -118 : 38 + Math.max(0, 10 - frame) * 5,
+        lowerRotation: frame < 7 ? -62 : 35
+      },
+      rightArm: {
+        upperRotation: frame < 7 ? -128 : 55 + Math.max(0, 10 - frame) * 5,
+        lowerRotation: frame < 7 ? -68 : 45
+      },
+      leftLeg: { upperRotation: frame < 7 ? 12 : -25, lowerRotation: 18 },
+      rightLeg: { upperRotation: frame < 7 ? 20 : -18, lowerRotation: 18 },
+      weaponRotation: rotations[frame],
+      weaponScale: frame < 7 ? 1.35 + frame * 0.11 : 2.12 - (frame - 7) * 0.12
+    }));
+  }
+
   // ?? 鋆捱???冽????- 瘜?擃???
   createGavelSmashAnimation() {
     return [
@@ -1186,6 +1265,23 @@
       ctx.fill();
       ctx.restore();
     }
+
+    if (equipment.specialEffect === 'forge_sparks') {
+      const time = Date.now() * 0.006;
+      ctx.save();
+      ctx.shadowColor = '#FF5A1F';
+      ctx.shadowBlur = 7;
+      for (let spark = 0; spark < 7; spark++) {
+        const phase = time + spark * 1.6;
+        const radius = 20 + (spark % 3) * 7;
+        const x = Math.cos(phase * 0.72) * radius;
+        const y = -30 + Math.sin(phase) * 18 - (spark % 2) * 9;
+        ctx.globalAlpha = 0.35 + (spark % 3) * 0.16;
+        ctx.fillStyle = spark % 2 ? '#FF6D00' : '#FFD166';
+        ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+      }
+      ctx.restore();
+    }
   }
 
   // ? 蝜芾ˊ?恍◢嚗◢敶勗???
@@ -1523,6 +1619,9 @@
       case 'flame_katana': // ?怎敹?- ??
         this.drawFlameKatana(ctx, weapon.color, colors);
         break;
+      case 'forgefire_greatblade':
+        this.drawForgefireGreatblade(ctx, weapon.color, frame.weaponRotation || 0, frame.weaponScale || 1);
+        break;
       case 'water_staff': // 瘞游蔣敹?- 瘞湔?
         this.drawWaterStaff(ctx, weapon.color, colors);
         break;
@@ -1609,6 +1708,65 @@
     // ???
     ctx.fillStyle = colors.secondary;
     ctx.fillRect(-3, 3, 6, 8);
+  }
+
+  // 鍛炎忍者專屬：厚重的鍛鋼火焰大刃，不與火忍宗的細太刀共用。
+  drawForgefireGreatblade(ctx, color, rotation, scale) {
+    const flameTime = Date.now() * 0.009;
+    ctx.save();
+    ctx.rotate(rotation * Math.PI / 180);
+    ctx.scale(scale, scale);
+
+    // 加長握柄與護手
+    ctx.fillStyle = '#28140F';
+    ctx.fillRect(-4, 4, 8, 18);
+    ctx.fillStyle = color;
+    ctx.fillRect(-9, 2, 18, 4);
+    ctx.fillStyle = '#7A2D16';
+    ctx.fillRect(-2, 6, 4, 14);
+
+    // 寬刃：煤黑鍛鋼外緣，中央仍有熔岩般的刃紋。
+    ctx.shadowColor = '#FF5A1F';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#211615';
+    ctx.strokeStyle = '#FF6D00';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-8, 3);
+    ctx.lineTo(-14, -43);
+    ctx.lineTo(-5, -66);
+    ctx.lineTo(5, -66);
+    ctx.lineTo(14, -43);
+    ctx.lineTo(8, 3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 5;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.lineTo(0, -55);
+    ctx.moveTo(-5, -14);
+    ctx.lineTo(4, -25);
+    ctx.moveTo(4, -34);
+    ctx.lineTo(-3, -44);
+    ctx.stroke();
+
+    // 火舌貼著刀背跳動；這是重刃本身的特效而非通用火刀。
+    ctx.strokeStyle = '#FFB000';
+    ctx.lineWidth = 2;
+    for (let flame = 0; flame < 4; flame++) {
+      const bladeY = -18 - flame * 11;
+      const side = flame % 2 ? -1 : 1;
+      const flicker = Math.sin(flameTime + flame * 1.8) * 4;
+      ctx.beginPath();
+      ctx.moveTo(side * 8, bladeY);
+      ctx.quadraticCurveTo(side * (15 + flicker), bladeY - 5, side * 10, bladeY - 12);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // ?? 瘞湔?
@@ -2038,6 +2196,7 @@
       'waterShield', 'waterDragon', 'thunderStep', 'thunderPunch',
       'rockGuard', 'earthQuake', 'shadowStrike', 'shadowClone',  // ? 蝣箔??啗???”銝?
       'spiritBomb', 'spiritJudgment', 'attack', 'gavelSmash',
+      'forgefireSlash', 'forgefireSpin', 'flameGodBlade',
       'elfTalisman', 'stealthDash',
       'bloodShackles', 'bloodDevour',
       'flashCut', 'iaiFlash'

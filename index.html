@@ -436,7 +436,7 @@
             dokusei: 'assets/portraits/dokusei.png',
             taijutsu: 'assets/portraits/taijutsu.png',
             ranger: 'assets/portraits/ranger.png',
-            blood_pact: 'assets/portraits/blood_pact.png',
+            warlock: 'assets/portraits/blood_pact.png',
             ronin: 'assets/portraits/ronin.png',
             beastmaster: 'assets/portraits/beastmaster.png',
             scorpion: 'assets/portraits/scorpion.png',
@@ -455,9 +455,12 @@
             const rosterGrid = document.getElementById('characterRoster');
             rosterGrid.innerHTML = '';
 
-            Object.entries(characters).forEach(([, char]) => {
-                rosterGrid.appendChild(createCharacterCard(char));
-            });
+            Object.entries(characters)
+                // The newest challenger always occupies the final roster plate.
+                .sort(([firstId], [secondId]) => (firstId === 'forgefire') - (secondId === 'forgefire'))
+                .forEach(([, char]) => {
+                    rosterGrid.appendChild(createCharacterCard(char));
+                });
 
             renderSelectedCharacter('player1');
             renderSelectedCharacter('player2');
@@ -1828,7 +1831,9 @@
                 }
             };
             
-            Object.entries(characters).forEach(([id, char]) => {
+            Object.entries(characters)
+                .sort(([firstId], [secondId]) => (firstId === 'forgefire') - (secondId === 'forgefire'))
+                .forEach(([id, char]) => {
                 const card = document.createElement('div');
                 card.className = 'character-guide-card';
                 card.setAttribute('data-element', elementMap[id]);
@@ -1904,8 +1909,8 @@
                     </div>
                 `;
                 
-                grid.appendChild(card);
-            });
+                    grid.appendChild(card);
+                });
         }
         
         // 事件監聽器
