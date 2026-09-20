@@ -7,6 +7,10 @@ const SKILL_CODES = {
   // 火焰忍者技能代碼
   FIRE_RUSH: 'FIR_001',      // 爆炎衝刺 🔥
   FIRE_BALL: 'FIR_002',      // 火球術 💥
+
+  // 鍛炎忍者技能代碼
+  FORGE_FIRE_SPIN: 'FRG_001', // 烈火旋斬 🔥
+  FLAME_GOD_BLADE: 'FRG_002', // 奧義・炎神巨刃 🗡️
   
   // 水影忍者技能代碼
   WATER_SHIELD: 'WAT_001',   // 水幕盾 🛡️
@@ -161,7 +165,53 @@ const characters = {
       }
     }
   },
-  
+
+  forgefire: {
+    id: 'forgefire',
+    name: '鍛炎忍者',
+    organization: '火忍宗',
+    maxHp: 105,
+    hp: 105,
+    attackDamage: 7,
+    attackSpeed: 800,
+    attackRange: 60,
+    moveSpeed: 260,
+    position: { x: 100, y: 300 },
+    facing: 1,
+    passive: {
+      name: '火焰刀・三式',
+      description: '火焰刀普攻每第三擊會釋出火焰劍氣：傷害提升至9，並多延伸80px。',
+      attacksNeeded: 3,
+      thirdStrikeDamage: 9,
+      thirdStrikeRangeBonus: 80
+    },
+    skills: {
+      normal: {
+        code: SKILL_CODES.FORGE_FIRE_SPIN,
+        name: '烈火旋斬',
+        type: '範圍/擊退',
+        cooldown: 7000,
+        range: 130,
+        damage: 11,
+        knockback: 80,
+        distance: 60
+      },
+      ultimate: {
+        code: SKILL_CODES.FLAME_GOD_BLADE,
+        name: '奧義・炎神巨刃',
+        type: '蓄力/貫穿',
+        cooldown: 18000,
+        range: 400,
+        damage: 22,
+        knockback: 150,
+        chargeTime: 700,
+        trailDuration: 3000,
+        trailDamage: 2,
+        trailTickRate: 1000
+      }
+    }
+  },
+
   suijin: {
     id: 'suijin',
     name: '水影忍者',

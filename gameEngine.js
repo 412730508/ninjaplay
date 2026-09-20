@@ -5815,7 +5815,12 @@
           hazard.lastTickTime = now;
           target.hp = Math.max(0, target.hp - hazard.damagePerTick);
           this.addDamageNumber(target.position.x, target.position.y - 10, hazard.damagePerTick, 'skill');
-          this.addVisualEffect(target.position.x, target.position.y, 'poison', '☠️');
+          this.addVisualEffect(
+            target.position.x,
+            target.position.y,
+            hazard.type === 'fire_trail' ? 'burning_trail' : 'poison',
+            hazard.type === 'fire_trail' ? '🔥' : '☠️'
+          );
           if (target.hp <= 0) {
             const winnerId = target === this.players.player1 ? 'player2' : 'player1';
             this.gameState.winner = winnerId;
@@ -5994,6 +5999,27 @@
 
         const baseX = hazard.x - hazard.width / 2;
         const groundY = hazard.y;
+
+        if (hazard.type === 'fire_trail') {
+          ctx.fillStyle = 'rgba(255, 86, 0, 0.36)';
+          ctx.shadowColor = '#ff6d00';
+          ctx.shadowBlur = 16;
+          ctx.fillRect(baseX, groundY - 8, hazard.width, 14);
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = '#ffd166';
+          const flameCount = Math.max(5, Math.floor(hazard.width / 38));
+          for (let i = 0; i < flameCount; i++) {
+            const flameX = baseX + (hazard.width / flameCount) * (i + 0.5);
+            const flameH = 8 + Math.sin(age * 0.012 + i * 1.7) * 4;
+            ctx.beginPath();
+            ctx.moveTo(flameX - 5, groundY + 2);
+            ctx.lineTo(flameX, groundY - flameH);
+            ctx.lineTo(flameX + 5, groundY + 2);
+            ctx.fill();
+          }
+          ctx.restore();
+          return;
+        }
 
         // Ground glow
         ctx.fillStyle = 'rgba(139, 0, 0, 0.25)';
@@ -7977,6 +8003,8 @@
       [SKILL_CODES.WIND_SLASH]: 'windSlash',
       [SKILL_CODES.FIRE_RUSH]: 'fireRush',
       [SKILL_CODES.FIRE_BALL]: 'fireBall',
+      [SKILL_CODES.FORGE_FIRE_SPIN]: 'fireRush',
+      [SKILL_CODES.FLAME_GOD_BLADE]: 'windSlash',
       [SKILL_CODES.WATER_SHIELD]: 'waterShield',
       [SKILL_CODES.WATER_DRAGON]: 'waterDragon',
       [SKILL_CODES.THUNDER_STEP]: 'thunderStep',
@@ -9484,8 +9512,15 @@
       }
     }
     
+    let isForgeFireThirdStrike = false;
+    if (player.id === 'forgefire') {
+      const attackCount = (player.effects.forgefireAttackCount || 0) + 1;
+      player.effects.forgefireAttackCount = attackCount;
+      isForgeFireThirdStrike = attackCount % (player.passive?.attacksNeeded || 3) === 0;
+    }
+
     const distance = Math.abs(player.position.x - opponent.position.x);
-    const meleeRange = this.getMeleeRange(player);
+    const meleeRange = this.getMeleeRange(player) + (isForgeFireThirdStrike ? (player.passive?.thirdStrikeRangeBonus || 80) : 0);
     const targetBonusRadius = Math.max(0, this.getCollisionRadius(opponent, 40) - 40);
     if (distance > meleeRange + targetBonusRadius) return;
     
@@ -9544,6 +9579,12 @@
     }
     
     let damage = player.attackDamage;
+
+    if (isForgeFireThirdStrike) {
+      damage = player.passive?.thirdStrikeDamage || 9;
+      this.addVisualEffect(player.position.x + player.facing * 55, player.position.y - 25, 'fire_sword_wave', '🔥');
+      this.addCombatLog(`${player.name} 第三擊火焰劍氣！`, playerId, 'skill');
+    }
     
     // ??瘚芯犖?恥鋡怠?嚗??銵?- 2蝘?餅??脣蝝????銝活?格蝒??
     if (player.id === 'ronin' && player.passive) {
@@ -10266,10 +10307,68 @@
         break;
         
       case SKILL_CODES.FIRE_BALL:
-        // ?怎?銵?
         this.createProjectile(player, skill, 'fireball');
         break;
-        
+
+      case SKILL_CODES.FORGE_FIRE_SPIN: {
+        this.addCombatLog(`${player.name} 使用 烈火旋斬！`, playerSide, 'skill');
+        player.position.x += (skill.distance || 60) * player.facing;
+        player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x));
+
+        const distance = Math.abs(player.position.x - opponent.position.x);
+        if (distance <= (skill.range || 130)) {
+          const hit = this.dealDamage(opponent, skill.damage || 11, playerId);
+          if (hit.hit) {
+            const knockDirection = Math.sign(opponent.position.x - player.position.x) || player.facing;
+            opponent.position.x += knockDirection * (skill.knockback || 80);
+            opponent.position.x = Math.max(80, Math.min(this.canvasWidth - 80, opponent.position.x));
+            this.addCombatLog(`烈火旋斬命中！擊退 ${skill.knockback || 80}px`, playerSide, 'damage');
+          }
+        }
+        this.addVisualEffect(player.position.x, player.position.y - 18, 'fire_spin', '🔥');
+        this.triggerCameraShake(5, 180);
+        break;
+      }
+
+      case SKILL_CODES.FLAME_GOD_BLADE: {
+        const chargeTime = skill.chargeTime || 700;
+        player.effects.casting = now + chargeTime;
+        this.addCombatLog(`${player.name} 正在蓄力 炎神巨刃！`, playerSide, 'status');
+        this.addVisualEffect(player.position.x, player.position.y - 42, 'fire_charge', '🔥');
+
+        setTimeout(() => {
+          if (this.gameState.winner || player.hp <= 0 || opponent.hp <= 0 || player.effects.stunned > Date.now()) return;
+
+          player.effects.casting = 0;
+          const strikeRange = skill.range || 400;
+          const forwardDistance = (opponent.position.x - player.position.x) * player.facing;
+          if (forwardDistance >= -20 && forwardDistance <= strikeRange) {
+            const hit = this.dealDamage(opponent, skill.damage || 22, playerId);
+            if (hit.hit) {
+              opponent.position.x += player.facing * (skill.knockback || 150);
+              opponent.position.x = Math.max(80, Math.min(this.canvasWidth - 80, opponent.position.x));
+              this.addCombatLog(`炎神巨刃命中！造成 ${skill.damage || 22} 傷害`, playerSide, 'damage');
+            }
+          }
+
+          this.gameState.hazards.push({
+            type: 'fire_trail',
+            x: player.position.x + player.facing * (strikeRange / 2),
+            y: player.position.y + 27,
+            width: strikeRange,
+            duration: skill.trailDuration || 3000,
+            damagePerTick: skill.trailDamage || 2,
+            tickRate: skill.trailTickRate || 1000,
+            lastTickTime: Date.now(),
+            createdAt: Date.now(),
+            targetRef: opponent
+          });
+          this.addVisualEffect(player.position.x + player.facing * 100, player.position.y - 30, 'flame_god_blade', '🗡️');
+          this.triggerCameraShake(10, 320);
+        }, chargeTime);
+        break;
+      }
+
       case SKILL_CODES.WATER_SHIELD:
         // ?? 瘞游???- ?ˊ??
         this.addCombatLog(`${player.name} 雿輻 瘞游??橘?`, playerSide, 'skill');

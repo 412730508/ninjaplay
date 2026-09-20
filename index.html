@@ -357,7 +357,8 @@
         
         const elementMap = {
             fujin: 'wind',
-            katon: 'fire', 
+            katon: 'fire',
+            forgefire: 'fire',
             suijin: 'water',
             raijin: 'thunder',
             doton: 'earth',
@@ -380,6 +381,7 @@
         const skillIcons = {
             fujin: { normal: '🌪️', ultimate: '🌀' },
             katon: { normal: '🔥', ultimate: '💥' },
+            forgefire: { normal: '🔥', ultimate: '🗡️' },
             suijin: { normal: '🛡️', ultimate: '🐉' },
             raijin: { normal: '⚡', ultimate: '👊' },
             doton: { normal: '🗿', ultimate: '💥' },
@@ -402,6 +404,7 @@
         const characterIcons = {
             fujin: '🌪️',
             katon: '🔥',
+            forgefire: '🗡️',
             suijin: '🌊',
             raijin: '⚡',
             doton: '🗿',
@@ -1446,6 +1449,8 @@
                 'WND_002': '🌀',  // 旋風斬
                 'FIR_001': '🔥',  // 爆炎衝刺
                 'FIR_002': '💥',  // 火球術
+                'FRG_001': '🔥',  // 烈火旋斬
+                'FRG_002': '🗡️', // 奧義・炎神巨刃
                 'WAT_001': '🛡️', // 水幕盾
                 'WAT_002': '🐉',  // 水龍彈
                 'THU_001': '⚡',  // 閃電步
@@ -1527,6 +1532,14 @@
                 [SKILL_CODES.FIRE_BALL]: {
                     description: '凝聚火焰投射火球，命中敵人造成高傷害並擊退，著彈點產生爆炸波及周圍40px範圍。',
                     effects: ['遠程攻擊', '傷害18', '爆炸範圍40px', '爆炸傷害+5', '擊退50px', '冷卻13秒']
+                },
+                [SKILL_CODES.FORGE_FIRE_SPIN]: {
+                    description: '握住火焰刀快速旋轉一圈，先向前踏出一步，再以烈焰橫掃身旁敵人。',
+                    effects: ['前移60px', '範圍130px', '傷害11', '擊退80px', '冷卻7秒']
+                },
+                [SKILL_CODES.FLAME_GOD_BLADE]: {
+                    description: '蓄力0.7秒後揮下巨型火焰刀，貫穿前方400px，並留下一道會灼燒敵人的火焰路徑。',
+                    effects: ['蓄力0.7秒', '距離400px', '傷害22', '擊退150px', '燃燒路徑3秒', '每秒傷害2', '冷卻18秒']
                 },
                 [SKILL_CODES.WATER_SHIELD]: {
                     description: '水之護盾環繞身體，3秒內減少50%受到的傷害，並獲得移速加成。護盾結束後回復80%儲存傷害值的HP。',

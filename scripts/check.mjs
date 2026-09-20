@@ -59,7 +59,11 @@ try {
     ['puppeteer', 'skills.normal.puppetFollowDist', 60],
     ['puppeteer', 'skills.ultimate.smokeRadius', 200],
     ['kage', 'skills.ultimate.duration', 3000],
-    ['kage', 'skills.ultimate.spawnDelay', 100]
+    ['kage', 'skills.ultimate.spawnDelay', 100],
+    ['forgefire', 'attackDamage', 7],
+    ['forgefire', 'skills.normal.cooldown', 7000],
+    ['forgefire', 'skills.ultimate.chargeTime', 700],
+    ['forgefire', 'skills.ultimate.trailDuration', 3000]
   ];
   for (const [characterId, propertyPath, expected] of expectedValues) {
     const actual = propertyPath.split('.').reduce((value, key) => value?.[key], roster[characterId]);
