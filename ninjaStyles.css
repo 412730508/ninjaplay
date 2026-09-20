@@ -1638,6 +1638,343 @@ body::after {
     min-width: 100%;
   }
 }
+
+/* Keep this final override at the end of the file: earlier selection styles
+   deliberately provide the roomy, scrollable layout used on smaller screens. */
+@media (min-width: 1081px) and (min-height: 600px) {
+  html, body { height: 100%; overflow: hidden; }
+  header { height: 78px; overflow: hidden; }
+  .ninja-title { margin: 8px 0 2px; font-size: clamp(1.7rem, 2.4vw, 2.45rem); }
+  .game-subtitle { margin: 0; font-size: 0.78rem; }
+
+  #characterSelect {
+    height: calc(100vh - 78px); min-height: 0; padding: 6px 14px 8px;
+    display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 7px; overflow: hidden;
+  }
+  #characterSelect .screen-title { margin: 0; font-size: clamp(1.25rem, 1.7vw, 1.65rem); }
+  #characterSelect .selection-hero, #characterSelect .selection-status { display: none; }
+  #characterSelect .character-selection {
+    width: min(100%, 1540px); height: 100%; min-height: 0; margin: 0 auto; padding: 0;
+    grid-template-columns: 190px minmax(0, 1fr) 190px; gap: 10px;
+  }
+  #characterSelect .selection-side, #characterSelect .selection-roster-panel {
+    min-height: 0; padding: 12px; border-radius: 18px;
+  }
+  #characterSelect .selection-side .player-panel-header, #characterSelect .roster-panel-header { margin-bottom: 7px; }
+  #characterSelect .selection-side .player-panel-header h3, #characterSelect .roster-panel-header h3 { font-size: 1rem; }
+  #characterSelect .player-kicker, #characterSelect .active-selection-label, #characterSelect .panel-tip { margin-bottom: 3px; font-size: 0.66rem; }
+  #characterSelect .slot-toggle-btn { padding: 7px 9px; font-size: 0.72rem; }
+  #characterSelect .selected-character-display { min-height: 0; margin: 6px 0; padding: 9px; }
+  #characterSelect .selected-character-icon { width: 36px; height: 36px; border-radius: 10px; }
+  #characterSelect .selected-character-metrics, #characterSelect .selected-character-skills { gap: 4px; margin-top: 6px; }
+  #characterSelect .selected-metric, #characterSelect .selected-skill-pill { padding: 3px 6px; font-size: 0.62rem; }
+  #characterSelect .roster-grid {
+    height: calc(100% - 56px); grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 7px;
+  }
+  #characterSelect .roster-grid .character-card { min-height: 0; height: 100%; padding: 7px; border-radius: 12px; }
+  #characterSelect .roster-grid .character-card-main { gap: 5px; }
+  #characterSelect .roster-grid .character-icon-block { width: 30px; height: 30px; border-radius: 9px; font-size: 1rem; }
+  #characterSelect .roster-grid .character-name { font-size: clamp(0.62rem, 0.75vw, 0.8rem); line-height: 1.2; }
+  #characterSelect .roster-grid .character-org, #characterSelect .roster-grid .character-hover-hint, #characterSelect .roster-grid .character-stats { display: none; }
+  #characterSelect .roster-grid .stat-pill { padding: 2px 4px; font-size: 0.55rem; }
+  #characterSelect .screen-controls { margin: 0 auto; padding: 0; gap: 8px; }
+  #characterSelect .screen-controls .ninja-btn { min-width: 0; padding: 9px 16px; border-radius: 10px; font-size: 0.83rem; }
+
+  #mapSelect {
+    height: calc(100vh - 78px); padding: 6px 20px 8px;
+    display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 8px; overflow: hidden;
+  }
+  #mapSelect .screen-title, #mapSelect .selected-ninjas-summary, #mapSelect .screen-controls, #mapSelect .selection-status { margin: 0; }
+  #mapSelect .screen-title { font-size: 1.45rem; }
+  #mapSelect .selected-ninjas-summary { gap: 14px; }
+  #mapSelect .ninja-preview { padding: 7px 18px; border-radius: 12px; }
+  #mapSelect .ninja-icon, #mapSelect .map-description, #mapSelect .selection-status { display: none; }
+  #mapSelect .map-selection { width: min(100%, 1380px); height: 100%; min-height: 0; padding: 0; }
+  #mapSelect .map-grid { height: 100%; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  #mapSelect .map-card { min-height: 0; padding: 9px; border-radius: 14px; }
+  #mapSelect .map-preview { height: calc(100% - 42px); min-height: 120px; }
+  #mapSelect .screen-controls .ninja-btn { min-width: 0; padding: 9px 20px; font-size: 0.86rem; }
+
+  #gameArea { height: calc(100vh - 78px); padding: 6px 14px 8px; display: flex; flex-direction: column; overflow: hidden; }
+  #gameArea .battle-interface { margin: 0 auto 6px; padding: 8px 12px; width: min(100%, 1400px); }
+  #gameArea .battle-header-compact { margin-bottom: 6px; }
+  #gameArea .combat-ui { padding: 7px 12px; }
+  #gameArea #gameCanvas { width: auto; max-width: 100%; height: min(700px, calc(100vh - 230px)); margin: 0 auto; flex: 0 1 auto; }
+  #gameArea .controls-compact { margin: 5px auto 0; }
+}
+
+/* ===== Desktop single-screen game flow =====
+   The desktop layout keeps the selection, map, and battle flows inside one
+   viewport. Smaller displays intentionally fall back to normal document flow. */
+@media (min-width: 1081px) and (min-height: 600px) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  header {
+    height: 78px;
+    overflow: hidden;
+  }
+
+  .ninja-title {
+    margin: 8px 0 2px;
+    font-size: clamp(1.7rem, 2.4vw, 2.45rem);
+  }
+
+  .game-subtitle {
+    margin: 0;
+    font-size: 0.78rem;
+  }
+
+  .game-screen {
+    min-height: 0;
+  }
+
+  #characterSelect {
+    height: calc(100vh - 78px);
+    min-height: 0;
+    padding: 6px 14px 8px;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 7px;
+    overflow: hidden;
+  }
+
+  #characterSelect .screen-title {
+    margin: 0;
+    font-size: clamp(1.25rem, 1.7vw, 1.65rem);
+  }
+
+  #characterSelect .selection-hero,
+  #characterSelect .selection-status {
+    display: none;
+  }
+
+  #characterSelect .character-selection {
+    width: min(100%, 1540px);
+    height: 100%;
+    min-height: 0;
+    margin: 0 auto;
+    padding: 0;
+    grid-template-columns: 190px minmax(0, 1fr) 190px;
+    gap: 10px;
+  }
+
+  #characterSelect .selection-side,
+  #characterSelect .selection-roster-panel {
+    min-height: 0;
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  #characterSelect .selection-side .player-panel-header,
+  #characterSelect .roster-panel-header {
+    margin-bottom: 7px;
+  }
+
+  #characterSelect .selection-side .player-panel-header h3,
+  #characterSelect .roster-panel-header h3 {
+    font-size: 1rem;
+  }
+
+  #characterSelect .player-kicker,
+  #characterSelect .active-selection-label,
+  #characterSelect .panel-tip {
+    margin-bottom: 3px;
+    font-size: 0.66rem;
+  }
+
+  #characterSelect .slot-toggle-btn {
+    padding: 7px 9px;
+    font-size: 0.72rem;
+  }
+
+  #characterSelect .selected-character-display {
+    min-height: 0;
+    margin: 6px 0;
+    padding: 9px;
+  }
+
+  #characterSelect .selected-character-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  #characterSelect .selected-character-metrics,
+  #characterSelect .selected-character-skills {
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  #characterSelect .selected-metric,
+  #characterSelect .selected-skill-pill {
+    padding: 3px 6px;
+    font-size: 0.62rem;
+  }
+
+  #characterSelect .roster-grid {
+    height: calc(100% - 56px);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  #characterSelect .roster-grid .character-card {
+    min-height: 0;
+    height: 100%;
+    padding: 7px;
+    border-radius: 12px;
+  }
+
+  #characterSelect .roster-grid .character-card-main {
+    gap: 5px;
+  }
+
+  #characterSelect .roster-grid .character-icon-block {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    font-size: 1rem;
+  }
+
+  #characterSelect .roster-grid .character-name {
+    font-size: clamp(0.62rem, 0.75vw, 0.8rem);
+    line-height: 1.2;
+  }
+
+  #characterSelect .roster-grid .character-org,
+  #characterSelect .roster-grid .character-hover-hint,
+  #characterSelect .roster-grid .character-stats {
+    display: none;
+  }
+
+  #characterSelect .roster-grid .stat-pill {
+    padding: 2px 4px;
+    font-size: 0.55rem;
+  }
+
+  #characterSelect .screen-controls {
+    margin: 0 auto;
+    padding: 0;
+    gap: 8px;
+  }
+
+  #characterSelect .screen-controls .ninja-btn {
+    min-width: 0;
+    padding: 9px 16px;
+    border-radius: 10px;
+    font-size: 0.83rem;
+  }
+
+  #mapSelect {
+    height: calc(100vh - 78px);
+    padding: 6px 20px 8px;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  #mapSelect .screen-title,
+  #mapSelect .selected-ninjas-summary,
+  #mapSelect .screen-controls,
+  #mapSelect .selection-status {
+    margin: 0;
+  }
+
+  #mapSelect .screen-title {
+    font-size: 1.45rem;
+  }
+
+  #mapSelect .selected-ninjas-summary {
+    gap: 14px;
+  }
+
+  #mapSelect .ninja-preview {
+    padding: 7px 18px;
+    border-radius: 12px;
+  }
+
+  #mapSelect .ninja-icon {
+    display: none;
+  }
+
+  #mapSelect .map-selection {
+    width: min(100%, 1380px);
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+  }
+
+  #mapSelect .map-grid {
+    height: 100%;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  #mapSelect .map-card {
+    min-height: 0;
+    padding: 9px;
+    border-radius: 14px;
+  }
+
+  #mapSelect .map-preview {
+    height: calc(100% - 42px);
+    min-height: 120px;
+  }
+
+  #mapSelect .map-description {
+    display: none;
+  }
+
+  #mapSelect .screen-controls .ninja-btn {
+    min-width: 0;
+    padding: 9px 20px;
+    font-size: 0.86rem;
+  }
+
+  #mapSelect .selection-status {
+    display: none;
+  }
+
+  #gameArea {
+    height: calc(100vh - 78px);
+    padding: 6px 14px 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #gameArea .battle-interface {
+    margin: 0 auto 6px;
+    padding: 8px 12px;
+    width: min(100%, 1400px);
+  }
+
+  #gameArea .battle-header-compact {
+    margin-bottom: 6px;
+  }
+
+  #gameArea .combat-ui {
+    padding: 7px 12px;
+  }
+
+  #gameArea #gameCanvas {
+    width: auto;
+    max-width: 100%;
+    height: min(700px, calc(100vh - 230px));
+    margin: 0 auto;
+    flex: 0 1 auto;
+  }
+
+  #gameArea .controls-compact {
+    margin: 5px auto 0;
+  }
+}
     
 /* ===== 低捲動共享角色池覆蓋 ===== */
 #characterSelect {
@@ -1968,4 +2305,66 @@ body::after {
     align-items: flex-start;
     text-align: left;
   }
+}
+
+/* Final desktop layout override: must remain after the responsive selection rules. */
+@media (min-width: 1081px) and (min-height: 600px) {
+  html, body { height: 100%; overflow: hidden; }
+  header { height: 78px; overflow: hidden; }
+  .ninja-title { margin: 8px 0 2px; font-size: clamp(1.7rem, 2.4vw, 2.45rem); }
+  .game-subtitle { margin: 0; font-size: 0.78rem; }
+
+  #characterSelect {
+    height: calc(100vh - 78px); min-height: 0; padding: 6px 14px 8px;
+    display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 7px; overflow: hidden;
+  }
+  #characterSelect .screen-title { margin: 0; font-size: clamp(1.25rem, 1.7vw, 1.65rem); }
+  #characterSelect .selection-hero, #characterSelect .selection-status { display: none; }
+  #characterSelect .character-selection {
+    width: min(100%, 1540px); height: 100%; min-height: 0; margin: 0 auto; padding: 0;
+    grid-template-columns: 190px minmax(0, 1fr) 190px; gap: 10px;
+  }
+  #characterSelect .selection-side, #characterSelect .selection-roster-panel { min-height: 0; padding: 12px; border-radius: 18px; }
+  #characterSelect .selection-side .player-panel-header, #characterSelect .roster-panel-header { margin-bottom: 7px; }
+  #characterSelect .selection-side .player-panel-header h3, #characterSelect .roster-panel-header h3 { font-size: 1rem; }
+  #characterSelect .player-kicker, #characterSelect .active-selection-label, #characterSelect .panel-tip { margin-bottom: 3px; font-size: 0.66rem; }
+  #characterSelect .slot-toggle-btn { padding: 7px 9px; font-size: 0.72rem; }
+  #characterSelect .selected-character-display { min-height: 0; margin: 6px 0; padding: 9px; }
+  #characterSelect .selected-character-icon { width: 36px; height: 36px; border-radius: 10px; }
+  #characterSelect .selected-character-metrics, #characterSelect .selected-character-skills { gap: 4px; margin-top: 6px; }
+  #characterSelect .selected-metric, #characterSelect .selected-skill-pill { padding: 3px 6px; font-size: 0.62rem; }
+  #characterSelect .roster-grid {
+    height: calc(100% - 56px); grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 7px;
+  }
+  #characterSelect .roster-grid .character-card { min-height: 0; height: 100%; padding: 7px; border-radius: 12px; }
+  #characterSelect .roster-grid .character-card-main { gap: 5px; }
+  #characterSelect .roster-grid .character-icon-block { width: 30px; height: 30px; border-radius: 9px; font-size: 1rem; }
+  #characterSelect .roster-grid .character-name { font-size: clamp(0.62rem, 0.75vw, 0.8rem); line-height: 1.2; }
+  #characterSelect .roster-grid .character-org, #characterSelect .roster-grid .character-hover-hint, #characterSelect .roster-grid .character-stats { display: none; }
+  #characterSelect .roster-grid .stat-pill { padding: 2px 4px; font-size: 0.55rem; }
+  #characterSelect .screen-controls { margin: 0 auto; padding: 0; gap: 8px; }
+  #characterSelect .screen-controls .ninja-btn { min-width: 0; padding: 9px 16px; border-radius: 10px; font-size: 0.83rem; }
+
+  #mapSelect {
+    height: calc(100vh - 78px); padding: 6px 20px 8px;
+    display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 8px; overflow: hidden;
+  }
+  #mapSelect .screen-title, #mapSelect .selected-ninjas-summary, #mapSelect .screen-controls, #mapSelect .selection-status { margin: 0; }
+  #mapSelect .screen-title { font-size: 1.45rem; }
+  #mapSelect .selected-ninjas-summary { gap: 14px; }
+  #mapSelect .ninja-preview { padding: 7px 18px; border-radius: 12px; }
+  #mapSelect .ninja-icon, #mapSelect .map-description, #mapSelect .selection-status { display: none; }
+  #mapSelect .map-selection { width: min(100%, 1380px); height: 100%; min-height: 0; padding: 0; }
+  #mapSelect .map-grid { height: 100%; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  #mapSelect .map-card { min-height: 0; padding: 9px; border-radius: 14px; }
+  #mapSelect .map-preview { height: calc(100% - 42px); min-height: 120px; }
+  #mapSelect .screen-controls .ninja-btn { min-width: 0; padding: 9px 20px; font-size: 0.86rem; }
+
+  #gameArea { height: calc(100vh - 78px); padding: 6px 14px 8px; display: flex; flex-direction: column; overflow: hidden; }
+  #gameArea .battle-interface { margin: 0 auto 6px; padding: 8px 12px; width: min(100%, 1400px); }
+  #gameArea .battle-header-compact { margin-bottom: 6px; }
+  #gameArea .combat-ui { padding: 7px 12px; }
+  #gameArea #gameCanvas { width: auto; max-width: 100%; height: min(700px, calc(100vh - 230px)); margin: 0 auto; flex: 0 1 auto; }
+  #gameArea .controls-compact { margin: 5px auto 0; }
 }

@@ -19,6 +19,16 @@ for (const asset of localAssets) {
   }
 }
 
+const css = readFileSync(resolve(root, 'ninjaStyles.css'), 'utf8')
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/'[^']*'|"[^"]*"/g, '');
+const openBraces = [...css].filter((character) => character === '{').length;
+const closeBraces = [...css].filter((character) => character === '}').length;
+if (openBraces !== closeBraces) {
+  console.error(`CSS brace check failed: ${openBraces} opening and ${closeBraces} closing braces.`);
+  failed = true;
+}
+
 for (const file of readdirSync(root).filter((file) => file.endsWith('.js'))) {
   const result = spawnSync(process.execPath, ['--check', file], {
     cwd: root,
