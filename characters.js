@@ -309,8 +309,9 @@ const characters = {
         type: '召喚分身',
         cooldown: 12000,
         cloneCount: 5, // 🆕 召喚5個分身
-        duration: 5000, // 🆕 持續5秒
-        cloneDamage: 3 // 🆕 分身傷害
+        duration: 3000,
+        spawnDelay: 100,
+        cloneDamage: 3
       }
     }
   },
@@ -801,7 +802,7 @@ const characters = {
     facing: 1,
     passive: {
       name: '絲線操控',
-      description: '傀儡存在時，本體與傀儡同時發動普攻，形成雙重打擊。傀儡不存在時普攻距離+30px。',
+      description: '傀儡存在時，本體與傀儡同時發動普攻；傀儡每次命中會儲存2/3傷害，收回時一口氣釋放。傀儡不存在時普攻距離+30px。',
       puppetAttackDamage: 3,
       soloRangeBonus: 30
     },
@@ -813,7 +814,7 @@ const characters = {
         cooldown: 4000,
         puppetHp: 30,
         puppetSpeed: 200,
-        puppetFollowDist: 80,
+        puppetFollowDist: 60,
         puppetMaxTether: 300
       },
       ultimate: {
@@ -822,7 +823,7 @@ const characters = {
         type: '瞬移/範圍',
         cooldown: 14000,
         swapSmokeDuration: 2000,
-        smokeRadius: 100,
+        smokeRadius: 200,
         smokeDamagePerTick: 2,
         smokeTickInterval: 500,
         smokeSlow: 0.4,

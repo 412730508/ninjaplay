@@ -6237,6 +6237,8 @@
       // Root BOTH players
       player.effects.rooted = now + skill.rootDuration;
       opponent.effects.rooted = now + skill.rootDuration;
+      opponent.effects.chainDisabled = now + skill.rootDuration;
+      this.endDefend(opponentId);
 
       // ?? ??憭扳?5蝘撠???銵-50%
       const healRedDuration = skill.healReductionDuration || 5000;
@@ -6252,7 +6254,7 @@
         endTime: now + skill.rootDuration
       };
 
-      this.addCombatLog(`痛苦枷鎖！定身${skill.rootDuration / 1000}秒＋減速-50%！`, playerId, 'damage');
+      this.addCombatLog(`痛苦枷鎖！定身${skill.rootDuration / 1000}秒，無法攻擊或防禦！`, playerId, 'damage');
       this.addVisualEffect(opponent.position.x, opponent.position.y, 'chain', '⛓️');
       this.triggerCameraShake(8, 400);
     }
@@ -9245,7 +9247,7 @@
     const player = this.players[playerId];
     const opponent = this.players[playerId === 'player1' ? 'player2' : 'player1'];
     
-    if (!player || player.effects.stunned > now || player.effects.casting > now || this.isPlayerDefending(playerId)) return;
+    if (!player || player.effects.stunned > now || player.effects.casting > now || player.effects.chainDisabled > now || this.isPlayerDefending(playerId)) return;
     
     // ?儭?Exile Blade: block attacks during execution
     if (player.isExecuting) return;
@@ -9471,7 +9473,10 @@
         const puppetRange = (player.attackRange || 60) + 20;
         if (puppetDist <= puppetRange && opponent.hp > 0) {
           const puppetDmg = player.passive?.puppetAttackDamage || 3;
-          this.dealDamage(opponent, puppetDmg, playerId);
+          const puppetHit = this.dealDamage(opponent, puppetDmg, playerId);
+          if (puppetHit.hit) {
+            puppet.storedDamage = (puppet.storedDamage || 0) + puppetDmg * (2 / 3);
+          }
           this.addVisualEffect(puppet.x, puppet.y - 30, 'puppet_hit', '💥');
           this.addCombatLog('傀儡攻擊！', playerId, 'damage');
           puppetAttacked = true;
@@ -9678,7 +9683,7 @@
     if (!player) return;
     
     // 瑼Ｘ?臬鋡怎???賣?銝?
-    if (player.effects.stunned > now || player.effects.casting > now) return;
+    if (player.effects.stunned > now || player.effects.casting > now || player.effects.chainDisabled > now) return;
     
     // ?儭?瑼Ｘ?脩戌?瑕 (?脩戌蝯?敺?蝘?⊥??活?脩戌)
     if (now < defendState.cooldownUntil) {
@@ -9795,7 +9800,7 @@
     const player = this.players[playerId];
     
     // 瑼Ｘ??賣?暺???
-    if (!player || player.effects.stunned > now || player.effects.silenced > now || this.isPlayerDefending(playerId)) return;
+    if (!player || player.effects.stunned > now || player.effects.silenced > now || player.effects.chainDisabled > now || this.isPlayerDefending(playerId)) return;
 
     // ?儭?Exile Blade: block skill usage during execution
     if (player.isExecuting) return;
@@ -10455,6 +10460,27 @@
         const dashDist = skill.dashDistance || 300;
         const newX = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x + player.facing * dashDist));
         player.position.x = newX;
+
+        // The dash itself is an attack. A successful counter arms one guaranteed
+        // critical Black Blade Strike, otherwise the configured crit chance applies.
+        const pathStart = Math.min(shadowX, newX);
+        const pathEnd = Math.max(shadowX, newX);
+        const hitRadius = this.getCollisionRadius ? this.getCollisionRadius(opponent, 30) : 30;
+        const hitsOpponent = opponent.hp > 0 &&
+          opponent.position.x + hitRadius >= pathStart &&
+          opponent.position.x - hitRadius <= pathEnd &&
+          Math.abs(player.position.y - opponent.position.y) <= 60;
+        if (hitsOpponent) {
+          const guaranteedCrit = player.effects.guaranteedCrit > now;
+          const isCritical = guaranteedCrit || Math.random() < (skill.critChance || 0);
+          const damage = (skill.damage || 0) + (isCritical ? (skill.critDamage || 0) : 0);
+          if (guaranteedCrit) player.effects.guaranteedCrit = 0;
+          const result = this.dealDamageWithResult(opponent, damage, playerId);
+          if (result.hit) {
+            this.addDamageNumber(opponent.position.x, opponent.position.y - 35, damage, isCritical ? 'critical' : 'skill');
+            this.addCombatLog(isCritical ? '黑刃突襲暴擊！' : '黑刃突襲命中！', playerSide, 'damage');
+          }
+        }
         
         this.addVisualEffect(player.position.x, player.position.y, 'shadow_dash', '💨');
         if (typeof particleSystem !== 'undefined' && particleSystem) {
@@ -10474,22 +10500,22 @@
         
         // ?萄遣5??頨恬?瘥??0.14蝘郊?箇
         const cloneCount = skill.cloneCount || 5;
-        const spawnInterval = 700 / cloneCount; // 0.7蝘像??
+        const spawnDelay = skill.spawnDelay || 100;
         
         for (let i = 0; i < cloneCount; i++) {
           const angle = (Math.PI * 2 / cloneCount) * i;
           const radius = 80;
           
           const clone = {
-            x: player.position.x + Math.cos(angle) * radius,
-            y: player.position.y + Math.sin(angle) * radius - 50,
-            facing: player.facing,
+            x: opponent.position.x + Math.cos(angle) * radius,
+            y: opponent.position.y + Math.sin(angle) * radius - 50,
+            facing: opponent.position.x >= player.position.x ? 1 : -1,
             opacity: 0,
-            spawnAt: now + i * spawnInterval,
+            spawnAt: now + spawnDelay,
             spawned: false,
             createdAt: now,
-            expiresAt: now + 700 + skill.duration, // 摮暑??敺?典?曉???蝞?
-            attackCooldown: now + 700, // ?券?箇敺????餅?
+            expiresAt: now + spawnDelay + skill.duration,
+            attackCooldown: now + spawnDelay,
             index: i
           };
           
@@ -13269,17 +13295,19 @@
       const puppet = this.gameState.puppet[pid];
       if (!puppet || !puppet.active) return;
 
-      // Puppet follows owner
-      const dx = player.position.x - puppet.x;
-      const followDist = player.skills.normal.puppetFollowDist || 80;
+      // Puppet follows a point beside its owner and always faces the enemy.
+      const opponent = this.players[pid === 'player1' ? 'player2' : 'player1'];
+      const followDist = player.skills.normal.puppetFollowDist || 60;
+      const targetX = player.position.x + player.facing * followDist;
+      const dx = targetX - puppet.x;
       const puppetSpeed = (player.skills.normal.puppetSpeed || 200) * 0.016;
 
-      if (Math.abs(dx) > followDist) {
+      if (Math.abs(dx) > 2) {
         const dir = Math.sign(dx);
-        puppet.x += dir * puppetSpeed;
+        puppet.x += dir * Math.min(Math.abs(dx), puppetSpeed);
         puppet.x = Math.max(80, Math.min(this.canvasWidth - 80, puppet.x));
-        puppet.facing = dir;
       }
+      if (opponent) puppet.facing = opponent.position.x >= puppet.x ? 1 : -1;
 
       // Tether break: if puppet too far, recall it
       const maxTether = player.skills.normal.puppetMaxTether || 300;
@@ -13326,6 +13354,13 @@
       this.addCombatLog(`${player.name} ?嗅???∴?`, playerSide, 'status');
       this.addVisualEffect(puppet.x, puppet.y - 20, 'puppet_recall', '💨');
 
+      const storedDamage = Math.floor(puppet.storedDamage || 0);
+      if (storedDamage > 0 && opponent?.hp > 0) {
+        this.dealDamageWithResult(opponent, storedDamage, playerId);
+        this.addDamageNumber(opponent.position.x, opponent.position.y - 35, storedDamage, 'skill');
+        this.addCombatLog(`傀儡收回！釋放儲存的${storedDamage}點傷害！`, playerSide, 'damage');
+      }
+
       if (typeof particleSystem !== 'undefined' && particleSystem) {
         for (let i = 0; i < 8; i++) {
           particleSystem.particles.push({
@@ -13349,6 +13384,7 @@
         facing: player.facing,
         hp: skill.puppetHp || 30,
         maxHp: skill.puppetHp || 30,
+        storedDamage: 0,
         spawnTime: now
       };
       this.addCombatLog(`${player.name} ?砍???∴?`, playerSide, 'skill');
@@ -14600,10 +14636,11 @@
           canon.wave2Hit = true;
           const dmg = skill.wave2?.damage || 10;
           this.dealDamageWithResult(opponent, dmg, pid);
+          this.endDefend(opponentId);
           opponent.effects.slowed = now + 1500;
           opponent.effects.slowPercent = skill.wave2?.slowMultiplier || 0.4;
           this.addVisualEffect(opponent.position.x, opponent.position.y, 'slow', '🎶');
-          this.addCombatLog('輪唱第二波命中！減速60%', pid, 'damage');
+          this.addCombatLog('輪唱第二波命中！強減速並強制解除防禦！', pid, 'damage');
         }
       }
       // Wave 3: 2000-3000ms, radius 200->800px (full screen)

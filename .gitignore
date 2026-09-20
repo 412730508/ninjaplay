@@ -1,0 +1,8 @@
+# Local tooling and operating-system files
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Local preview output
+.cache/
+coverage/

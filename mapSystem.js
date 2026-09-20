@@ -4271,7 +4271,7 @@ class MapSystem {
       }
     });
     
-    // � 地面植被 - 多層次草叢
+    // 🌿 地面植被 - 多層次草叢
     // 深色背景草
     ctx.fillStyle = '#1a3a1a';
     for (let i = 0; i < 45; i++) {

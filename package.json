@@ -1,0 +1,9 @@
+{
+  "name": "ninjaplay",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A dependency-free browser fighting game.",
+  "scripts": {
+    "check": "node scripts/check.mjs"
+  }
+}
