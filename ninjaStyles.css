@@ -1058,7 +1058,7 @@ body::after {
 #characterSelect {
   position: relative;
   overflow: hidden;
-  display: block !important;
+  display: block;
 }
 
 #characterSelect.hidden {
@@ -1702,6 +1702,81 @@ body::after {
   #gameArea .combat-ui { padding: 7px 12px; }
   #gameArea #gameCanvas { width: auto; max-width: 100%; height: min(700px, calc(100vh - 230px)); margin: 0 auto; flex: 0 1 auto; }
   #gameArea .controls-compact { margin: 5px auto 0; }
+}
+
+/* Selection workbench: actions stay visible even when the roster fills the viewport. */
+@media (min-width: 1081px) and (min-height: 600px) {
+  #characterSelect {
+    display: grid !important;
+    grid-template-rows: 34px minmax(0, 1fr) 58px;
+    background: linear-gradient(180deg, rgba(2, 5, 18, 0.18), rgba(2, 5, 18, 0.6));
+  }
+
+  #characterSelect .selection-action-bar {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1.25fr 1.45fr;
+    align-items: stretch;
+    width: min(100%, 1120px);
+    min-height: 50px;
+    padding: 5px;
+    gap: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    background: rgba(6, 10, 28, 0.9);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    z-index: 30;
+  }
+
+  #characterSelect .selection-action-bar .ninja-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 7px 10px;
+    margin: 0;
+    font-size: clamp(0.7rem, 0.82vw, 0.88rem);
+    white-space: nowrap;
+  }
+
+  #characterSelect #selectMapBtn {
+    background: linear-gradient(135deg, #1565c0, #1e88e5);
+  }
+
+  #characterSelect #startGameBtn {
+    background: linear-gradient(135deg, #b77900, #ffb300 55%, #ffe082);
+    color: #161006;
+    box-shadow: 0 4px 18px rgba(255, 179, 0, 0.3);
+  }
+
+  #characterSelect .character-selection {
+    grid-template-columns: 200px minmax(0, 1fr) 200px;
+    align-items: stretch;
+  }
+
+  #characterSelect .selection-roster-panel {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  #characterSelect .active-selection-prompt {
+    display: none;
+  }
+
+  #characterSelect .roster-grid {
+    height: auto;
+    min-height: 0;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1080px), (max-height: 599px) {
+  #characterSelect .selection-action-bar {
+    display: flex;
+  }
+
+  #characterSelect .selection-action-bar .ninja-btn {
+    flex: 1 1 190px;
+  }
 }
 
 /* ===== Desktop single-screen game flow =====
