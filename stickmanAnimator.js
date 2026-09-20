@@ -998,6 +998,12 @@
   
   // 蝜芾ˊ?急鈭?
   drawStickman(ctx, x, y, frame, schoolId, facing = 1, scale = 1) {
+    // 鍛炎忍者不是火忍宗換色版：使用完整獨立的鍛甲、頭盔與重刃剪影。
+    if (schoolId === 'forgefire') {
+      this.drawForgefireNinja(ctx, x, y, frame, facing, scale);
+      return;
+    }
+
     const colors = this.schoolColors[schoolId] || this.schoolColors.katon;
     const equipment = this.ninjaEquipment[schoolId] || this.ninjaEquipment.katon;
     
@@ -1040,6 +1046,126 @@
     // ??蝜芾ˊ?寞???蝎?
     this.drawSpecialEffects(ctx, frame, equipment, x, y);
     
+    ctx.restore();
+  }
+
+  // 鍛炎忍者專屬角色模型：低重心鍛甲、琥珀護目鏡與雙手鍛鋼巨刃。
+  drawForgefireNinja(ctx, x, y, frame, facing = 1, scale = 1) {
+    const t = Date.now() * 0.006;
+    const weaponRotation = frame.weaponRotation ?? -28;
+    const weaponScale = frame.weaponScale ?? 1;
+    const bodyTilt = (frame.body?.rotation || 0) * 0.35;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(facing * scale, scale);
+    ctx.rotate(bodyTilt * Math.PI / 180);
+
+    // 散出的鍛爐火星。
+    ctx.save();
+    ctx.shadowColor = '#FF5A1F';
+    ctx.shadowBlur = 7;
+    for (let spark = 0; spark < 8; spark++) {
+      const phase = t + spark * 1.35;
+      const radius = 19 + (spark % 3) * 9;
+      ctx.globalAlpha = 0.32 + (spark % 3) * 0.15;
+      ctx.fillStyle = spark % 2 ? '#FF6D00' : '#FFD166';
+      ctx.fillRect(Math.cos(phase * 0.7) * radius - 2, -34 + Math.sin(phase) * 20 - spark % 2 * 10, 4, 4);
+    }
+    ctx.restore();
+
+    // 厚實破披風與雙腿，形成比火忍宗更沉重的輪廓。
+    ctx.fillStyle = '#180E0D';
+    ctx.beginPath();
+    ctx.moveTo(-15, -51);
+    ctx.lineTo(-27, -9);
+    ctx.lineTo(-10, 8);
+    ctx.lineTo(4, -11);
+    ctx.lineTo(19, 7);
+    ctx.lineTo(26, -10);
+    ctx.lineTo(13, -51);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#7A2D16';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-8, -12);
+    ctx.lineTo(-13, 27);
+    ctx.moveTo(8, -12);
+    ctx.lineTo(13, 27);
+    ctx.stroke();
+    ctx.fillStyle = '#2A1A17';
+    ctx.fillRect(-19, 25, 15, 6);
+    ctx.fillRect(5, 25, 15, 6);
+
+    // 六角鍛甲軀幹與外翻肩甲。
+    ctx.fillStyle = '#2A1A17';
+    ctx.strokeStyle = '#FF6D00';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-17, -48);
+    ctx.lineTo(-22, -34);
+    ctx.lineTo(-14, -13);
+    ctx.lineTo(14, -13);
+    ctx.lineTo(22, -34);
+    ctx.lineTo(17, -48);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#8B2F17';
+    ctx.fillRect(-27, -47, 12, 10);
+    ctx.fillRect(15, -47, 12, 10);
+    ctx.fillStyle = '#FFD166';
+    ctx.fillRect(-3, -42, 6, 23);
+    ctx.fillStyle = '#FF5A1F';
+    ctx.fillRect(-10, -31, 20, 3);
+
+    // 雙手抱持巨刃，而不是火忍宗的單手細刀姿勢。
+    ctx.strokeStyle = '#4A1712';
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-17, -42);
+    ctx.lineTo(5, -28);
+    ctx.lineTo(15, -19);
+    ctx.moveTo(18, -42);
+    ctx.lineTo(5, -28);
+    ctx.lineTo(15, -12);
+    ctx.stroke();
+    ctx.fillStyle = '#FFD166';
+    ctx.beginPath();
+    ctx.arc(15, -19, 5, 0, Math.PI * 2);
+    ctx.arc(15, -12, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 鍛鋼巨刃必定可見，普攻與兩招會讀取自己的旋轉與放大資訊。
+    ctx.save();
+    ctx.translate(15, -18);
+    this.drawForgefireGreatblade(ctx, '#FFD166', weaponRotation, weaponScale);
+    ctx.restore();
+
+    // 密封鍛造頭盔與一條發亮的琥珀護目鏡。
+    ctx.fillStyle = '#231413';
+    ctx.strokeStyle = '#9B321A';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, -64, 17, Math.PI, Math.PI * 2);
+    ctx.lineTo(17, -57);
+    ctx.lineTo(-17, -57);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#FFB000';
+    ctx.shadowColor = '#FF6D00';
+    ctx.shadowBlur = 9;
+    ctx.fillRect(-12, -64, 24, 5);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(-15, -55, 30, 7);
+    ctx.fillStyle = '#5A1F17';
+    ctx.fillRect(-20, -70, 40, 5);
+    ctx.fillStyle = '#FFD166';
+    ctx.fillRect(-4, -73, 8, 5);
     ctx.restore();
   }
 

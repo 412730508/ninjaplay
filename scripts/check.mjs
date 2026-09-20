@@ -7,7 +7,7 @@ const root = resolve(import.meta.dirname, '..');
 const htmlPath = resolve(root, 'index.html');
 const html = readFileSync(htmlPath, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
 const localAssets = [...new Set([
-  ...[...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)].map((match) => match[1]),
+  ...[...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)].map((match) => match[1].split(/[?#]/, 1)[0]),
   ...[...html.matchAll(/assets\/portraits\/[\w.-]+\.png/g)].map((match) => match[0])
 ])].filter((asset) => !/^(?:https?:|data:|#)/.test(asset));
 
