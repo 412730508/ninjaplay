@@ -690,6 +690,12 @@ body::after {
   pointer-events: none;
 }
 
+/* Screen-specific desktop layouts must never reserve space while hidden. */
+#mapSelect.hidden,
+#gameArea.hidden {
+  display: none !important;
+}
+
 .screen-title {
   font-size: clamp(1.8em, 3.5vw, 2.4em);
   font-weight: 900;
