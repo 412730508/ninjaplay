@@ -2425,7 +2425,10 @@ body::after {
 
 #characterSelect .roster-grid .character-card.has-portrait.selected .character-portrait {
   opacity: 1;
-  transform: scale(1.03);
+  box-sizing: border-box;
+  object-fit: contain;
+  padding: 4px;
+  transform: none;
 }
 
 #characterSelect .roster-grid .character-card.has-portrait.selected .character-card-copy {
