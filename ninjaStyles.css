@@ -2394,6 +2394,48 @@ body::after {
   transform: translateY(-4px) scale(1.01);
 }
 
+/* Pixel portraits: subdued beside a name, then take over the tile once picked. */
+#characterSelect .roster-grid .character-portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.46;
+  image-rendering: pixelated;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+#characterSelect .roster-grid .character-card.has-portrait.selected {
+  padding: 0 !important;
+}
+
+#characterSelect .roster-grid .character-card.has-portrait.selected .character-card-main {
+  height: 100% !important;
+  gap: 0 !important;
+}
+
+#characterSelect .roster-grid .character-card.has-portrait.selected .character-icon-block {
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+}
+
+#characterSelect .roster-grid .character-card.has-portrait.selected .character-portrait {
+  opacity: 1;
+  transform: scale(1.03);
+}
+
+#characterSelect .roster-grid .character-card.has-portrait.selected .character-card-copy {
+  display: none !important;
+}
+
+#characterSelect .roster-grid .character-card::after {
+  z-index: 3;
+}
+
 #characterSelect .roster-grid .character-card-main {
   gap: 10px;
 }

@@ -421,6 +421,20 @@
             shamisen: '🎸'
         };
 
+        // Player-supplied pixel portraits for the first ten roster slots.
+        const characterPortraits = {
+            fujin: 'assets/portraits/fujin.png',
+            katon: 'assets/portraits/katon.png',
+            suijin: 'assets/portraits/suijin.png',
+            raijin: 'assets/portraits/raijin.png',
+            doton: 'assets/portraits/doton.png',
+            kage: 'assets/portraits/kage.png',
+            rei: 'assets/portraits/rei.png',
+            dokusei: 'assets/portraits/dokusei.png',
+            taijutsu: 'assets/portraits/taijutsu.png',
+            ranger: 'assets/portraits/ranger.png'
+        };
+
         function formatCooldown(ms) {
             return `${Math.round(ms / 1000)}秒`;
         }
@@ -759,7 +773,8 @@
         
         function createCharacterCard(character) {
             const card = document.createElement('div');
-            card.className = 'character-card';
+            const portrait = characterPortraits[character.id];
+            card.className = `character-card${portrait ? ' has-portrait' : ''}`;
             card.setAttribute('data-element', elementMap[character.id]);
             card.setAttribute('data-character-id', character.id);
             card.onclick = () => selectCharacter(character.id, gameState.activeSelectionPlayer, card);
@@ -768,7 +783,9 @@
             
             card.innerHTML = `
                 <div class="character-card-main">
-                    <div class="character-icon-block">${characterIcons[character.id] || '🥷'}</div>
+                    <div class="character-icon-block">${portrait
+                        ? `<img class="character-portrait" data-portrait="${portrait}" alt="${character.name} 頭像">`
+                        : (characterIcons[character.id] || '🥷')}</div>
                     <div class="character-card-copy">
                         <div class="character-name-row">
                             <div class="character-name">${character.name}</div>
@@ -815,6 +832,9 @@
                     </div>
                 </div>
             `;
+
+            const portraitImage = card.querySelector('.character-portrait');
+            if (portraitImage) portraitImage.src = portrait;
             
             return card;
         }
