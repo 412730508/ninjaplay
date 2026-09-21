@@ -867,29 +867,35 @@
             const portrait = characterPortraits[characterId];
             selectedDisplay.innerHTML = `
                 <div class="selected-character-card">
-                    <div class="selected-character-top">
-                        <div class="selected-character-icon${portrait ? ' has-portrait' : ''}">${portrait
-                            ? `<img class="selected-character-portrait" data-portrait="${portrait}" alt="${char.name} 頭像">`
-                            : (characterIcons[characterId] || '🥷')}</div>
-                        <div class="selected-char-info">
-                            <div class="char-name">${char.name}</div>
-                            <div class="char-org">${char.organization}</div>
+                    <div class="selected-character-details">
+                        <div class="selected-character-top">
+                            <div class="selected-character-icon${portrait ? ' has-portrait' : ''}">${portrait
+                                ? `<img class="selected-character-portrait" data-portrait="${portrait}" alt="${char.name} 頭像">`
+                                : (characterIcons[characterId] || '🥷')}</div>
+                            <div class="selected-char-info">
+                                <div class="char-name">${char.name}</div>
+                                <div class="char-org">${char.organization}</div>
+                            </div>
+                        </div>
+                        <div class="selected-character-metrics">
+                            <span class="selected-metric">HP ${char.hp}</span>
+                            <span class="selected-metric">ATK ${char.attackDamage}</span>
+                            <span class="selected-metric">SPD ${Math.round(char.moveSpeed / 10)}</span>
+                        </div>
+                        <div class="selected-character-skills">
+                            <span class="selected-skill-pill">${skillIcons[characterId]?.normal || '⚔️'} ${char.skills.normal.name}</span>
+                            <span class="selected-skill-pill accent">${skillIcons[characterId]?.ultimate || '💥'} ${char.skills.ultimate.name}</span>
                         </div>
                     </div>
-                    <div class="selected-character-metrics">
-                        <span class="selected-metric">HP ${char.hp}</span>
-                        <span class="selected-metric">ATK ${char.attackDamage}</span>
-                        <span class="selected-metric">SPD ${Math.round(char.moveSpeed / 10)}</span>
-                    </div>
-                    <div class="selected-character-skills">
-                        <span class="selected-skill-pill">${skillIcons[characterId]?.normal || '⚔️'} ${char.skills.normal.name}</span>
-                        <span class="selected-skill-pill accent">${skillIcons[characterId]?.ultimate || '💥'} ${char.skills.ultimate.name}</span>
-                    </div>
+                    <div class="selected-character-showcase${portrait ? ' has-portrait' : ''}" aria-hidden="true">${portrait
+                        ? `<img class="selected-character-showcase-image" data-portrait="${portrait}" alt="">`
+                        : `<span>${characterIcons[characterId] || '🥷'}</span>`}</div>
                 </div>
             `;
 
-            const selectedPortrait = selectedDisplay.querySelector('.selected-character-portrait');
-            if (selectedPortrait) selectedPortrait.src = portrait;
+            selectedDisplay.querySelectorAll('[data-portrait]').forEach(image => {
+                image.src = portrait;
+            });
         }
 
         function setActiveSelectionPlayer(playerId) {

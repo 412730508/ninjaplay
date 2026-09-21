@@ -1553,6 +1553,58 @@ body::after {
 
 .selected-character-card {
   width: 100%;
+  height: 100%;
+  min-height: 88px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(132px, 42%);
+  overflow: hidden;
+  border-radius: 13px;
+}
+
+.selected-character-details {
+  position: relative;
+  z-index: 1;
+  padding: 2px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* The large, empty right half of each player nameplate is reserved for art. */
+.selected-character-showcase {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 58% 50%, rgba(255, 194, 83, 0.19), transparent 62%),
+    linear-gradient(90deg, rgba(8, 13, 31, 0), rgba(7, 12, 28, 0.32));
+}
+
+.selected-character-showcase::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 38px;
+  background: linear-gradient(90deg, rgba(14, 20, 43, 0.88), transparent);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.selected-character-showcase-image {
+  width: 100%;
+  height: 100%;
+  min-height: 88px;
+  display: block;
+  object-fit: contain;
+  transform: scale(1.12);
+  image-rendering: pixelated;
+}
+
+.selected-character-showcase > span {
+  font-size: clamp(3rem, 6vw, 6rem);
+  filter: drop-shadow(0 0 18px rgba(255, 178, 55, 0.35));
 }
 
 .selected-character-top {
