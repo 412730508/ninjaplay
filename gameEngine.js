@@ -9385,6 +9385,7 @@
       const timeDiff = now - lastAttackTime;
       const passive = player.passive;
       let isPerfectPitch = false;
+      let isFourthBeat = false;
       let noteDamage = player.attackDamage;
 
       if (lastAttackTime > 0 && passive &&
@@ -9439,16 +9440,39 @@
         }
       }
 
+      // Every fourth pluck is an accent beat. It intentionally uses a fixed
+      // damage value instead of stacking with the timing-perfect multiplier.
+      if (passive) {
+        const attackCount = (player.effects.shamisenAttackCount || 0) + 1;
+        player.effects.shamisenAttackCount = attackCount;
+        if (attackCount % (passive.attacksNeeded || 4) === 0) {
+          isFourthBeat = true;
+          noteDamage = passive.fourthHitDamage || 5;
+          this.addVisualEffect(player.position.x, player.position.y - 52, 'accent_beat', '♪');
+          this.addCombatLog(`${player.name} 第四拍・重音！`, playerId, 'status');
+        }
+      }
+
       player.effects.shamisenLastAttackTime = now;
 
       // AoE: 200px 範圍音波傷害
       const dist = Math.abs(player.position.x - opponent.position.x);
       if (dist <= (player.attackRange || 200)) {
         const damageResult = this.dealDamage(opponent, noteDamage, playerId);
-        if (damageResult && damageResult.hit && isPerfectPitch && passive) {
-          const kbDir = opponent.position.x > player.position.x ? 1 : -1;
-          opponent.position.x += kbDir * (passive.perfectKnockback || 10);
-          opponent.position.x = Math.max(80, Math.min(this.canvasWidth - 80, opponent.position.x));
+        if (damageResult && damageResult.hit) {
+          if (isPerfectPitch && passive) {
+            const kbDir = opponent.position.x > player.position.x ? 1 : -1;
+            opponent.position.x += kbDir * (passive.perfectKnockback || 10);
+            opponent.position.x = Math.max(80, Math.min(this.canvasWidth - 80, opponent.position.x));
+          }
+          if (isFourthBeat && passive) {
+            opponent.effects.slowed = Math.max(
+              opponent.effects.slowed || 0,
+              now + (passive.fourthHitSlowDuration || 1000)
+            );
+            this.addVisualEffect(opponent.position.x, opponent.position.y - 40, 'slow', '♩');
+            this.addCombatLog('重音命中：緩速30%（1秒）！', playerId, 'status');
+          }
         }
       }
 
@@ -9459,7 +9483,7 @@
           radius: 5,
           maxRadius: 200,
           expandSpeed: 400,
-          color: isPerfectPitch ? '#FFD700' : 'rgba(200,200,255,1)',
+          color: isPerfectPitch ? '#FFD700' : isFourthBeat ? '#FF7EB6' : 'rgba(200,200,255,1)',
           life: 300, maxLife: 300,
           alpha: 0.45,
           type: 'shamisen_wave_ring'

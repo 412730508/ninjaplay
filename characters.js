@@ -943,10 +943,14 @@ const characters = {
     facing: 1,
     passive: {
       name: '完美絕對音律',
-      description: '普攻節奏精準（480~520ms間隔）觸發完美音律，傷害翻倍為6、附帶10px擊退，投射物變為金色大號🎶。',
+      description: '普攻節奏精準（480~520ms間隔）觸發完美音律，傷害翻倍為6、附帶10px擊退。每第4下普攻則固定造成5傷害，並使敵人緩速30%、持續1秒。',
       perfectWindow: [480, 520],
       perfectDamage: 6,
-      perfectKnockback: 10
+      perfectKnockback: 10,
+      attacksNeeded: 4,
+      fourthHitDamage: 5,
+      fourthHitSlowMultiplier: 0.7,
+      fourthHitSlowDuration: 1000
     },
     skills: {
       normal: {
