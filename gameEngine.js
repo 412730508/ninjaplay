@@ -13584,27 +13584,28 @@
       const puppet = this.gameState.puppet[pid];
       if (!puppet || !puppet.active) return;
 
-      // Puppet follows a point beside its owner and always faces the enemy.
+      // 傀儡不再跟隨本體：只會朝敵人前進，但永遠不超過本體 150px。
       const opponent = this.players[pid === 'player1' ? 'player2' : 'player1'];
-      const followDist = player.skills.normal.puppetFollowDist || 60;
-      const targetX = player.position.x + player.facing * followDist;
+      const advanceLimit = player.skills.normal.puppetAdvanceLimit || 150;
+      const rawSpeed = player.skills.normal.puppetSpeed || 240;
+      const frameScale = Math.min((deltaTime || 16.6667) / 16.6667, 3);
+      const moveStep = rawSpeed * 0.016 * frameScale;
+      const targetX = opponent?.position?.x ?? puppet.x;
       const dx = targetX - puppet.x;
-      const puppetSpeed = (player.skills.normal.puppetSpeed || 200) * 0.016;
 
       if (Math.abs(dx) > 2) {
         const dir = Math.sign(dx);
-        puppet.x += dir * Math.min(Math.abs(dx), puppetSpeed);
-        puppet.x = Math.max(80, Math.min(this.canvasWidth - 80, puppet.x));
+        puppet.facing = dir;
+        const nextX = puppet.x + dir * Math.min(Math.abs(dx), moveStep);
+        const leashMin = player.position.x - advanceLimit;
+        const leashMax = player.position.x + advanceLimit;
+        puppet.x = Math.max(leashMin, Math.min(leashMax, nextX));
       }
-      if (opponent) puppet.facing = opponent.position.x >= puppet.x ? 1 : -1;
 
-      // Tether break: if puppet too far, recall it
-      const maxTether = player.skills.normal.puppetMaxTether || 300;
-      if (Math.abs(player.position.x - puppet.x) > maxTether) {
-        puppet.active = false;
-        this.addCombatLog('傀儡纜線斷裂！自動收回！', pid, 'status');
-        this.addVisualEffect(puppet.x, puppet.y - 20, 'puppet_recall', '💨');
-      }
+      // 本體移動也不能讓傀儡超過 150px；維持在繃緊的絲線邊界，而不是自動消失。
+      puppet.x = Math.max(player.position.x - advanceLimit, Math.min(player.position.x + advanceLimit, puppet.x));
+      puppet.x = Math.max(80, Math.min(this.canvasWidth - 80, puppet.x));
+      if (opponent) puppet.facing = opponent.position.x >= puppet.x ? 1 : -1;
     });
 
     // Update smoke zones
@@ -13664,13 +13665,15 @@
         }
       }
     } else {
-      // Deploy puppet at player's position offset
-      const spawnX = player.position.x + player.facing * 60;
+      // 從敵人的反方向 150px 召出，再讓傀儡一路朝敵人推進。
+      const spawnDistance = skill.puppetSpawnDistance || 150;
+      const enemyDirection = opponent && opponent.position.x < player.position.x ? -1 : 1;
+      const spawnX = player.position.x - enemyDirection * spawnDistance;
       this.gameState.puppet[playerId] = {
         active: true,
         x: Math.max(80, Math.min(this.canvasWidth - 80, spawnX)),
         y: player.position.y,
-        facing: player.facing,
+        facing: enemyDirection,
         hp: skill.puppetHp || 30,
         maxHp: skill.puppetHp || 30,
         storedDamage: 0,

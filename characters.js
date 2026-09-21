@@ -863,9 +863,10 @@ const characters = {
         type: '切換/召喚',
         cooldown: 4000,
         puppetHp: 30,
-        puppetSpeed: 200,
-        puppetFollowDist: 60,
-        puppetMaxTether: 300
+        // 顯示速度 24（引擎內速度單位為 240）。傀儡只會朝敵人推進。
+        puppetSpeed: 240,
+        puppetSpawnDistance: 150,
+        puppetAdvanceLimit: 150
       },
       ultimate: {
         code: SKILL_CODES.PHANTOM_SWAP,
