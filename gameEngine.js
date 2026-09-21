@@ -37,6 +37,7 @@
       azureVoltage: { player1: 0, player2: 0 },   // ???潮銋??餃?
       azureStrikes: [],   // ???潮憭拍蔑/憭扳??賡?拐辣
       azureUlt: { player1: null, player2: null },  // ???潮憭扳????
+      combatFlourishes: [], // 共用戰鬥演出：普攻斬擊、技能起手與命中爆發
       // ?儭??啣?嚗?折?蝳衣頂蝯?
       defending: {
         player1: { 
@@ -250,6 +251,9 @@
     // 皜脫??拙振
     this.renderPlayers();
 
+    // 共用戰鬥演出層：補足各流派普攻、技能與奧義的壓迫感。
+    this.renderCombatFlourishes();
+
     // ?? 皜脫????剜??寞? (?函摰嗡?敺?
     ['player1', 'player2'].forEach(pid => {
       const p = this.players[pid];
@@ -311,6 +315,154 @@
     
 
 
+  }
+
+  getCombatPalette(characterId) {
+    const palettes = {
+      fujin: ['#7FEFFF', '#0099CC', '#E7FFFF'],
+      katon: ['#FF7043', '#D84315', '#FFE0B2'],
+      forgefire: ['#FFB000', '#FF4D00', '#FFE08A'],
+      suijin: ['#7AD7FF', '#1976D2', '#E1F5FE'],
+      raijin: ['#FFF176', '#8E24AA', '#FFFDE7'],
+      doton: ['#C8A47A', '#6D4C41', '#F0DEC5'],
+      kage: ['#9B7BFF', '#311B92', '#EDE7F6'],
+      rei: ['#F48FB1', '#8E24AA', '#FCE4EC'],
+      dokusei: ['#7DFF8B', '#00897B', '#E0FFE5'],
+      taijutsu: ['#FF6B6B', '#B71C1C', '#FFE2E2'],
+      ranger: ['#B8F58A', '#2E7D32', '#F1FFE6'],
+      warlock: ['#FF4D67', '#6A0011', '#FFD5DC'],
+      ronin: ['#E8F1F8', '#546E7A', '#FFFFFF'],
+      beastmaster: ['#C6A77A', '#4E342E', '#F3E0C2'],
+      scorpion: ['#FF5C5C', '#5D0011', '#FFD0D0'],
+      adjudicator: ['#FFE082', '#9A6B00', '#FFF8D5'],
+      exileblade: ['#66F5F3', '#006B75', '#E5FFFF'],
+      puppeteer: ['#D6A2FF', '#4A148C', '#F3E5F5'],
+      azure_disciple: ['#75D9FF', '#0047AB', '#E1F5FE'],
+      shamisen: ['#FFD180', '#A74E2D', '#FFF0D6']
+    };
+    return palettes[characterId] || ['#FFFFFF', '#6B7280', '#FFFFFF'];
+  }
+
+  spawnCombatFlourish(kind, source, target = null, power = 1) {
+    const attacker = typeof source === 'object' ? source : this.getAttackerFromSource(source);
+    if (!attacker) return;
+
+    const [color, shade, highlight] = this.getCombatPalette(attacker.id);
+    const flourishes = this.gameState.combatFlourishes || (this.gameState.combatFlourishes = []);
+    flourishes.push({
+      kind,
+      x: attacker.position.x,
+      y: attacker.position.y - 32,
+      targetX: target?.position?.x ?? attacker.position.x + attacker.facing * 110,
+      targetY: (target?.position?.y ?? attacker.position.y) - 30,
+      facing: attacker.facing || 1,
+      color,
+      shade,
+      highlight,
+      power,
+      startTime: Date.now(),
+      duration: kind === 'ultimate' ? 850 : kind === 'skill' ? 580 : 320
+    });
+
+    // Guard against unusually fast attacks building an unbounded visual queue.
+    if (flourishes.length > 48) flourishes.splice(0, flourishes.length - 48);
+  }
+
+  renderCombatFlourishes() {
+    const flourishes = this.gameState.combatFlourishes;
+    if (!flourishes?.length) return;
+
+    const now = Date.now();
+    this.gameState.combatFlourishes = flourishes.filter(effect => {
+      const progress = Math.min(1, (now - effect.startTime) / effect.duration);
+      if (progress >= 1) return false;
+
+      const fade = 1 - progress;
+      const ctx = this.ctx;
+      const baseRadius = 24 + effect.power * 16;
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (effect.kind === 'swing') {
+        const cx = effect.x + effect.facing * 18;
+        const cy = effect.y - 4;
+        const start = effect.facing > 0 ? -2.25 : -0.9;
+        const sweep = (0.3 + progress * 1.35) * effect.facing;
+        ctx.globalAlpha = fade * 0.62;
+        ctx.strokeStyle = effect.color;
+        ctx.shadowColor = effect.color;
+        ctx.shadowBlur = 12 * effect.power;
+        ctx.lineWidth = 4 + effect.power * 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, baseRadius + progress * 20, start, start + sweep, effect.facing < 0);
+        ctx.stroke();
+      } else if (effect.kind === 'impact') {
+        const radius = baseRadius + progress * 48 * effect.power;
+        ctx.globalAlpha = fade * 0.72;
+        ctx.strokeStyle = effect.highlight;
+        ctx.shadowColor = effect.color;
+        ctx.shadowBlur = 14 * effect.power;
+        ctx.lineWidth = 3 + effect.power * 2;
+        ctx.beginPath();
+        ctx.arc(effect.targetX, effect.targetY, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = effect.color;
+        ctx.lineWidth = 2;
+        for (let ray = 0; ray < 7; ray++) {
+          const angle = (Math.PI * 2 / 7) * ray + progress * 0.7;
+          const inner = radius * 0.34;
+          const outer = radius * (0.78 + (ray % 2) * 0.18);
+          ctx.beginPath();
+          ctx.moveTo(effect.targetX + Math.cos(angle) * inner, effect.targetY + Math.sin(angle) * inner);
+          ctx.lineTo(effect.targetX + Math.cos(angle) * outer, effect.targetY + Math.sin(angle) * outer);
+          ctx.stroke();
+        }
+      } else {
+        const isUltimate = effect.kind === 'ultimate';
+        const radius = baseRadius + progress * (isUltimate ? 150 : 82) * effect.power;
+        ctx.globalAlpha = fade * (isUltimate ? 0.5 : 0.36);
+        ctx.fillStyle = effect.shade;
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalAlpha = fade * 0.9;
+        ctx.strokeStyle = effect.color;
+        ctx.shadowColor = effect.color;
+        ctx.shadowBlur = isUltimate ? 26 : 14;
+        ctx.lineWidth = isUltimate ? 5 : 3;
+        ctx.setLineDash(isUltimate ? [12, 8] : [7, 6]);
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, radius, progress * Math.PI * 2, progress * Math.PI * 2 + Math.PI * 1.65);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const rayCount = isUltimate ? 10 : 5;
+        for (let ray = 0; ray < rayCount; ray++) {
+          const angle = (Math.PI * 2 / rayCount) * ray - progress * 2.4;
+          const inner = 15 + progress * 12;
+          const outer = radius * (0.68 + (ray % 3) * 0.09);
+          ctx.globalAlpha = fade * (isUltimate ? 0.48 : 0.32);
+          ctx.strokeStyle = ray % 2 ? effect.highlight : effect.color;
+          ctx.lineWidth = isUltimate ? 2.5 : 1.5;
+          ctx.beginPath();
+          ctx.moveTo(effect.x + Math.cos(angle) * inner, effect.y + Math.sin(angle) * inner);
+          ctx.lineTo(effect.x + Math.cos(angle) * outer, effect.y + Math.sin(angle) * outer);
+          ctx.stroke();
+        }
+
+        if (isUltimate) {
+          ctx.globalAlpha = fade * 0.24;
+          ctx.fillStyle = effect.highlight;
+          ctx.fillRect(effect.x - 22, effect.y - 170 * fade, 44, 170 * fade);
+        }
+      }
+
+      ctx.restore();
+      return true;
+    });
   }
 
   renderBackground() {
@@ -9298,7 +9450,8 @@
           ? 'forgefireSlash'
           : 'attack'
     );
-    
+    this.spawnCombatFlourish('swing', player, opponent, player.id === 'forgefire' || player.id === 'adjudicator' ? 1.35 : 1);
+
     // ? ???餅?嚗撠?撠
     if (player.isRanged) {
       // ?弩 銵憟???銵敶?撠
@@ -10010,7 +10163,10 @@
     if (typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createSkillEffect(skill.code, player.position.x, player.position.y, player.facing);
     }
-    
+
+    const isUltimateSkill = skill === player.skills?.ultimate;
+    this.spawnCombatFlourish(isUltimateSkill ? 'ultimate' : 'skill', player, opponent, isUltimateSkill ? 1.45 : 1);
+
     const playerSide = playerId === 'player1' ? 'player1' : 'player2';  // ?? 蝣箏??拙振雿蔭
     
     // ? 銝??賊?鋡怠?嚗?銵??蝙?冽??賢??脣??賊?
@@ -12712,6 +12868,9 @@
     if (source && source.type === 'skill') damageType = 'skill';
     
     this.addDamageNumber(target.position.x, target.position.y, damage, damageType);
+    if (attacker && attacker !== target) {
+      this.spawnCombatFlourish('impact', attacker, target, damage >= 15 ? 1.45 : damage >= 10 ? 1.15 : 0.9);
+    }
     result.hit = true;
     
     // 瑼Ｘ?蝯?
