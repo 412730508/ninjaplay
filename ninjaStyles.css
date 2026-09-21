@@ -1555,8 +1555,8 @@ body::after {
   width: 100%;
   height: 100%;
   min-height: 88px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(132px, 42%);
+  position: relative;
+  display: block;
   overflow: hidden;
   border-radius: 13px;
 }
@@ -1564,6 +1564,8 @@ body::after {
 .selected-character-details {
   position: relative;
   z-index: 1;
+  width: 57%;
+  height: 100%;
   padding: 2px 0;
   display: flex;
   flex-direction: column;
@@ -1572,7 +1574,9 @@ body::after {
 
 /* The large, empty right half of each player nameplate is reserved for art. */
 .selected-character-showcase {
-  position: relative;
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 43%;
   display: grid;
   place-items: center;
   min-width: 0;
@@ -1593,12 +1597,12 @@ body::after {
 }
 
 .selected-character-showcase-image {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   height: 100%;
-  min-height: 88px;
   display: block;
   object-fit: contain;
-  transform: scale(1.12);
+  transform: none;
   image-rendering: pixelated;
 }
 
@@ -1739,7 +1743,10 @@ body::after {
   #characterSelect .selection-side .player-panel-header h3, #characterSelect .roster-panel-header h3 { font-size: 1rem; }
   #characterSelect .player-kicker, #characterSelect .active-selection-label, #characterSelect .panel-tip { margin-bottom: 3px; font-size: 0.66rem; }
   #characterSelect .slot-toggle-btn { padding: 7px 9px; font-size: 0.72rem; }
-  #characterSelect .selected-character-display { min-height: 0; margin: 6px 0; padding: 9px; }
+  #characterSelect .selected-character-display {
+    min-height: 0; margin: 6px 0; padding: 0; overflow: hidden;
+  }
+  #characterSelect .selected-character-details { padding: 12px; }
   #characterSelect .selected-character-icon { width: 36px; height: 36px; border-radius: 10px; }
   #characterSelect .selected-character-metrics, #characterSelect .selected-character-skills { gap: 4px; margin-top: 6px; }
   #characterSelect .selected-metric, #characterSelect .selected-skill-pill { padding: 3px 6px; font-size: 0.62rem; }
@@ -2683,7 +2690,10 @@ body::after {
   #characterSelect .selection-side .player-panel-header h3, #characterSelect .roster-panel-header h3 { font-size: 1rem; }
   #characterSelect .player-kicker, #characterSelect .active-selection-label, #characterSelect .panel-tip { margin-bottom: 3px; font-size: 0.66rem; }
   #characterSelect .slot-toggle-btn { padding: 7px 9px; font-size: 0.72rem; }
-  #characterSelect .selected-character-display { min-height: 0; margin: 6px 0; padding: 9px; }
+  #characterSelect .selected-character-display {
+    min-height: 0; margin: 6px 0; padding: 0; overflow: hidden;
+  }
+  #characterSelect .selected-character-details { padding: 12px; }
   #characterSelect .selected-character-icon { width: 36px; height: 36px; border-radius: 10px; }
   #characterSelect .selected-character-metrics, #characterSelect .selected-character-skills { gap: 4px; margin-top: 6px; }
   #characterSelect .selected-metric, #characterSelect .selected-skill-pill { padding: 3px 6px; font-size: 0.62rem; }
