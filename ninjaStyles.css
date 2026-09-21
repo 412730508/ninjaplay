@@ -690,6 +690,59 @@ body::after {
   pointer-events: none;
 }
 
+/* 1v1 role tags: the player's win condition, visible before reading any skill text. */
+.character-role-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 8px;
+  color: rgba(232, 239, 255, 0.72);
+  font-size: 0.69rem;
+  line-height: 1.15;
+}
+
+.character-role-tag {
+  padding: 3px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  white-space: nowrap;
+}
+
+.character-role-tag.primary {
+  border-color: rgba(255, 189, 70, 0.42);
+  background: rgba(255, 173, 48, 0.12);
+  color: #ffd47d;
+}
+
+.character-role-divider {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.66rem;
+}
+
+#characterSelect .selected-role-tags {
+  margin: 6px 0 0;
+  font-size: 0.62rem;
+}
+
+@media (min-width: 1081px) and (min-height: 600px) {
+  #characterSelect .roster-grid .character-role-tags {
+    gap: 2px;
+    margin: 4px 0 0;
+    font-size: clamp(0.47rem, 0.5vw, 0.58rem);
+    white-space: nowrap;
+  }
+
+  #characterSelect .roster-grid .character-role-tag {
+    padding: 2px 4px;
+  }
+
+  #characterSelect .roster-grid .character-role-divider {
+    display: none;
+  }
+}
+
 /* Screen-specific desktop layouts must never reserve space while hidden. */
 #mapSelect.hidden,
 #gameArea.hidden {

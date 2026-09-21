@@ -447,6 +447,30 @@
             shamisen: 'assets/portraits/shamisen.png'
         };
 
+        // 1v1 遊戲的職位不是坦補輸出，而是「這隻角色如何贏下單挑」。
+        const characterRoles = {
+            fujin: { primary: '高機動刺殺', secondary: '突進壓制' },
+            katon: { primary: '突進壓制', secondary: '爆發收頭' },
+            forgefire: { primary: '重擊壓制', secondary: '範圍封位' },
+            suijin: { primary: '決鬥反制', secondary: '續戰防守' },
+            raijin: { primary: '突進壓制', secondary: '連段追擊' },
+            doton: { primary: '決鬥反制', secondary: '防禦壓制' },
+            kage: { primary: '高機動刺殺', secondary: '爆發收頭' },
+            rei: { primary: '遠距消耗', secondary: '續戰回復' },
+            dokusei: { primary: '設局控場', secondary: '持續消耗' },
+            taijutsu: { primary: '摔投壓制', secondary: '處決收頭' },
+            ranger: { primary: '遠距消耗', secondary: '風箏游擊' },
+            warlock: { primary: '遠距消耗', secondary: '吸血續戰' },
+            ronin: { primary: '決鬥反制', secondary: '居合刺殺' },
+            beastmaster: { primary: '變身壓制', secondary: '抓取控場' },
+            scorpion: { primary: '召喚設局', secondary: '持續控場' },
+            adjudicator: { primary: '決鬥反制', secondary: '領域壓制' },
+            exileblade: { primary: '高機動刺殺', secondary: '爆發收頭' },
+            puppeteer: { primary: '傀儡設局', secondary: '遠近切換' },
+            azure_disciple: { primary: '蓄能爆發', secondary: '高機動刺殺' },
+            shamisen: { primary: '遠距控場', secondary: '節奏消耗' }
+        };
+
         function formatCooldown(ms) {
             return `${Math.round(ms / 1000)}秒`;
         }
@@ -795,6 +819,7 @@
             card.onclick = () => selectCharacter(character.id, gameState.activeSelectionPlayer, card);
 
             const passiveDescription = character.passive?.description || character.passive?.desc;
+            const role = characterRoles[character.id];
             
             card.innerHTML = `
                 <div class="character-card-main">
@@ -807,6 +832,11 @@
                             <div class="character-speed">SPD ${Math.round(character.moveSpeed / 10)}</div>
                         </div>
                         <div class="character-org">${character.organization}</div>
+                        ${role ? `<div class="character-role-tags" aria-label="角色定位：${role.primary}，${role.secondary}">
+                            <span class="character-role-tag primary">${role.primary}</span>
+                            <span class="character-role-divider" aria-hidden="true">｜</span>
+                            <span class="character-role-tag">${role.secondary}</span>
+                        </div>` : ''}
                         <div class="character-stat-pills">
                             <span class="stat-pill">HP ${character.hp}</span>
                             <span class="stat-pill">ATK ${character.attackDamage}</span>
@@ -865,6 +895,7 @@
 
             const char = characters[characterId];
             const portrait = characterPortraits[characterId];
+            const role = characterRoles[characterId];
             selectedDisplay.innerHTML = `
                 <div class="selected-character-card">
                     <div class="selected-character-details">
@@ -875,6 +906,11 @@
                             <div class="selected-char-info">
                                 <div class="char-name">${char.name}</div>
                                 <div class="char-org">${char.organization}</div>
+                                ${role ? `<div class="character-role-tags selected-role-tags" aria-label="角色定位：${role.primary}，${role.secondary}">
+                                    <span class="character-role-tag primary">${role.primary}</span>
+                                    <span class="character-role-divider" aria-hidden="true">｜</span>
+                                    <span class="character-role-tag">${role.secondary}</span>
+                                </div>` : ''}
                             </div>
                         </div>
                         <div class="selected-character-metrics">
