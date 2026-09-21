@@ -705,7 +705,7 @@ const characters = {
     organization: '鞭蠍門',
     maxHp: 85,
     hp: 85,
-    attackDamage: 5,
+    attackDamage: 3,
     attackSpeed: 800,
     moveSpeed: 290,
     attackRange: 240,

@@ -6414,6 +6414,7 @@
 
       // Root BOTH players
       player.effects.rooted = now + skill.rootDuration;
+      player.effects.chainCasting = now + skill.rootDuration;
       opponent.effects.rooted = now + skill.rootDuration;
       opponent.effects.chainDisabled = now + skill.rootDuration;
       this.endDefend(opponentId);
@@ -6432,7 +6433,7 @@
         endTime: now + skill.rootDuration
       };
 
-      this.addCombatLog(`痛苦枷鎖！定身${skill.rootDuration / 1000}秒，無法攻擊或防禦！`, playerId, 'damage');
+      this.addCombatLog(`痛苦枷鎖！雙方定身${skill.rootDuration / 1000}秒；施術中的蠍子無法普攻。`, playerId, 'damage');
       this.addVisualEffect(opponent.position.x, opponent.position.y, 'chain', '⛓️');
       this.triggerCameraShake(8, 400);
     }
@@ -8733,6 +8734,7 @@
       poisonDotEnd: 0,
       poisonTickTime: 0,
       rooted: 0,
+      chainCasting: 0,
       buffedDart: 0,
       superArmor: 0,
       thornTrapSpeedBuff: 0,
@@ -8786,6 +8788,7 @@
       poisonDotEnd: 0,
       poisonTickTime: 0,
       rooted: 0,
+      chainCasting: 0,
       buffedDart: 0,
       superArmor: 0,
       thornTrapSpeedBuff: 0,
@@ -9427,7 +9430,7 @@
     const player = this.players[playerId];
     const opponent = this.players[playerId === 'player1' ? 'player2' : 'player1'];
     
-    if (!player || player.effects.stunned > now || player.effects.casting > now || player.effects.chainDisabled > now || this.isPlayerDefending(playerId)) return;
+    if (!player || player.effects.stunned > now || player.effects.casting > now || player.effects.chainDisabled > now || player.effects.chainCasting > now || this.isPlayerDefending(playerId)) return;
     
     // ?儭?Exile Blade: block attacks during execution
     if (player.isExecuting) return;
