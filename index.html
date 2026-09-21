@@ -336,7 +336,7 @@
     <script src="characters.js?v=forgefire-model-2"></script>
     <script src="balance.js"></script>
     <script src="particleSystem.js"></script>
-    <script src="mapSystem.js"></script>
+    <script src="mapSystem.js?v=battlefield-vista-2"></script>
     <script src="stickmanAnimator.js?v=forgefire-model-2"></script>
     <script src="gameEngine.js?v=forgefire-model-2"></script>
     <script src="aiController.js"></script>
@@ -864,10 +864,13 @@
             }
 
             const char = characters[characterId];
+            const portrait = characterPortraits[characterId];
             selectedDisplay.innerHTML = `
                 <div class="selected-character-card">
                     <div class="selected-character-top">
-                        <div class="selected-character-icon">${characterIcons[characterId] || '🥷'}</div>
+                        <div class="selected-character-icon${portrait ? ' has-portrait' : ''}">${portrait
+                            ? `<img class="selected-character-portrait" data-portrait="${portrait}" alt="${char.name} 頭像">`
+                            : (characterIcons[characterId] || '🥷')}</div>
                         <div class="selected-char-info">
                             <div class="char-name">${char.name}</div>
                             <div class="char-org">${char.organization}</div>
@@ -884,6 +887,9 @@
                     </div>
                 </div>
             `;
+
+            const selectedPortrait = selectedDisplay.querySelector('.selected-character-portrait');
+            if (selectedPortrait) selectedPortrait.src = portrait;
         }
 
         function setActiveSelectionPlayer(playerId) {
@@ -1338,17 +1344,16 @@
                 
                 // 🔧 創建地圖預覽canvas
                 const previewCanvas = document.createElement('canvas');
-                previewCanvas.width = 250;
-                previewCanvas.height = 120;
+                // Keep the preview sharp even when a large desktop map card displays it.
+                previewCanvas.width = 720;
+                previewCanvas.height = 360;
                 const previewCtx = previewCanvas.getContext('2d');
                 
                 // 🔧 渲染迷你地圖背景
                 if (map.background && typeof map.background === 'function') {
                     previewCtx.save();
-                    // 縮放比例：從 1200x600 縮小到 250x120
-                    const scaleX = 250 / 1200;
-                    const scaleY = 120 / 600;
-                    previewCtx.scale(scaleX, scaleY);
+                    // Render the full 1200×600 battlefield at a crisp 2× preview resolution.
+                    previewCtx.scale(0.6, 0.6);
                     
                     // 調用地圖的背景渲染函數
                     map.background.call(mapSystem, previewCtx, 1200, 600);
@@ -1367,6 +1372,18 @@
                 iconOverlay.className = 'map-icon-overlay';
                 iconOverlay.textContent = map.icon;
                 mapPreview.appendChild(iconOverlay);
+
+                const mapAtmosphere = {
+                    grassland: '日光與長風',
+                    forest: '古樹與薄霧',
+                    castle: '月影與屋瓦',
+                    ship: '浪潮與晚霞',
+                    windNinjaDojo: '餘燼與殘風'
+                };
+                const atmosphere = document.createElement('span');
+                atmosphere.className = 'map-atmosphere';
+                atmosphere.textContent = mapAtmosphere[id] || '忍者決戰場';
+                mapPreview.appendChild(atmosphere);
                 
                 const mapInfo = document.createElement('div');
                 mapInfo.className = 'map-info';
@@ -1492,7 +1509,7 @@
                 }
             } else {
                 // 隨機從三張地圖中抽選一張
-                const randomMaps = ['grassland', 'forest', 'castle'];
+            const randomMaps = ['grassland', 'forest', 'castle', 'ship'];
                 const picked = randomMaps[Math.floor(Math.random() * randomMaps.length)];
                 gameState.selectedMap = picked;
                 if (typeof mapSystem !== 'undefined' && mapSystem) {
