@@ -14859,16 +14859,13 @@
       wave1Hit: false,
       wave2Hit: false,
       wave3Hit: false,
+      lastVfxAt: now,
       skill: skill
     };
 
     this.addCombatLog(player.name + ' 開始引導秘曲・輪唱殺陣！', playerSide, 'skill');
-    this.triggerCameraShake(3, channelingDuration);
-
-    // Initial channeling burst particles
-    if (typeof particleSystem !== 'undefined' && particleSystem) {
-      particleSystem.createSkillEffect(skill.code, player.position.x, player.position.y, player.facing);
-    }
+    // 不讓整段引導都震動；3 秒連續抖動會讓音忍的施放顯得掉幀。
+    this.triggerCameraShake(3, 280);
   }
 
   // *** Shamisen: Per-frame update for Deadly Canon expanding waves ***
@@ -14958,8 +14955,11 @@
         }
       }
 
-      // Spawn emoji particles at wave border each frame
-      if (typeof particleSystem !== 'undefined' && particleSystem) {
+      // 音波特效以固定節奏產生，而非每一幀都塞新粒子。
+      // 保留壓迫感，同時避免 3 秒引導累積過量 Canvas 粒子造成卡頓。
+      const vfxInterval = 80;
+      if (typeof particleSystem !== 'undefined' && particleSystem && now - (canon.lastVfxAt || 0) >= vfxInterval) {
+        canon.lastVfxAt = now;
         let currentRadius = 0;
         if (elapsed < 1000) {
           currentRadius = (elapsed / 1000) * (skill.wave1?.maxRadius || 100);
