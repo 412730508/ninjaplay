@@ -250,7 +250,7 @@
             </div>
 
             <div id="tournamentFooter" class="tournament-footer">
-                禁角順序：P1 → P2　｜　選秀順序：P1 ×1 → P2 ×2 → P1 ×2 → P2 ×1
+                禁角順序：P1 → P2　｜　選秀順序：P1 ×1 → P2 ×2 → P1 ×2 → P2 ×1　｜　每人第 1／2／3 手就是第 1／2／3 戰出場
             </div>
         </div>
     </div>
@@ -405,7 +405,7 @@
             versusCpu: false
         };
 
-        // 道場鬥技盃：禁兩角、蛇形選六角，接著各自排好三戰的出場順序。
+        // 道場鬥技盃：禁兩角、蛇形選六角；每人選角的先後就是三戰出場順序。
         let tournamentState = null;
         let tournamentWinnerWatcher = null;
 
@@ -430,7 +430,6 @@
                 turn: 'player1',
                 bans: [],
                 teams: { player1: [], player2: [] },
-                lineups: { player1: [], player2: [] },
                 cursors: { player1: 0, player2: 1 },
                 draftSteps: [
                     { player: 'player1', count: 1 }, { player: 'player2', count: 2 },
@@ -499,19 +498,13 @@
                     state.stepIndex++;
                     state.stepPicks = 0;
                     if (state.stepIndex >= state.draftSteps.length) {
-                        state.phase = 'lineup';
+                        state.phase = 'ready';
+                        renderTournament();
+                        setTimeout(startTournamentRound, 650);
+                        return;
                     } else {
                         state.turn = state.draftSteps[state.stepIndex].player;
                     }
-                }
-            } else if (state.phase === 'lineup') {
-                if (!state.teams[playerId].includes(id) || state.lineups[playerId].includes(id)) return;
-                state.lineups[playerId].push(id);
-                if (state.lineups.player1.length === 3 && state.lineups.player2.length === 3) {
-                    state.phase = 'ready';
-                    renderTournament();
-                    setTimeout(startTournamentRound, 650);
-                    return;
                 }
             }
             renderTournament();
@@ -519,11 +512,9 @@
 
         function tournamentSlotMarkup(playerId) {
             const state = tournamentState;
-            const lineup = state.phase === 'lineup' || state.phase === 'ready'
-                ? state.lineups[playerId] : state.teams[playerId];
             return [0, 1, 2].map(index => {
-                const id = lineup[index];
-                if (!id) return `<div class="tournament-slot empty"><span class="slot-number">${index + 1}</span><span>${state.phase === 'lineup' ? '選擇出戰順序' : '等待選秀'}</span></div>`;
+                const id = state.teams[playerId][index];
+                if (!id) return `<div class="tournament-slot empty"><span class="slot-number">${index + 1}</span><span>等待第 ${index + 1} 手選角</span></div>`;
                 const char = characters[id];
                 const portrait = characterPortraits[id];
                 return `<div class="tournament-slot"><span class="slot-number">${index + 1}</span>${portrait ? `<img data-portrait="${portrait}" alt="">` : '<span>🥷</span>'}<strong>${char.name}</strong></div>`;
@@ -546,10 +537,7 @@
                 const confirm = step.player === 'player1' ? p1Key : p2Key;
                 return { phase: '蛇形選秀', title: `${player} 選角 ${state.stepPicks + 1}/${step.count}：按 ${confirm} 鎖定`, hint: '選秀順序：P1 ×1 → P2 ×2 → P1 ×2 → P2 ×1（已選與禁用角色不可再選）' };
             }
-            if (state.phase === 'lineup') {
-                return { phase: '排定三戰順序', title: '雙方各自選出第 1、2、3 戰的出場順序', hint: `P1：WASD／${p1Key}　・　P2：方向鍵／${p2Key}　｜　每名角色只能排一次` };
-            }
-            return { phase: '比賽準備中', title: '道場開門，第一戰即將開始', hint: '三戰兩勝・固定道場・場內每 20 秒生成一個隨機補給' };
+            return { phase: '比賽準備中', title: '選秀順序即為出場順序，道場開門！', hint: '三戰兩勝・固定道場・場內每 20 秒生成一個隨機補給' };
         }
 
         function renderTournament() {
@@ -570,9 +558,7 @@
                 const isBanned = state.bans.includes(id);
                 const p1Cursor = state.cursors.player1 === index;
                 const p2Cursor = state.cursors.player2 === index;
-                const activeTurn = state.phase === 'lineup'
-                    ? state.teams.player1.includes(id) || state.teams.player2.includes(id)
-                    : state.turn && state.cursors[state.turn] === index;
+                const activeTurn = state.turn && state.cursors[state.turn] === index;
                 const portrait = characterPortraits[id];
                 return `<div class="tournament-card${isBanned ? ' is-banned' : ''}${taken && !isBanned ? ' is-picked' : ''}${p1Cursor ? ' cursor-p1' : ''}${p2Cursor ? ' cursor-p2' : ''}${activeTurn ? ' current-turn' : ''}" data-id="${id}">
                     <span class="tournament-card-name">${char.name}</span>
@@ -588,8 +574,8 @@
         function startTournamentRound() {
             const state = tournamentState;
             if (!state?.active || state.completed) return;
-            const player1 = state.lineups.player1[state.round];
-            const player2 = state.lineups.player2[state.round];
+            const player1 = state.teams.player1[state.round];
+            const player2 = state.teams.player2[state.round];
             if (!player1 || !player2) return;
             gameState.selectedCharacters = { player1, player2 };
             gameState.selectedMap = 'tournamentDojo';
