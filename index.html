@@ -63,7 +63,7 @@
     }
     </script>
     
-    <link rel="stylesheet" href="ninjaStyles.css">
+    <link rel="stylesheet" href="ninjaStyles.css?v=dojo-tournament-1">
     
     <!-- 🔍 Canonical URL -->
     <link rel="canonical" href="https://412730508.github.io/ninjaplay/">
@@ -170,6 +170,9 @@
             <button class="ninja-btn" id="startGameBtn" disabled>
                 ⚔️ 開始忍者決戰 ⚔️
             </button>
+            <button class="ninja-btn tournament-entry" type="button" onclick="startTournament()">
+                🏆 道場鬥技盃 🏆
+            </button>
         </div>
         
         <div class="selection-status">
@@ -209,7 +212,49 @@
             <p>🗺️ 地圖: <span id="selectedMapName">未選擇</span></p>
         </div>
     </div>
-    
+
+    <!-- 🏆 界面：道場鬥技盃（鍵盤專用禁選、蛇形選秀與三戰兩勝） -->
+    <div id="tournamentScreen" class="game-screen hidden" aria-live="polite">
+        <div class="tournament-shell">
+            <div class="tournament-topline">
+                <div>
+                    <span class="tournament-eyebrow">DOJO DUEL LEAGUE</span>
+                    <h2>🏆 道場鬥技盃</h2>
+                </div>
+                <div id="tournamentScore" class="tournament-score" aria-label="賽事比分">
+                    <span class="tournament-score-p1">玩家 1　0</span><b>FIRST TO 2</b><span class="tournament-score-p2">0　玩家 2</span>
+                </div>
+                <button class="ninja-btn-small tournament-exit" type="button" onclick="exitTournament()">退出錦標賽</button>
+            </div>
+
+            <section class="tournament-status-card">
+                <span id="tournamentPhase" class="tournament-phase">禁選階段</span>
+                <h3 id="tournamentPrompt">玩家 1：移到欲禁用的角色後，按 K 確認</h3>
+                <p id="tournamentHint">P1：WASD 移動／K 確認　・　P2：方向鍵移動／NUM 5 確認</p>
+            </section>
+
+            <div class="tournament-draft-layout">
+                <aside class="tournament-team tournament-team-p1">
+                    <span class="team-label">PLAYER 1</span>
+                    <h3>紅方戰隊</h3>
+                    <div id="tournamentP1Roster" class="tournament-team-roster"></div>
+                </aside>
+
+                <main id="tournamentRoster" class="tournament-roster" aria-label="錦標賽角色選擇"></main>
+
+                <aside class="tournament-team tournament-team-p2">
+                    <span class="team-label">PLAYER 2</span>
+                    <h3>藍方戰隊</h3>
+                    <div id="tournamentP2Roster" class="tournament-team-roster"></div>
+                </aside>
+            </div>
+
+            <div id="tournamentFooter" class="tournament-footer">
+                禁角順序：P1 → P2　｜　選秀順序：P1 ×1 → P2 ×2 → P1 ×2 → P2 ×1
+            </div>
+        </div>
+    </div>
+
     <!-- ⚔️ 界面 3：戰鬥 -->
     <div id="gameArea" class="game-screen hidden">
         <!-- 🔧 整合戰鬥UI - 緊湊布局 -->
@@ -341,9 +386,9 @@
     <script src="characters.js?v=forgefire-model-2"></script>
     <script src="balance.js"></script>
     <script src="particleSystem.js"></script>
-    <script src="mapSystem.js?v=battlefield-vista-2"></script>
+    <script src="mapSystem.js?v=dojo-tournament-1"></script>
     <script src="stickmanAnimator.js?v=forgefire-model-2"></script>
-    <script src="gameEngine.js?v=forgefire-model-2"></script>
+    <script src="gameEngine.js?v=dojo-tournament-1"></script>
     <script src="aiController.js"></script>
     <script>
         // 全局遊戲引擎實例
@@ -359,6 +404,248 @@
             battleStartTime: null,
             versusCpu: false
         };
+
+        // 道場鬥技盃：禁兩角、蛇形選六角，接著各自排好三戰的出場順序。
+        let tournamentState = null;
+        let tournamentWinnerWatcher = null;
+
+        function tournamentCharacterIds() {
+            return Object.keys(characters).sort((a, b) => (a === 'forgefire') - (b === 'forgefire'));
+        }
+
+        function tournamentBindings() {
+            return game?.getControlBindings?.() || {
+                player1: { ultimate: 'k' },
+                player2: { ultimate: 'numpad5' }
+            };
+        }
+
+        function startTournament() {
+            detachCpuController();
+            if (game) game.gameState.paused = true;
+            gameState.versusCpu = false;
+            tournamentState = {
+                active: true,
+                phase: 'ban',
+                turn: 'player1',
+                bans: [],
+                teams: { player1: [], player2: [] },
+                lineups: { player1: [], player2: [] },
+                cursors: { player1: 0, player2: 1 },
+                draftSteps: [
+                    { player: 'player1', count: 1 }, { player: 'player2', count: 2 },
+                    { player: 'player1', count: 2 }, { player: 'player2', count: 1 }
+                ],
+                stepIndex: 0,
+                stepPicks: 0,
+                scores: { player1: 0, player2: 0 },
+                round: 0,
+                completed: false
+            };
+            showScreen('tournamentScreen');
+            renderTournament();
+        }
+
+        function exitTournament() {
+            if (tournamentWinnerWatcher) clearInterval(tournamentWinnerWatcher);
+            tournamentWinnerWatcher = null;
+            tournamentState = null;
+            if (game) { game.gameState.paused = false; game.gameState.winner = null; }
+            showScreen('characterSelect');
+        }
+
+        function tournamentCursorMove(playerId, direction) {
+            if (!tournamentState?.active || tournamentState.phase === 'finished') return;
+            const ids = tournamentCharacterIds();
+            const columns = 5;
+            let next = tournamentState.cursors[playerId];
+            if (direction === 'left') next -= 1;
+            if (direction === 'right') next += 1;
+            if (direction === 'up') next -= columns;
+            if (direction === 'down') next += columns;
+            if (next < 0) next += ids.length;
+            if (next >= ids.length) next -= ids.length;
+            tournamentState.cursors[playerId] = next;
+            renderTournament();
+        }
+
+        function tournamentChoiceAvailable(id) {
+            return !tournamentState.bans.includes(id) &&
+                !tournamentState.teams.player1.includes(id) &&
+                !tournamentState.teams.player2.includes(id);
+        }
+
+        function confirmTournamentCursor(playerId) {
+            const state = tournamentState;
+            if (!state?.active || state.phase === 'finished') return;
+            const id = tournamentCharacterIds()[state.cursors[playerId]];
+            if (!id) return;
+
+            if (state.phase === 'ban') {
+                if (playerId !== state.turn || !tournamentChoiceAvailable(id)) return;
+                state.bans.push(id);
+                if (state.bans.length === 1) {
+                    state.turn = 'player2';
+                } else {
+                    state.phase = 'draft';
+                    state.turn = state.draftSteps[0].player;
+                }
+            } else if (state.phase === 'draft') {
+                const step = state.draftSteps[state.stepIndex];
+                if (playerId !== step.player || !tournamentChoiceAvailable(id)) return;
+                state.teams[playerId].push(id);
+                state.stepPicks++;
+                if (state.stepPicks >= step.count) {
+                    state.stepIndex++;
+                    state.stepPicks = 0;
+                    if (state.stepIndex >= state.draftSteps.length) {
+                        state.phase = 'lineup';
+                    } else {
+                        state.turn = state.draftSteps[state.stepIndex].player;
+                    }
+                }
+            } else if (state.phase === 'lineup') {
+                if (!state.teams[playerId].includes(id) || state.lineups[playerId].includes(id)) return;
+                state.lineups[playerId].push(id);
+                if (state.lineups.player1.length === 3 && state.lineups.player2.length === 3) {
+                    state.phase = 'ready';
+                    renderTournament();
+                    setTimeout(startTournamentRound, 650);
+                    return;
+                }
+            }
+            renderTournament();
+        }
+
+        function tournamentSlotMarkup(playerId) {
+            const state = tournamentState;
+            const lineup = state.phase === 'lineup' || state.phase === 'ready'
+                ? state.lineups[playerId] : state.teams[playerId];
+            return [0, 1, 2].map(index => {
+                const id = lineup[index];
+                if (!id) return `<div class="tournament-slot empty"><span class="slot-number">${index + 1}</span><span>${state.phase === 'lineup' ? '選擇出戰順序' : '等待選秀'}</span></div>`;
+                const char = characters[id];
+                const portrait = characterPortraits[id];
+                return `<div class="tournament-slot"><span class="slot-number">${index + 1}</span>${portrait ? `<img data-portrait="${portrait}" alt="">` : '<span>🥷</span>'}<strong>${char.name}</strong></div>`;
+            }).join('');
+        }
+
+        function tournamentPrompt() {
+            const state = tournamentState;
+            const key = tournamentBindings();
+            const p1Key = key.player1.ultimate === 'r' ? 'R' : 'K';
+            const p2Key = key.player2.ultimate === '>' ? '>' : 'NUM 5';
+            if (state.phase === 'ban') {
+                const player = state.turn === 'player1' ? '玩家 1' : '玩家 2';
+                const confirm = state.turn === 'player1' ? p1Key : p2Key;
+                return { phase: '禁選階段', title: `${player}：禁用一名角色後按 ${confirm} 確認`, hint: `P1：WASD 移動／${p1Key} 確認　・　P2：方向鍵移動／${p2Key} 確認　｜　禁角 ${state.bans.length}/2` };
+            }
+            if (state.phase === 'draft') {
+                const step = state.draftSteps[state.stepIndex];
+                const player = step.player === 'player1' ? '玩家 1' : '玩家 2';
+                const confirm = step.player === 'player1' ? p1Key : p2Key;
+                return { phase: '蛇形選秀', title: `${player} 選角 ${state.stepPicks + 1}/${step.count}：按 ${confirm} 鎖定`, hint: '選秀順序：P1 ×1 → P2 ×2 → P1 ×2 → P2 ×1（已選與禁用角色不可再選）' };
+            }
+            if (state.phase === 'lineup') {
+                return { phase: '排定三戰順序', title: '雙方各自選出第 1、2、3 戰的出場順序', hint: `P1：WASD／${p1Key}　・　P2：方向鍵／${p2Key}　｜　每名角色只能排一次` };
+            }
+            return { phase: '比賽準備中', title: '道場開門，第一戰即將開始', hint: '三戰兩勝・固定道場・場內每 20 秒生成一個隨機補給' };
+        }
+
+        function renderTournament() {
+            const state = tournamentState;
+            if (!state) return;
+            const ids = tournamentCharacterIds();
+            const prompt = tournamentPrompt();
+            document.getElementById('tournamentPhase').textContent = prompt.phase;
+            document.getElementById('tournamentPrompt').textContent = prompt.title;
+            document.getElementById('tournamentHint').textContent = prompt.hint;
+            document.getElementById('tournamentP1Roster').innerHTML = tournamentSlotMarkup('player1');
+            document.getElementById('tournamentP2Roster').innerHTML = tournamentSlotMarkup('player2');
+            document.getElementById('tournamentScore').innerHTML = `<span class="tournament-score-p1">玩家 1　${state.scores.player1}</span><b>FIRST TO 2</b><span class="tournament-score-p2">${state.scores.player2}　玩家 2</span>`;
+
+            document.getElementById('tournamentRoster').innerHTML = ids.map((id, index) => {
+                const char = characters[id];
+                const taken = !tournamentChoiceAvailable(id);
+                const isBanned = state.bans.includes(id);
+                const p1Cursor = state.cursors.player1 === index;
+                const p2Cursor = state.cursors.player2 === index;
+                const activeTurn = state.phase === 'lineup'
+                    ? state.teams.player1.includes(id) || state.teams.player2.includes(id)
+                    : state.turn && state.cursors[state.turn] === index;
+                const portrait = characterPortraits[id];
+                return `<div class="tournament-card${isBanned ? ' is-banned' : ''}${taken && !isBanned ? ' is-picked' : ''}${p1Cursor ? ' cursor-p1' : ''}${p2Cursor ? ' cursor-p2' : ''}${activeTurn ? ' current-turn' : ''}" data-id="${id}">
+                    <span class="tournament-card-name">${char.name}</span>
+                    <span class="tournament-card-role">${characterRoles[id]?.primary || char.organization}</span>
+                    ${portrait ? `<img class="tournament-card-portrait" data-portrait="${portrait}" alt="">` : ''}
+                </div>`;
+            }).join('');
+            document.querySelectorAll('#tournamentScreen [data-portrait]').forEach(image => {
+                image.src = image.dataset.portrait;
+            });
+        }
+
+        function startTournamentRound() {
+            const state = tournamentState;
+            if (!state?.active || state.completed) return;
+            const player1 = state.lineups.player1[state.round];
+            const player2 = state.lineups.player2[state.round];
+            if (!player1 || !player2) return;
+            gameState.selectedCharacters = { player1, player2 };
+            gameState.selectedMap = 'tournamentDojo';
+            gameState.versusCpu = false;
+            mapSystem.setCurrentMap('tournamentDojo');
+            startBattle({ tournament: true });
+            watchTournamentWinner();
+        }
+
+        function watchTournamentWinner() {
+            if (tournamentWinnerWatcher) clearInterval(tournamentWinnerWatcher);
+            let handled = false;
+            tournamentWinnerWatcher = setInterval(() => {
+                if (handled || !game?.gameState?.winner || !tournamentState?.active) return;
+                handled = true;
+                clearInterval(tournamentWinnerWatcher);
+                tournamentWinnerWatcher = null;
+                const winner = game.gameState.winner;
+                tournamentState.scores[winner]++;
+                setTimeout(() => finishTournamentRound(winner), 2200);
+            }, 250);
+        }
+
+        function finishTournamentRound(winner) {
+            const state = tournamentState;
+            if (!state?.active) return;
+            if (game) game.gameState.paused = true;
+            state.round++;
+            if (state.scores[winner] >= 2 || state.round >= 3) {
+                state.completed = true;
+                state.phase = 'finished';
+                showScreen('tournamentScreen');
+                renderTournament();
+                document.getElementById('tournamentPhase').textContent = '錦標賽結束';
+                document.getElementById('tournamentPrompt').textContent = `${winner === 'player1' ? '玩家 1' : '玩家 2'} 以 ${state.scores.player1}：${state.scores.player2} 奪下道場鬥技盃！`;
+                document.getElementById('tournamentHint').textContent = '按右上角「退出錦標賽」回到一般對戰。';
+                return;
+            }
+            showScreen('tournamentScreen');
+            renderTournament();
+            document.getElementById('tournamentPhase').textContent = `第 ${state.round + 1} 戰準備`;
+            document.getElementById('tournamentPrompt').textContent = `第 ${state.round + 1} 戰將於 2 秒後開始`;
+            setTimeout(startTournamentRound, 2000);
+        }
+
+        document.addEventListener('keydown', event => {
+            if (gameState.currentScreen !== 'tournamentScreen' || !tournamentState?.active || tournamentState.completed) return;
+            let key = event.key.toLowerCase();
+            if (event.code === 'Numpad5') key = 'numpad5';
+            if (event.code === 'Period') key = '>';
+            const directions = { a: ['player1', 'left'], d: ['player1', 'right'], w: ['player1', 'up'], s: ['player1', 'down'], arrowleft: ['player2', 'left'], arrowright: ['player2', 'right'], arrowup: ['player2', 'up'], arrowdown: ['player2', 'down'] };
+            const bindings = tournamentBindings();
+            if (directions[key]) { event.preventDefault(); tournamentCursorMove(...directions[key]); return; }
+            if (key === bindings.player1.ultimate) { event.preventDefault(); confirmTournamentCursor('player1'); }
+            if (key === bindings.player2.ultimate) { event.preventDefault(); confirmTournamentCursor('player2'); }
+        }, true);
         
         const elementMap = {
             fujin: 'wind',
@@ -1264,7 +1551,7 @@
             showScreen('characterSelect');
         }
         
-        function startBattle() {
+        function startBattle(options = {}) {
             if (gameState.selectedMap && mapSystem.maps[gameState.selectedMap]) {
                 document.getElementById('currentMapDisplay').textContent = 
                     `戰場：${mapSystem.maps[gameState.selectedMap].name}`;
@@ -1280,8 +1567,18 @@
             detachCpuController();
             
             game.selectCharacters(gameState.selectedCharacters.player1, gameState.selectedCharacters.player2);
+            // Tournament rounds always begin from a completely clean state, including any prior winner.
+            if (options.tournament) {
+                game.resetGame();
+                game.enableTournamentPickups();
+            }
             game.init('gameCanvas');
             attachCpuController();
+
+            if (options.tournament) {
+                showScreen('gameArea');
+                return;
+            }
 
             // 🎉 彩蛋判斷
             const p1 = gameState.selectedCharacters.player1;
@@ -1412,6 +1709,8 @@
             }
             
             Object.entries(mapSystem.maps).forEach(([id, map]) => {
+                // 道場鬥技場由錦標賽專屬流程使用，不混入一般對戰地圖池。
+                if (id === 'tournamentDojo') return;
                 // 🔥 風忍武道場僅在叛風之刃 vs 風影忍者時出現
                 if (id === 'windNinjaDojo') {
                     const picks = gameState.selectedCharacters;

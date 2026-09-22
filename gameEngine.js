@@ -38,6 +38,7 @@
       azureStrikes: [],   // ???潮憭拍蔑/憭扳??賡?拐辣
       azureUlt: { player1: null, player2: null },  // ???潮憭扳????
       combatFlourishes: [], // 共用戰鬥演出：普攻斬擊、技能起手與命中爆發
+      tournamentPickups: { enabled: false, nextSpawnAt: 0, warning: null, items: [] },
       // ?儭??啣?嚗?折?蝳衣頂蝯?
       defending: {
         player1: { 
@@ -96,6 +97,7 @@
     };
 
     this.aiController = null;
+    this.eventListenersAttached = false;
 
     this.gameLoop = this.gameLoop.bind(this); // 蝣箔? gameLoop ?寞?甇?Ⅱ蝬?
   }
@@ -130,7 +132,10 @@
   init(canvasId) {
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d');
-    this.setupEventListeners();
+    if (!this.eventListenersAttached) {
+      this.setupEventListeners();
+      this.eventListenersAttached = true;
+    }
     
     // 蝣箔? gameLoop ?寞?摮銝血???
     this.startGameLoop();
@@ -211,6 +216,9 @@
     
     // *** Update Shamisen Deadly Canon system ***
     this.updateShamisenSystems(deltaTime);
+
+    // 道場鬥技盃：每二十秒產生一次補給，並提前五秒標出落點。
+    this.updateTournamentPickups();
     
     // ?儭??脩戌鋡急?嗥閫?炎?伐??摹?脩戌(>2蝘??◤?/摰澈/瘝? ??撘瑕閫??脩戌
     const now_defend = Date.now();
@@ -266,6 +274,125 @@
     }
   }
 
+  enableTournamentPickups() {
+    const now = Date.now();
+    this.gameState.tournamentPickups = {
+      enabled: true,
+      // First item appears at the 20-second mark; the warning starts five seconds earlier.
+      nextSpawnAt: now + 20000,
+      warning: null,
+      items: []
+    };
+  }
+
+  updateTournamentPickups() {
+    const system = this.gameState.tournamentPickups;
+    if (!system?.enabled || !this.players.player1 || !this.players.player2) return;
+    const now = Date.now();
+
+    if (!system.warning && now >= system.nextSpawnAt - 5000) {
+      const types = [
+        { id: 'medkit', color: '#ff4d59', icon: '✚', label: '醫療包' },
+        { id: 'accelerator', color: '#c25cff', icon: '⚡', label: '奧義加速器' },
+        { id: 'armor', color: '#63e66f', icon: '⬡', label: '裝甲包' }
+      ];
+      const type = types[Math.floor(Math.random() * types.length)];
+      const x = 180 + Math.random() * (this.canvasWidth - 360);
+      system.warning = { ...type, x, y: 540, appearsAt: system.nextSpawnAt };
+      this.addCombatLog(`道場補給即將落下：${type.label}`, 'system', 'status');
+    }
+
+    if (system.warning && now >= system.warning.appearsAt) {
+      system.items.push({ ...system.warning, spawnedAt: now });
+      system.warning = null;
+      system.nextSpawnAt += 20000;
+    }
+
+    for (let i = system.items.length - 1; i >= 0; i--) {
+      const item = system.items[i];
+      for (const playerId of ['player1', 'player2']) {
+        const player = this.players[playerId];
+        if (!player || Math.abs(player.position.x - item.x) > 48) continue;
+        this.applyTournamentPickup(playerId, item);
+        system.items.splice(i, 1);
+        break;
+      }
+    }
+  }
+
+  applyTournamentPickup(playerId, item) {
+    const player = this.players[playerId];
+    if (!player) return;
+    const now = Date.now();
+    if (item.id === 'medkit') {
+      const heal = Math.max(1, Math.round((player.maxHp - player.hp) * 0.2));
+      player.hp = Math.min(player.maxHp, player.hp + heal);
+      this.addDamageNumber(player.position.x, player.position.y - 55, `+${heal}`, 'heal');
+      this.addVisualEffect(player.position.x, player.position.y - 30, 'tournament_medkit', '✚');
+      this.addCombatLog(`${player.name} 搶到醫療包，回復 ${heal} HP`, playerId, 'status');
+    } else if (item.id === 'accelerator') {
+      const cooldown = player.skills?.ultimate?.cooldown || 0;
+      const lastUse = this.cooldowns[playerId].ultimate || 0;
+      const remaining = Math.max(0, lastUse + cooldown - now);
+      const acceleratedRemaining = remaining * 0.4;
+      this.cooldowns[playerId].ultimate = now - (cooldown - acceleratedRemaining);
+      this.addVisualEffect(player.position.x, player.position.y - 30, 'tournament_accelerator', '⚡');
+      this.addCombatLog(`${player.name} 的奧義冷卻縮短 60%`, playerId, 'status');
+    } else {
+      player.effects.tournamentArmor = (player.effects.tournamentArmor || 0) + 15;
+      this.addVisualEffect(player.position.x, player.position.y - 30, 'tournament_armor', '⬡');
+      this.addCombatLog(`${player.name} 獲得 15 點臨時裝甲`, playerId, 'status');
+    }
+  }
+
+  renderTournamentPickups() {
+    const system = this.gameState.tournamentPickups;
+    if (!system?.enabled) return;
+    const ctx = this.ctx;
+    const now = Date.now();
+
+    if (system.warning) {
+      const warning = system.warning;
+      const seconds = Math.max(0, (warning.appearsAt - now) / 1000);
+      const bob = Math.sin(now * 0.009) * 7;
+      ctx.save();
+      ctx.translate(warning.x, warning.y - 135 + bob);
+      ctx.shadowColor = warning.color; ctx.shadowBlur = 22;
+      ctx.fillStyle = warning.color;
+      ctx.beginPath();
+      ctx.moveTo(0, 32); ctx.lineTo(-22, 0); ctx.lineTo(-8, 0); ctx.lineTo(-8, -40); ctx.lineTo(8, -40); ctx.lineTo(8, 0); ctx.lineTo(22, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fff'; ctx.font = '900 16px Arial'; ctx.textAlign = 'center';
+      ctx.fillText(`${Math.ceil(seconds)}`, 0, -54);
+      ctx.restore();
+    }
+
+    system.items.forEach(item => {
+      const pulse = 1 + Math.sin((now - item.spawnedAt) * 0.008) * 0.08;
+      ctx.save();
+      ctx.translate(item.x, item.y - 27); ctx.scale(pulse, pulse);
+      ctx.shadowColor = item.color; ctx.shadowBlur = 24;
+      ctx.fillStyle = 'rgba(8, 11, 22, 0.88)'; ctx.beginPath(); ctx.arc(0, 0, 27, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = item.color; ctx.lineWidth = 4; ctx.stroke();
+      ctx.shadowBlur = 0; ctx.fillStyle = item.color; ctx.font = '900 27px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(item.icon, 0, 1);
+      ctx.restore();
+    });
+
+    ['player1', 'player2'].forEach(playerId => {
+      const player = this.players[playerId];
+      const armor = player?.effects?.tournamentArmor || 0;
+      if (armor <= 0) return;
+      ctx.save();
+      ctx.strokeStyle = '#76f58b'; ctx.lineWidth = 3; ctx.shadowColor = '#3cff69'; ctx.shadowBlur = 15;
+      ctx.beginPath(); ctx.arc(player.position.x, player.position.y - 38, 34, 0, Math.PI * 2); ctx.stroke();
+      ctx.shadowBlur = 0; ctx.fillStyle = '#dfffe4'; ctx.font = '900 13px Arial'; ctx.textAlign = 'center';
+      ctx.fillText(`⬡ ${Math.ceil(armor)}`, player.position.x, player.position.y - 86);
+      ctx.restore();
+    });
+  }
+
   render() {
     // 皜征?怠?
     this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
@@ -284,6 +411,9 @@
     
     // 皜脫??拙振
     this.renderPlayers();
+
+    // 道場補給位於角色前景，讓落點箭頭與可搶取的道具不會被場景吃掉。
+    this.renderTournamentPickups();
 
     // 共用戰鬥演出層：補足各流派普攻、技能與奧義的壓迫感。
     this.renderCombatFlourishes();
@@ -8786,6 +8916,7 @@
       stealthAttackSpeedBuff: 0,
       talismanState: null,
       bloodShield: 0,
+      tournamentArmor: 0,
       bloodTether: null,
       bloodCurseTether: null,
       // 鋆捱????
@@ -8840,6 +8971,7 @@
       stealthAttackSpeedBuff: 0,
       talismanState: null,
       bloodShield: 0,
+      tournamentArmor: 0,
       bloodTether: null,
       bloodCurseTether: null,
       // 鋆捱????
@@ -9168,6 +9300,7 @@
     this.gameState.adjudicatorDomain = null; // ?? 皜鋆捱????
     this.gameState.puppet = { player1: null, player2: null }; // ? 皜???
     this.gameState.puppetSmoke = []; // ? 皜?
+    this.gameState.tournamentPickups = { enabled: false, nextSpawnAt: 0, warning: null, items: [] };
     this.hitStopFrames = 0; // ?? 皜 Hit-Stop
     
     // ?儭??蔭?脩戌???
@@ -9245,6 +9378,8 @@
 
   setupEventListeners() {
     document.addEventListener('keydown', (e) => {
+      // 選秀畫面使用同一組鍵盤鍵位，戰鬥引擎不應把選秀操作當成技能輸入。
+      if (typeof gameState !== 'undefined' && gameState.currentScreen === 'tournamentScreen') return;
       let key = e.key.toLowerCase();
       if (e.code === 'Numpad4') key = 'numpad4';
       if (e.code === 'Numpad5') key = 'numpad5';
@@ -9281,6 +9416,7 @@
     });
     
     document.addEventListener('keyup', (e) => {
+      if (typeof gameState !== 'undefined' && gameState.currentScreen === 'tournamentScreen') return;
       let key = e.key.toLowerCase();
       if (e.code === 'Numpad4') key = 'numpad4';
       if (e.code === 'Numpad5') key = 'numpad5';
@@ -12847,7 +12983,15 @@
         this.addVisualEffect(target.position.x, target.position.y, 'shield_absorb', '🛡️');
       }
     }
-    
+
+    // 道場鬥技盃的裝甲是額外血量：先承受傷害，不影響角色原本的護盾邏輯。
+    if (target.effects.tournamentArmor > 0 && damage > 0) {
+      const absorbed = Math.min(target.effects.tournamentArmor, damage);
+      target.effects.tournamentArmor -= absorbed;
+      damage -= absorbed;
+      this.addVisualEffect(target.position.x, target.position.y - 24, 'tournament_armor_hit', '⬡');
+    }
+
     target.hp = Math.max(0, target.hp - damage);
     
     // ? ???蝟餌絞

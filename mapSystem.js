@@ -1,5 +1,7 @@
 class MapSystem {
   constructor() {
+    this.tournamentDojoImage = new Image();
+    this.tournamentDojoImage.src = 'assets/tournament-dojo-background.png';
     this.maps = {
       grassland: {
         id: 'grassland',
@@ -45,6 +47,15 @@ class MapSystem {
         background: this.renderWindNinjaDojo,
         groundColor: '#2c3539',
         skyColor: '#0a0f18'
+      },
+      tournamentDojo: {
+        id: 'tournamentDojo',
+        name: '道場鬥技場',
+        description: '鬥技盃專屬舞台——燈火下的一對一忍者決鬥',
+        icon: '🏆',
+        background: this.renderTournamentDojo,
+        groundColor: '#4a2e1d',
+        skyColor: '#120e1c'
       }
     };
     
@@ -5134,6 +5145,53 @@ class MapSystem {
   // ═══════════════════════════════════════════════════════════════════════════
   renderWindNinjaDojo(ctx, width, height) {
     drawWindNinjaDojo(ctx, { width, height }, Date.now() * 0.001);
+  }
+
+  // 錦標賽專屬道場：以使用者提供的群像作為遠景，再覆上清晰的榻榻米對戰區。
+  renderTournamentDojo(ctx, width, height) {
+    const image = this.tournamentDojoImage;
+    const time = Date.now() * 0.001;
+    if (image && image.complete && image.naturalWidth) {
+      const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+      const drawW = image.naturalWidth * scale;
+      const drawH = image.naturalHeight * scale;
+      ctx.drawImage(image, (width - drawW) / 2, (height - drawH) / 2, drawW, drawH);
+      ctx.fillStyle = 'rgba(9, 7, 16, 0.42)';
+      ctx.fillRect(0, 0, width, height);
+    } else {
+      const night = ctx.createLinearGradient(0, 0, 0, height);
+      night.addColorStop(0, '#120d23'); night.addColorStop(0.55, '#38213b'); night.addColorStop(1, '#211713');
+      ctx.fillStyle = night; ctx.fillRect(0, 0, width, height);
+    }
+
+    const floorY = height * 0.72;
+    ctx.fillStyle = 'rgba(32, 17, 12, 0.9)';
+    ctx.fillRect(0, floorY, width, height - floorY);
+    for (let x = -80; x < width + 100; x += 120) {
+      ctx.strokeStyle = 'rgba(236, 182, 94, 0.28)';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x, floorY); ctx.lineTo(x + 88, height); ctx.stroke();
+    }
+    for (let y = floorY + 34; y < height; y += 52) {
+      ctx.strokeStyle = 'rgba(236, 182, 94, 0.18)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    }
+
+    const lanterns = [width * 0.12, width * 0.88];
+    lanterns.forEach((x, i) => {
+      const glow = ctx.createRadialGradient(x, height * 0.28, 4, x, height * 0.28, 125);
+      glow.addColorStop(0, `rgba(255, 190, 83, ${0.32 + Math.sin(time * 2 + i) * 0.05})`);
+      glow.addColorStop(1, 'rgba(255, 126, 33, 0)');
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, height * 0.28, 125, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f6b84c'; ctx.fillRect(x - 13, height * 0.22, 26, 42);
+      ctx.strokeStyle = '#4e1d14'; ctx.lineWidth = 4; ctx.strokeRect(x - 13, height * 0.22, 26, 42);
+    });
+
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.font = `900 ${Math.max(27, width * 0.035)}px serif`;
+    ctx.fillStyle = 'rgba(255, 225, 152, 0.84)'; ctx.shadowColor = '#12080b'; ctx.shadowBlur = 11;
+    ctx.fillText('道 場 鬥 技', width / 2, height * 0.18);
+    ctx.restore();
   }
   
   // 設置當前地圖
