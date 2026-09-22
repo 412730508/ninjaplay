@@ -1872,6 +1872,63 @@ body::after {
   #gameArea .controls-compact { margin: 5px auto 0; }
 }
 
+/* Battle-only control scheme switcher. */
+.control-mode-toggle {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 120;
+  display: grid;
+  gap: 2px;
+  min-width: 114px;
+  padding: 9px 12px;
+  color: #fff7df;
+  text-align: left;
+  font-family: inherit;
+  background: linear-gradient(145deg, rgba(24, 32, 56, 0.96), rgba(8, 13, 29, 0.98));
+  border: 1px solid rgba(255, 194, 74, 0.5);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.34);
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.control-mode-toggle:hover {
+  transform: translateY(-2px);
+  border-color: #ffe08a;
+}
+
+.control-mode-toggle.mode-b {
+  border-color: rgba(180, 115, 255, 0.82);
+  background: linear-gradient(145deg, rgba(74, 25, 112, 0.96), rgba(15, 11, 35, 0.98));
+}
+
+.control-mode-kicker {
+  color: rgba(255, 224, 138, 0.72);
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.control-mode-toggle strong {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.control-mode-toggle small {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.62rem;
+}
+
+@media (max-width: 680px) {
+  .control-mode-toggle {
+    right: 10px;
+    bottom: 10px;
+    min-width: 96px;
+    padding: 7px 9px;
+  }
+}
+
 /* Selection workbench: actions stay visible even when the roster fills the viewport. */
 @media (min-width: 1081px) and (min-height: 600px) {
   #characterSelect {

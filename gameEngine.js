@@ -73,14 +73,21 @@
       's': false,
       'j': false,      // ??賭?
       'k': false,      // 憭扳?
+      'e': false,
+      'r': false,
       // ?拙振2
       'arrowleft': false,
       'arrowright': false,
       'arrowup': false,
       'arrowdown': false,
       'numpad4': false, // ??賭?
-      'numpad5': false  // 憭扳?
+      'numpad5': false, // 憭扳?
+      '<': false,
+      '>': false
     };
+
+    // A 是原本鍵位；B 將雙方技能鍵改到更接近各自移動區的位置。
+    this.controlMode = 'a';
     
     // ?脫迫??閫貊????
     this.skillPressed = {
@@ -91,6 +98,33 @@
     this.aiController = null;
 
     this.gameLoop = this.gameLoop.bind(this); // 蝣箔? gameLoop ?寞?甇?Ⅱ蝬?
+  }
+
+  getControlBindings() {
+    return this.controlMode === 'b'
+      ? {
+          player1: { normal: 'e', ultimate: 'r' },
+          player2: { normal: '<', ultimate: '>' }
+        }
+      : {
+          player1: { normal: 'j', ultimate: 'k' },
+          player2: { normal: 'numpad4', ultimate: 'numpad5' }
+        };
+  }
+
+  setControlMode(mode) {
+    const nextMode = mode === 'b' ? 'b' : 'a';
+    this.controlMode = nextMode;
+
+    // 切換途中不保留按鍵狀態，避免上一套鍵位卡住或誤放技能。
+    Object.keys(this.keys).forEach(key => { this.keys[key] = false; });
+    Object.values(this.skillPressed).forEach(state => {
+      state.normal = false;
+      state.ultimate = false;
+      state.attack = false;
+      state.defend = false;
+    });
+    return this.controlMode;
   }
 
   init(canvasId) {
@@ -8467,6 +8501,7 @@
   // ?? 皜脫???瘠D?脣漲璇?
   renderSkillCooldowns() {
     const ctx = this.ctx;
+    const bindings = this.getControlBindings();
     const barWidth = 120;
     const barHeight = 12;
     const spacing = 10;
@@ -8489,7 +8524,7 @@
     ctx.lineWidth = 2;
     ctx.strokeRect(p1X, p1Y, barWidth, barHeight);
     ctx.fillStyle = '#FFF';
-    ctx.fillText('Q - ' + this.players.player1.skills.normal.name, p1X, p1Y - 5);
+    ctx.fillText(bindings.player1.normal.toUpperCase() + ' - ' + this.players.player1.skills.normal.name, p1X, p1Y - 5);
     
     // 蝯扔???
     const p1UltProgress = Math.max(0, 1 - this.cooldowns.player1.ultimate / this.players.player1.skills.ultimate.cooldown);
@@ -8500,7 +8535,7 @@
     ctx.strokeStyle = '#FFF';
     ctx.strokeRect(p1X, p1Y + barHeight + spacing, barWidth, barHeight);
     ctx.fillStyle = '#FFF';
-    ctx.fillText('E - ' + this.players.player1.skills.ultimate.name, p1X, p1Y + barHeight + spacing - 5);
+    ctx.fillText(bindings.player1.ultimate.toUpperCase() + ' - ' + this.players.player1.skills.ultimate.name, p1X, p1Y + barHeight + spacing - 5);
     
     // ?拙振2??瘠D (?喃?閫?
     const p2X = this.canvasWidth - barWidth - 20;
@@ -8518,7 +8553,7 @@
     ctx.lineWidth = 2;
     ctx.strokeRect(p2X, p2Y, barWidth, barHeight);
     ctx.fillStyle = '#FFF';
-    ctx.fillText(this.players.player2.skills.normal.name + ' - U', p2X + barWidth, p2Y - 5);
+    ctx.fillText(this.players.player2.skills.normal.name + ' - ' + bindings.player2.normal.toUpperCase(), p2X + barWidth, p2Y - 5);
     
     // 蝯扔???
     const p2UltProgress = Math.max(0, 1 - this.cooldowns.player2.ultimate / this.players.player2.skills.ultimate.cooldown);
@@ -8529,7 +8564,7 @@
     ctx.strokeStyle = '#FFF';
     ctx.strokeRect(p2X, p2Y + barHeight + spacing, barWidth, barHeight);
     ctx.fillStyle = '#FFF';
-    ctx.fillText(this.players.player2.skills.ultimate.name + ' - O', p2X + barWidth, p2Y + barHeight + spacing - 5);
+    ctx.fillText(this.players.player2.skills.ultimate.name + ' - ' + bindings.player2.ultimate.toUpperCase(), p2X + barWidth, p2Y + barHeight + spacing - 5);
     
     ctx.restore();
   }
@@ -9213,7 +9248,11 @@
       let key = e.key.toLowerCase();
       if (e.code === 'Numpad4') key = 'numpad4';
       if (e.code === 'Numpad5') key = 'numpad5';
-      const player2Keys = ['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'numpad4', 'numpad5'];
+      // < 與 > 在多數鍵盤上是 ,／. 鍵；以實體按鍵辨識，不強迫按 Shift。
+      if (e.code === 'Comma') key = '<';
+      if (e.code === 'Period') key = '>';
+      const bindings = this.getControlBindings();
+      const player2Keys = ['arrowleft', 'arrowright', 'arrowup', 'arrowdown', bindings.player2.normal, bindings.player2.ultimate];
       
       // ?? ?蝯?敺?斗?雿?
       if (this.gameState.winner) {
@@ -9245,7 +9284,10 @@
       let key = e.key.toLowerCase();
       if (e.code === 'Numpad4') key = 'numpad4';
       if (e.code === 'Numpad5') key = 'numpad5';
-      const player2Keys = ['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'numpad4', 'numpad5'];
+      if (e.code === 'Comma') key = '<';
+      if (e.code === 'Period') key = '>';
+      const bindings = this.getControlBindings();
+      const player2Keys = ['arrowleft', 'arrowright', 'arrowup', 'arrowdown', bindings.player2.normal, bindings.player2.ultimate];
 
       if (this.isCpuControlled('player2') && player2Keys.includes(key)) {
         e.preventDefault();
@@ -9257,12 +9299,12 @@
         
         // ?蔭??賣??萇????迂?活閫貊
         if (key === 'w') this.skillPressed.player1.attack = false;
-        if (key === 'j') this.skillPressed.player1.normal = false;
-        if (key === 'k') { this.skillPressed.player1.ultimate = false; this._tryReleaseJudgment('player1'); }
+        if (key === bindings.player1.normal) this.skillPressed.player1.normal = false;
+        if (key === bindings.player1.ultimate) { this.skillPressed.player1.ultimate = false; this._tryReleaseJudgment('player1'); }
         if (key === 's') this.skillPressed.player1.defend = false;
         if (key === 'arrowup') this.skillPressed.player2.attack = false;
-        if (key === 'numpad4') this.skillPressed.player2.normal = false;
-        if (key === 'numpad5') { this.skillPressed.player2.ultimate = false; this._tryReleaseJudgment('player2'); }
+        if (key === bindings.player2.normal) this.skillPressed.player2.normal = false;
+        if (key === bindings.player2.ultimate) { this.skillPressed.player2.ultimate = false; this._tryReleaseJudgment('player2'); }
         if (key === 'arrowdown') this.skillPressed.player2.defend = false;
         
         e.preventDefault();
@@ -9295,6 +9337,7 @@
 
   handleInput() {
     const player2CpuControlled = this.isCpuControlled('player2');
+    const bindings = this.getControlBindings();
 
     // ??蝘餃??? - ?脩戌???賜宏??
     if (this.keys['a'] && !this.isPlayerDefending('player1')) this.movePlayer('player1', -1);
@@ -9307,11 +9350,11 @@
       this.attack('player1');
       this.skillPressed.player1.attack = true;
     }
-    if (this.keys['j'] && !this.skillPressed.player1.normal && !this.isPlayerDefending('player1')) {
+    if (this.keys[bindings.player1.normal] && !this.skillPressed.player1.normal && !this.isPlayerDefending('player1')) {
       this.useSkill('player1', 'normal');
       this.skillPressed.player1.normal = true;
     }
-    if (this.keys['k'] && !this.skillPressed.player1.ultimate && !this.isPlayerDefending('player1')) {
+    if (this.keys[bindings.player1.ultimate] && !this.skillPressed.player1.ultimate && !this.isPlayerDefending('player1')) {
       this.useSkill('player1', 'ultimate');
       this.skillPressed.player1.ultimate = true;
     }
@@ -9320,11 +9363,11 @@
       this.attack('player2');
       this.skillPressed.player2.attack = true;
     }
-    if (!player2CpuControlled && this.keys['numpad4'] && !this.skillPressed.player2.normal && !this.isPlayerDefending('player2')) {
+    if (!player2CpuControlled && this.keys[bindings.player2.normal] && !this.skillPressed.player2.normal && !this.isPlayerDefending('player2')) {
       this.useSkill('player2', 'normal');
       this.skillPressed.player2.normal = true;
     }
-    if (!player2CpuControlled && this.keys['numpad5'] && !this.skillPressed.player2.ultimate && !this.isPlayerDefending('player2')) {
+    if (!player2CpuControlled && this.keys[bindings.player2.ultimate] && !this.skillPressed.player2.ultimate && !this.isPlayerDefending('player2')) {
       this.useSkill('player2', 'ultimate');
       this.skillPressed.player2.ultimate = true;
     }

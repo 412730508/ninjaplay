@@ -241,11 +241,11 @@
                         </div>
                         <div class="skill-circle ready" id="p1Normal">
                             <div class="skill-icon">🌪️</div>
-                            <div class="skill-hotkey">F</div>
+                            <div class="skill-hotkey" id="p1NormalHotkey">J</div>
                         </div>
                         <div class="skill-circle ultimate ready" id="p1Ultimate">
                             <div class="skill-icon">⚔️</div>
-                            <div class="skill-hotkey">R</div>
+                            <div class="skill-hotkey" id="p1UltimateHotkey">K</div>
                         </div>
                         <div class="skill-circle defend ready" id="p1Defend">
                             <div class="defend-icon">🛡️</div>
@@ -269,11 +269,11 @@
                         </div>
                         <div class="skill-circle ready" id="p2Normal">
                             <div class="skill-icon">🌪️</div>
-                            <div class="skill-hotkey">K</div>
+                            <div class="skill-hotkey" id="p2NormalHotkey">NUM 4</div>
                         </div>
                         <div class="skill-circle ultimate ready" id="p2Ultimate">
                             <div class="skill-icon">⚔️</div>
-                            <div class="skill-hotkey">P</div>
+                            <div class="skill-hotkey" id="p2UltimateHotkey">NUM 5</div>
                         </div>
                         <div class="skill-circle defend ready" id="p2Defend">
                             <div class="defend-icon">🛡️</div>
@@ -290,11 +290,16 @@
         <!-- 🔧 控制說明 - 收合版本 -->
         <div class="controls-compact">
             <div class="control-hint">
-                <span><strong>玩家1:</strong> WASD移動 + FR技能</span>
-                <span id="player2ControlHint"><strong>玩家2:</strong> 方向鍵移動 + KP技能</span>
+                <span id="player1ControlHint"><strong>玩家1:</strong> WASD移動 + J／K 技能</span>
+                <span id="player2ControlHint"><strong>玩家2:</strong> 方向鍵移動 + NUM 4／5 技能</span>
                 <span><strong>防禦:</strong> S(玩家1) / ↓(玩家2) - 2秒CD</span>
             </div>
         </div>
+        <button type="button" class="control-mode-toggle" id="controlModeToggle" onclick="toggleControlMode()" aria-label="切換操作模式">
+            <span class="control-mode-kicker">操作模式</span>
+            <strong>Ａ｜預設</strong>
+            <small>切換至 B</small>
+        </button>
     </div>
 
     <!-- 🔍 添加遊戲描述區塊 -->
@@ -474,7 +479,44 @@
         function formatCooldown(ms) {
             return `${Math.round(ms / 1000)}秒`;
         }
-        
+
+        function updateControlModeUI(mode = 'a') {
+            const isModeB = mode === 'b';
+            const labels = isModeB
+                ? { p1Normal: 'E', p1Ultimate: 'R', p2Normal: '<', p2Ultimate: '>' }
+                : { p1Normal: 'J', p1Ultimate: 'K', p2Normal: 'NUM 4', p2Ultimate: 'NUM 5' };
+
+            const setText = (id, text) => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = text;
+            };
+
+            setText('p1NormalHotkey', labels.p1Normal);
+            setText('p1UltimateHotkey', labels.p1Ultimate);
+            setText('p2NormalHotkey', labels.p2Normal);
+            setText('p2UltimateHotkey', labels.p2Ultimate);
+
+            const p1Hint = document.getElementById('player1ControlHint');
+            const p2Hint = document.getElementById('player2ControlHint');
+            if (p1Hint) p1Hint.innerHTML = `<strong>玩家1:</strong> WASD移動 + ${labels.p1Normal}／${labels.p1Ultimate} 技能`;
+            if (p2Hint) p2Hint.innerHTML = `<strong>玩家2:</strong> 方向鍵移動 + ${labels.p2Normal}／${labels.p2Ultimate} 技能`;
+
+            const button = document.getElementById('controlModeToggle');
+            if (button) {
+                button.classList.toggle('mode-b', isModeB);
+                button.innerHTML = isModeB
+                    ? '<span class="control-mode-kicker">操作模式</span><strong>Ｂ｜E R ／ &lt; &gt;</strong><small>切換至 A</small>'
+                    : '<span class="control-mode-kicker">操作模式</span><strong>Ａ｜預設</strong><small>切換至 B</small>';
+            }
+        }
+
+        function toggleControlMode() {
+            if (!game) return;
+            const nextMode = game.controlMode === 'b' ? 'a' : 'b';
+            game.setControlMode(nextMode);
+            updateControlModeUI(nextMode);
+        }
+
         function initCharacterSelection() {
             const rosterGrid = document.getElementById('characterRoster');
             rosterGrid.innerHTML = '';
