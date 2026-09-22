@@ -12315,13 +12315,29 @@
           if (typeof particleSystem !== 'undefined' && particleSystem) {
             particleSystem.createRangerArrowHitEffect(projectile.x, projectile.y);
           }
+          // 強化箭要先結算這一箭的傷害，才在命中後強制解除防禦。
+          // 因此敵人若本來正在防禦，這一箭仍會被擋下，但之後 2 秒不能再防禦。
+          const targetId = target === this.players.player1 ? 'player1' : 'player2';
+          const wasDefending = this.isPlayerDefending(targetId);
+          this.dealDamage(target, projectile.damage, ownerSide);
+
           // Empowered shot - slow enemy
           if (projectile.empowered && projectile.slowDuration > 0) {
             target.effects.slowed = Date.now() + projectile.slowDuration;
             this.addCombatLog(`強化箭矢命中！緩速30%`, ownerSide, 'status');
             this.addVisualEffect(target.position.x, target.position.y, 'slow', '🐌');
+
+            if (wasDefending) this.endDefend(targetId);
+            const defenseLockDuration = projectile.owner?.skills?.ultimate?.defenseLockDuration || 2000;
+            const defendState = this.gameState.defending[targetId];
+            defendState.cooldownUntil = Math.max(defendState.cooldownUntil || 0, Date.now() + defenseLockDuration);
+            this.addVisualEffect(target.position.x, target.position.y - 25, 'defend_break', '💥');
+            this.addCombatLog(
+              wasDefending ? '強化箭矢破防！2 秒內無法防禦！' : '強化箭矢命中！2 秒內無法防禦！',
+              ownerSide,
+              'damage'
+            );
           }
-          this.dealDamage(target, projectile.damage, ownerSide);
           this.addVisualEffect(projectile.x, projectile.y, 'hit', '💥');
           return false;
         }

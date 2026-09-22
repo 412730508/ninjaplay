@@ -553,6 +553,7 @@ const characters = {
         empoweredDamage: 8,
         slowPercent: 0.3,
         slowDuration: 2000,
+        defenseLockDuration: 2000,
         buffDuration: 2000,
         boostedAttackSpeed: 250
       }
