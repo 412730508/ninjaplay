@@ -9105,10 +9105,10 @@
     player.skills.ultimate.type = '變身/定身';
     player.skills.ultimate.cooldown = 1000;
 
-    // 霈?鈭箏?憭扳??脣6蝘??
-    this.cooldowns[playerId].ultimate = Date.now() - player.skills.ultimate.cooldown + 6000;
+    const revertCooldown = player.skills.ultimate.revertCooldown || 3000;
+    this.cooldowns[playerId].ultimate = Date.now() - player.skills.ultimate.cooldown + revertCooldown;
 
-    this.addCombatLog('恢復人型！冷卻6秒！', playerId, 'status');
+    this.addCombatLog(`恢復人型！冷卻${revertCooldown / 1000}秒！`, playerId, 'status');
   }
 
   updateBeastmasterState(player, playerId, now) {
@@ -10449,7 +10449,6 @@
 
           const aoe = player.skills.ultimate.golemSkillAoE || 120;
           const damage = player.skills.ultimate.golemSkillDamage || 13;
-          const distanceToCenter = Math.abs(opponent.position.x - targetX);
 
           this.gameState.effects.push({
             type: 'boulder_impact',
@@ -10460,10 +10459,9 @@
             duration: 350
           });
 
-          if (distanceToCenter <= aoe) {
-            this.dealDamage(opponent, damage, playerId);
-            this.addCombatLog(`巨石命中！造成${damage}點傷害`, playerSide, 'damage');
-          }
+          // 巨岩鎖定施放時的目標，不再以落點範圍判定是否命中。
+          this.dealDamage(opponent, damage, playerId);
+          this.addCombatLog(`巨石命中！造成${damage}點傷害`, playerSide, 'damage');
 
           this.triggerCameraShake(8, 220);
         }, delay);
@@ -10495,8 +10493,12 @@
         player.beastStacks = Math.max(0, player.beastStacks - stackCost);
 
         const ccDuration = skill.rootDuration || 2000;
-        opponent.effects.rooted = now + ccDuration;
-        opponent.effects.stunned = now + ccDuration;
+        const rootRange = skill.transformRootRange || 200;
+        const targetIsClose = Math.abs(player.position.x - opponent.position.x) <= rootRange;
+        if (targetIsClose) {
+          opponent.effects.rooted = now + ccDuration;
+          opponent.effects.stunned = now + ccDuration;
+        }
 
         this.enterGolemForm(player, playerId);
         this.gameState.effects.push({
@@ -10507,7 +10509,11 @@
           duration: 1000
         });
         this.addVisualEffect(player.position.x, player.position.y, 'golem_transform', '🐉');
-        this.addCombatLog('巨獸解放！定身敵人2秒！', playerSide, 'skill');
+        this.addCombatLog(
+          targetIsClose ? `巨獸解放！${rootRange}px 內敵人定身2秒！` : '巨獸解放！敵人距離過遠，未被定身。',
+          playerSide,
+          'skill'
+        );
         break;
       }
 
@@ -10691,7 +10697,11 @@
             const knockDirection = Math.sign(opponent.position.x - player.position.x) || player.facing;
             opponent.position.x += knockDirection * (skill.knockback || 80);
             opponent.position.x = Math.max(80, Math.min(this.canvasWidth - 80, opponent.position.x));
-            this.addCombatLog(`烈火旋斬命中！擊退 ${skill.knockback || 80}px`, playerSide, 'damage');
+            if (skill.stun) {
+              opponent.effects.stunned = Math.max(opponent.effects.stunned || 0, now + skill.stun);
+              this.addVisualEffect(opponent.position.x, opponent.position.y, 'stun', '💫');
+            }
+            this.addCombatLog(`烈火旋斬命中！擊退 ${skill.knockback || 80}px${skill.stun ? `，暈眩${skill.stun / 1000}秒` : ''}`, playerSide, 'damage');
           }
         }
         this.addVisualEffect(player.position.x, player.position.y - 18, 'fire_spin', '🔥');
@@ -10753,7 +10763,7 @@
         // ?? 瘞游??曄???????+ ?儔
         setTimeout(() => {
           // 閮??儔??(60%?脣??瑕拿)
-          const healAmount = Math.floor((player.waterShieldStoredDamage || 0) * skill.healPercent);
+          const healAmount = (skill.baseHeal || 0) + Math.floor((player.waterShieldStoredDamage || 0) * skill.healPercent);
           const now2 = Date.now();
           const effectiveHeal = (player.effects.healReduction > now2) ? Math.floor(healAmount * (1 - (player.effects.healReductionPercent || 0))) : healAmount;
           
@@ -12486,7 +12496,7 @@
           }
           this.dealDamage(target, projectile.damage, ownerSide);
           // 鋡怠??貉?嚗?餃銝剖?敺?HP
-          this.applyBloodHeal(projectile.owner, 2, ownerSide);
+          this.applyBloodHeal(projectile.owner, projectile.owner.attackHeal || 0, ownerSide);
           this.addVisualEffect(projectile.x, projectile.y, 'hit', '💥');
           return false;
         }
