@@ -690,6 +690,42 @@ body::after {
   pointer-events: none;
 }
 
+/* 道場鬥技盃：戰術卡牌選擇 */
+#tournamentTalentScreen {
+  min-height: 100vh;
+  padding: clamp(18px, 3vh, 44px) clamp(16px, 4vw, 72px);
+  background:
+    radial-gradient(circle at 14% 8%, rgba(230, 67, 67, .24), transparent 32%),
+    radial-gradient(circle at 88% 12%, rgba(59, 145, 255, .25), transparent 36%),
+    linear-gradient(115deg, rgba(8, 7, 16, .91), rgba(12, 18, 36, .84)),
+    url('assets/tournament-dojo-background.png') center / cover;
+}
+.talent-shell { width: min(1420px, 100%); margin: 0 auto; }
+.talent-topline { display: flex; align-items: center; justify-content: space-between; gap: 18px; color: #fff4c8; }
+.talent-status-card { margin: 22px 0 20px; padding: 18px 26px; text-align: center; border: 1px solid rgba(255, 224, 138, .38); border-radius: 18px; background: rgba(9, 12, 28, .82); box-shadow: 0 14px 38px rgba(0, 0, 0, .34); }
+.talent-status-card h2 { margin: 7px 0; color: #fff4ce; font-size: clamp(1.28rem, 2vw, 2rem); }
+.talent-status-card p { margin: 0; color: #bfcbe8; }
+.talent-loadout-board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(16px, 2.4vw, 34px); }
+.talent-player-panel { min-width: 0; padding: 18px; border: 2px solid rgba(255,255,255,.12); border-radius: 22px; background: linear-gradient(145deg, rgba(20,24,42,.96), rgba(8,10,23,.95)); box-shadow: 0 20px 45px rgba(0,0,0,.28); }
+.talent-player-panel.player1 { border-color: rgba(255, 74, 74, .75); }
+.talent-player-panel.player2 { border-color: rgba(76, 150, 255, .78); }
+.talent-character-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.talent-character-head img { width: 58px; height: 58px; border-radius: 14px; object-fit: cover; image-rendering: pixelated; background: #101426; }
+.talent-character-head span { display: block; color: #b7c2dd; font-size: .75rem; letter-spacing: .12em; }
+.talent-character-head h3 { margin: 3px 0 0; color: #fff2c7; font-size: 1.24rem; }
+.talent-card-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.talent-card { min-height: 174px; padding: 16px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,.13); border-radius: 16px; background: linear-gradient(150deg, rgba(59,67,99,.6), rgba(17,19,37,.97)); transition: transform .15s ease, border-color .15s ease, filter .15s ease; }
+.talent-card::after { content: ''; position: absolute; inset: auto -18% -55% 20%; height: 100px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 217, 104, .18), transparent 70%); pointer-events: none; }
+.talent-card.is-cursor-p1 { border-color: #ff5454; box-shadow: 0 0 0 3px rgba(255, 73, 73, .24), 0 0 25px rgba(255, 73, 73, .3); transform: translateY(-4px); }
+.talent-card.is-cursor-p2 { border-color: #57a8ff; box-shadow: 0 0 0 3px rgba(73, 151, 255, .24), 0 0 25px rgba(73, 151, 255, .3); transform: translateY(-4px); }
+.talent-card.is-confirmed { filter: saturate(.58) brightness(.72); }
+.talent-card.is-confirmed.is-selected { filter: none; border-color: #ffd65b; box-shadow: 0 0 22px rgba(255, 204, 64, .35); }
+.talent-card-label { display: inline-flex; padding: 4px 8px; border-radius: 999px; background: rgba(255,255,255,.1); color: #e2e9fb; font-size: .7rem; font-weight: 800; letter-spacing: .08em; }
+.talent-card h4 { margin: 14px 0 8px; color: #ffe49a; font-size: 1.15rem; }
+.talent-card p { margin: 0; color: #d6def1; font-size: .9rem; line-height: 1.58; }
+.talent-selected-state { margin-top: 11px; color: #ffe292; font-size: .78rem; font-weight: 800; }
+@media (max-width: 760px) { .talent-loadout-board { grid-template-columns: 1fr; } .talent-topline { flex-wrap: wrap; } .talent-card { min-height: 145px; } }
+
 /* 1v1 role tags: the player's win condition, visible before reading any skill text. */
 .character-role-tags {
   display: flex;

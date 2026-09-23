@@ -255,6 +255,23 @@
         </div>
     </div>
 
+    <!-- 🃏 道場鬥技盃：每一戰開打前的主選／次選卡牌 -->
+    <div id="tournamentTalentScreen" class="game-screen hidden" aria-live="polite">
+        <div class="talent-shell">
+            <div class="talent-topline">
+                <span class="tournament-eyebrow">DOJO DUEL LEAGUE · ROUND LOADOUT</span>
+                <div id="talentRoundScore" class="tournament-score"></div>
+                <button class="ninja-btn-small tournament-exit" type="button" onclick="exitTournament()">退出錦標賽</button>
+            </div>
+            <section class="talent-status-card">
+                <span id="talentPhase" class="tournament-phase">主選</span>
+                <h2 id="talentPrompt">選擇本戰主選</h2>
+                <p id="talentHint">P1：W／A 選卡、奧義確認　・　P2：←／→ 選卡、奧義確認</p>
+            </section>
+            <div id="talentLoadoutBoard" class="talent-loadout-board"></div>
+        </div>
+    </div>
+
     <!-- ⚔️ 界面 3：戰鬥 -->
     <div id="gameArea" class="game-screen hidden">
         <!-- 🔧 整合戰鬥UI - 緊湊布局 -->
@@ -385,6 +402,7 @@
     
     <script src="characters.js?v=forgefire-model-2"></script>
     <script src="balance.js?v=balance-0.3.0"></script>
+    <script src="talents.js?v=dojo-loadout-1"></script>
     <script src="particleSystem.js"></script>
     <script src="mapSystem.js?v=dojo-canvas-2"></script>
     <script src="stickmanAnimator.js?v=forgefire-model-2"></script>
@@ -439,6 +457,7 @@
                 stepPicks: 0,
                 scores: { player1: 0, player2: 0 },
                 round: 0,
+                roundTalents: null,
                 completed: false
             };
             showScreen('tournamentScreen');
@@ -571,17 +590,109 @@
             });
         }
 
-        function startTournamentRound() {
+        function talentDataFor(playerId) {
+            const id = tournamentState?.teams?.[playerId]?.[tournamentState.round];
+            return id ? TOURNAMENT_TALENTS[id] : null;
+        }
+
+        function openTournamentTalentSelect() {
             const state = tournamentState;
             if (!state?.active || state.completed) return;
             const player1 = state.teams.player1[state.round];
             const player2 = state.teams.player2[state.round];
             if (!player1 || !player2) return;
+            state.phase = 'talent-primary';
+            state.roundTalents = { player1: {}, player2: {} };
+            state.talentCursors = { player1: 0, player2: 0 };
+            state.talentConfirmed = { player1: false, player2: false };
+            showScreen('tournamentTalentScreen');
+            renderTournamentTalents();
+        }
+
+        function talentChoice(playerId) {
+            const state = tournamentState;
+            const talentData = talentDataFor(playerId);
+            const slot = state.phase === 'talent-primary' ? 'primary' : 'secondary';
+            return talentData?.[slot]?.[state.talentCursors[playerId]];
+        }
+
+        function renderTournamentTalents() {
+            const state = tournamentState;
+            if (!state?.roundTalents) return;
+            const isPrimary = state.phase === 'talent-primary';
+            const slot = isPrimary ? 'primary' : 'secondary';
+            const stageName = isPrimary ? '主選' : '次選';
+            const bindings = tournamentBindings();
+            const p1Key = bindings.player1.ultimate === 'r' ? 'R' : 'K';
+            const p2Key = bindings.player2.ultimate === '>' ? '>' : 'NUM 5';
+            document.getElementById('talentPhase').textContent = `第 ${state.round + 1} 戰・${stageName}`;
+            document.getElementById('talentPrompt').textContent = `雙方選擇本戰${stageName}卡牌`;
+            document.getElementById('talentHint').textContent = `P1：W／A 選擇・${p1Key} 確認　｜　P2：←／→ 選擇・${p2Key} 確認`;
+            document.getElementById('talentRoundScore').innerHTML = `<span class="tournament-score-p1">玩家 1　${state.scores.player1}</span><b>FIRST TO 2</b><span class="tournament-score-p2">${state.scores.player2}　玩家 2</span>`;
+            document.getElementById('talentLoadoutBoard').innerHTML = ['player1', 'player2'].map(playerId => {
+                const characterId = state.teams[playerId][state.round];
+                const character = characters[characterId];
+                const portrait = characterPortraits[characterId];
+                const choices = talentDataFor(playerId)?.[slot] || [];
+                const selectedKey = state.roundTalents[playerId][slot];
+                const confirmed = state.talentConfirmed[playerId];
+                return `<section class="talent-player-panel ${playerId}">
+                    <div class="talent-character-head">${portrait ? `<img data-portrait="${portrait}" alt="">` : '<span>🥷</span>'}<div><span>${playerId === 'player1' ? 'PLAYER 1' : 'PLAYER 2'}・本戰出場</span><h3>${character.name}</h3></div></div>
+                    <div class="talent-card-row">${choices.map((choice, index) => `<article class="talent-card${state.talentCursors[playerId] === index && !confirmed ? ` is-cursor-${playerId === 'player1' ? 'p1' : 'p2'}` : ''}${confirmed ? ' is-confirmed' : ''}${selectedKey === choice[0] ? ' is-selected' : ''}">
+                        <span class="talent-card-label">${stageName} ${index === 0 ? 'A' : 'B'}</span><h4>${choice[1]}</h4><p>${choice[2]}</p>${selectedKey === choice[0] ? '<div class="talent-selected-state">✓ 已鎖定</div>' : ''}
+                    </article>`).join('')}</div>
+                </section>`;
+            }).join('');
+            document.querySelectorAll('#tournamentTalentScreen [data-portrait]').forEach(image => {
+                image.src = image.dataset.portrait;
+            });
+        }
+
+        function moveTournamentTalent(playerId, delta) {
+            const state = tournamentState;
+            if (!state?.roundTalents || state.talentConfirmed[playerId]) return;
+            state.talentCursors[playerId] = (state.talentCursors[playerId] + delta + 2) % 2;
+            renderTournamentTalents();
+        }
+
+        function confirmTournamentTalent(playerId) {
+            const state = tournamentState;
+            if (!state?.roundTalents || state.talentConfirmed[playerId]) return;
+            const slot = state.phase === 'talent-primary' ? 'primary' : 'secondary';
+            const choice = talentChoice(playerId);
+            if (!choice) return;
+            state.roundTalents[playerId][slot] = choice[0];
+            state.talentConfirmed[playerId] = true;
+            if (!state.talentConfirmed.player1 || !state.talentConfirmed.player2) {
+                renderTournamentTalents();
+                return;
+            }
+            if (state.phase === 'talent-primary') {
+                state.phase = 'talent-secondary';
+                state.talentCursors = { player1: 0, player2: 0 };
+                state.talentConfirmed = { player1: false, player2: false };
+                renderTournamentTalents();
+                return;
+            }
+            launchTournamentRound();
+        }
+
+        function startTournamentRound() {
+            openTournamentTalentSelect();
+        }
+
+        function launchTournamentRound() {
+            const state = tournamentState;
+            if (!state?.active || state.completed) return;
+            const player1 = state.teams.player1[state.round];
+            const player2 = state.teams.player2[state.round];
             gameState.selectedCharacters = { player1, player2 };
+            gameState.selectedTalents = state.roundTalents;
             gameState.selectedMap = 'tournamentDojo';
             gameState.versusCpu = false;
             mapSystem.setCurrentMap('tournamentDojo');
-            startBattle({ tournament: true });
+            state.phase = 'battle';
+            startBattle({ tournament: true, talents: state.roundTalents });
             watchTournamentWinner();
         }
 
@@ -622,12 +733,21 @@
         }
 
         document.addEventListener('keydown', event => {
-            if (gameState.currentScreen !== 'tournamentScreen' || !tournamentState?.active || tournamentState.completed) return;
+            if (!['tournamentScreen', 'tournamentTalentScreen'].includes(gameState.currentScreen) || !tournamentState?.active || tournamentState.completed) return;
             let key = event.key.toLowerCase();
             if (event.code === 'Numpad5') key = 'numpad5';
             if (event.code === 'Period') key = '>';
-            const directions = { a: ['player1', 'left'], d: ['player1', 'right'], w: ['player1', 'up'], s: ['player1', 'down'], arrowleft: ['player2', 'left'], arrowright: ['player2', 'right'], arrowup: ['player2', 'up'], arrowdown: ['player2', 'down'] };
             const bindings = tournamentBindings();
+            if (gameState.currentScreen === 'tournamentTalentScreen') {
+                if (key === 'w') { event.preventDefault(); moveTournamentTalent('player1', -1); return; }
+                if (key === 'a') { event.preventDefault(); moveTournamentTalent('player1', 1); return; }
+                if (key === 'arrowleft') { event.preventDefault(); moveTournamentTalent('player2', -1); return; }
+                if (key === 'arrowright') { event.preventDefault(); moveTournamentTalent('player2', 1); return; }
+                if (key === bindings.player1.ultimate) { event.preventDefault(); confirmTournamentTalent('player1'); return; }
+                if (key === bindings.player2.ultimate) { event.preventDefault(); confirmTournamentTalent('player2'); return; }
+                return;
+            }
+            const directions = { a: ['player1', 'left'], d: ['player1', 'right'], w: ['player1', 'up'], s: ['player1', 'down'], arrowleft: ['player2', 'left'], arrowright: ['player2', 'right'], arrowup: ['player2', 'up'], arrowdown: ['player2', 'down'] };
             if (directions[key]) { event.preventDefault(); tournamentCursorMove(...directions[key]); return; }
             if (key === bindings.player1.ultimate) { event.preventDefault(); confirmTournamentCursor('player1'); }
             if (key === bindings.player2.ultimate) { event.preventDefault(); confirmTournamentCursor('player2'); }
@@ -1552,7 +1672,7 @@
 
             detachCpuController();
             
-            game.selectCharacters(gameState.selectedCharacters.player1, gameState.selectedCharacters.player2);
+            game.selectCharacters(gameState.selectedCharacters.player1, gameState.selectedCharacters.player2, options.talents || null);
             // Tournament rounds always begin from a completely clean state, including any prior winner.
             if (options.tournament) {
                 game.resetGame();

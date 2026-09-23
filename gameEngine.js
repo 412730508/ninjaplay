@@ -726,7 +726,7 @@
         const animation = player.animation || { current: 'idle', frame: 0 };
         
         // ? ?梯澈????
-        if (player.effects.stealthActive > Date.now()) {
+        if (player.effects.stealthActive > Date.now() || player.effects.invisible > Date.now()) {
           this.ctx.globalAlpha = 0.15;
         }
         
@@ -6127,6 +6127,10 @@
 
         // Check if enemy overlaps hazard X range
         const inRange = Math.abs(target.position.x - hazard.x) < hazard.width / 2;
+        if (inRange && hazard.slowMultiplier) {
+          target.effects.slowed = Math.max(target.effects.slowed || 0, now + (hazard.slowDuration || 800));
+          target.effects.slowMultiplier = hazard.slowMultiplier;
+        }
         if (inRange && now - hazard.lastTickTime >= hazard.tickRate) {
           hazard.lastTickTime = now;
           target.hp = Math.max(0, target.hp - hazard.damagePerTick);
@@ -6588,6 +6592,18 @@
       const healRedPercent = skill.healReductionPercent || 0.5;
       opponent.effects.healReduction = now + healRedDuration;
       opponent.effects.healReductionPercent = healRedPercent;
+
+      if (skill.spawnThornsOnHit) {
+        const passive = player.passive || {};
+        this.gameState.hazards.push({
+          type: 'scorpion_thorns', x: opponent.position.x, y: opponent.position.y + 25,
+          width: passive.hazardWidth || 80, targetRef: opponent,
+          createdAt: now, duration: passive.hazardDuration || 4000,
+          damagePerTick: passive.hazardDamagePerTick || 2,
+          tickRate: passive.hazardTickRate || 1000, lastTickTime: now
+        });
+        this.addVisualEffect(opponent.position.x, opponent.position.y, 'scorpion_thorns', '🌿');
+      }
 
       // Store chain state for rendering
       this.gameState.chainOfPain = {
@@ -8854,8 +8870,114 @@
     }
   }
 
+  // 道場鬥技盃卡牌：先套用能直接改變角色資料的效果；其餘事件型效果由戰鬥 hooks 讀取。
+  applyTournamentTalents(player, loadout) {
+    player.tournamentTalents = loadout || {};
+    const primary = loadout?.primary;
+    const secondary = loadout?.secondary;
+    if (!primary && !secondary) return;
+
+    const has = key => primary === key || secondary === key;
+    const normal = player.skills?.normal;
+    const ultimate = player.skills?.ultimate;
+
+    if (has('residual_charge')) ultimate.cooldown = 7000;
+    if (has('wind_veil')) normal.invisibleDuration = 1000;
+    if (has('wind_borrow')) ultimate.recastStun = 2000;
+    if (has('light_step')) player.talentLightStep = true;
+    if (has('wind_unload')) normal.fixedSpeedDuration = 600;
+    if (has('scorched_dash')) normal.scorchTrail = { width: 150, duration: 1500, damage: 2, slowMultiplier: 0.6, slowDuration: 800 };
+    if (has('spreading_fireball')) ultimate.applyFlameMark = true;
+    if (has('long_burning_mark')) player.passive.markDuration = 7000;
+    if (has('backfire_step')) ultimate.backfireDistance = 135;
+    if (has('furnace_spin')) normal.range = 190;
+    if (has('wide_blade_path')) { ultimate.range = 500; ultimate.trailDuration = 5000; }
+    if (has('flame_god_start')) ultimate.resetSpinOnHit = true;
+    if (has('king_of_flames')) normal.doubleCharge = true;
+    if (has('surging_shield')) { normal.speedBoost = 35; normal.healPercent = 0.9; }
+    if (has('returning_tide')) player.talentReturningTide = true;
+    if (has('wetland')) ultimate.wetland = { width: 90, duration: 1000, slowMultiplier: 0.6 };
+    if (has('clarity')) normal.clarityCooldown = 6000;
+    if (has('chasing_thunder')) ultimate.preDash = 50;
+    if (has('charged_pursuit')) player.talentChargedPursuit = true;
+    if (has('thunder_stride')) player.talentThunderStride = true;
+    if (has('shattered_bulwark')) normal.shatterWall = { width: 80, duration: 1000 };
+    if (has('spreading_quake')) { ultimate.outerRange = 230; ultimate.outerDamage = 5; }
+    if (has('rooted')) player.controlResistance = 0.8;
+    if (has('rubble_aftershock')) ultimate.rubbleAftershock = { range: 100, duration: 1200, slowMultiplier: 0.8 };
+    if (has('surrounding_shadows')) normal.cloneCount = (normal.cloneCount || 0) + 1;
+    if (has('hunting_shadow_array')) { normal.dashDistance = 400; normal.shadowDuration = 5000; }
+    if (has('silent_afterimage')) player.talentSilentAfterimage = true;
+    if (has('shadow_step')) player.talentShadowStep = true;
+    if (has('requiem_talisman')) normal.knockback = 70;
+    if (has('guardian_talisman')) normal.heal = 6;
+    if (has('spirit_pressure')) ultimate.chargeSpeedMultiplier = 1.1;
+    if (has('afterglow')) ultimate.afterglow = { range: 100, duration: 3000, damageReduction: 1 };
+    if (has('crippling_darts')) { normal.cooldown = 5000; normal.multiShot = 2; }
+    if (has('overgrown_thorns')) ultimate.triggerRadius = 130;
+    if (has('poison_stride')) player.talentPoisonStride = true;
+    if (has('lingering_mist')) ultimate.lingeringMist = { range: 80, duration: 1000, slowMultiplier: 0.9 };
+    if (has('pursuit_execution')) ultimate.executeThreshold = 0.20;
+    if (has('wall_breaker')) normal.wallSlamTolerance = 30;
+    if (has('extended_armor')) player.passive.duration = 2000;
+    if (has('landing_pursuit')) normal.landingPursuit = 30;
+    if (has('hunter_quiver')) { player.ammoMax = 10; player.ammoReloadTime = 1600; }
+    if (has('spirit_leaf_reload')) player.ammoAutoRefill = 600;
+    if (has('wind_arrow')) player.passive.speedDuration = 2000;
+    if (has('quiet_leaf')) ultimate.dashDistance = 400;
+    if (has('crimson_chain')) { normal.hpCost = 0; normal.cooldown = 10000; }
+    if (has('coagulated_bind')) normal.tetherSlowMultiplier = 0.8;
+    if (has('low_health_dash')) player.passive.speedBonus = 0.1;
+    if (has('infinite_blood_curse')) player.passive.shieldCap = 20;
+    if (has('falling_petals')) player.talentFallingPetals = true;
+    if (has('deep_iai')) ultimate.hitKnockback = 100;
+    if (has('zanshin')) player.talentZanshin = true;
+    if (has('follow_cut')) normal.slowDuration = 1200;
+    if (has('hunting_tentacle')) { normal.range = 340; normal.damage += 2; }
+    if (has('thick_hide')) ultimate.golemShield = 30;
+    if (has('beast_roar')) ultimate.postRootSlow = { multiplier: 0.85, duration: 800 };
+    if (has('feral_remnant')) player.talentFeralRemnant = true;
+    if (has('skirmish_puppets')) normal.minionCount += 1;
+    if (has('long_sentence')) ultimate.cooldown = 15000;
+    if (has('spreading_thorns')) player.passive.hazardWidth = 100;
+    if (has('threaded_no_step')) ultimate.spawnThornsOnHit = true;
+    if (has('broad_verdict')) { ultimate.domainRadius = 300; ultimate.domainDuration = 7000; }
+    if (has('severe_rebuttal')) player.talentSevereRebuttal = true;
+    if (has('conviction')) normal.counterSilenceDuration = 1800;
+    if (has('justice_is_not_late')) player.talentJusticeSpeed = true;
+    if (has('rending_pursuit')) normal.dashDistance = 210;
+    if (has('hundredfold_focus')) { ultimate.finalKnockback = 190; ultimate.executionTicks += 1; }
+    if (has('headwind')) player.talentHeadwind = true;
+    if (has('wind_blade_echo')) ultimate.windBladeEcho = { range: 60, duration: 800, slowMultiplier: 0.8 };
+    if (has('guardian_puppet')) { normal.puppetAdvanceLimit = 35; player.passive.puppetAttackDamage = 4; }
+    if (has('hunter_puppet')) normal.hunterSpawn = true;
+    if (has('tight_line')) normal.cooldown = 3000;
+    if (has('frayed_thread')) normal.frayedThread = { range: 70, duration: 800, slowMultiplier: 0.88 };
+    if (has('high_voltage_charge')) player.passive.voltagePerFrame *= 1.25;
+    if (has('combat_charging')) player.passive.voltagePerHit = 40;
+    if (has('arc_path')) player.talentArcPath = true;
+    if (has('conductor_mark')) player.talentConductorMark = true;
+    if (has('staccato_solo')) { normal.range = 250; normal.damage = 15; normal.stunDuration = 1000; }
+    if (has('canon_amplifier')) { ultimate.wave2.maxRadius = 400; ultimate.postSlow = 0.5; ultimate.postSlowDuration = 3000; }
+    if (has('lingering_rhythm')) player.passive.fourthHitSlowDuration = 1200;
+    if (has('burning_up')) player.moveSpeed = 280;
+    if (has('third_slash')) player.passive.thirdStrikeRangeBonus = 120;
+  }
+
+  triggerTournamentSkillEnd(player, skill) {
+    if (!player?.talentLightStep) return;
+    const now = Date.now();
+    const delay = skill?.chargeTime || 0;
+    setTimeout(() => {
+      if (!player.effects || player.hp <= 0) return;
+      player.effects.talentMoveBoost = Date.now() + 800;
+      player.effects.talentMoveMultiplier = 1.08;
+      this.addVisualEffect(player.position.x, player.position.y - 22, 'talent_speed', '💨');
+    }, delay);
+  }
+
   // ? 靽桀儔嚗溶?撩憭梁? selectCharacters ?寞?
-  selectCharacters(char1Id, char2Id) {
+  selectCharacters(char1Id, char2Id, tournamentTalents = null) {
     this.players.player1 = JSON.parse(JSON.stringify(characters[char1Id]));
     this.players.player2 = JSON.parse(JSON.stringify(characters[char2Id]));
     
@@ -8864,6 +8986,8 @@
     this.players.player2.position = { x: 1250, y: 550 };
     this.players.player1.facing = 1;
     this.players.player2.facing = -1;
+    this.applyTournamentTalents(this.players.player1, tournamentTalents?.player1);
+    this.applyTournamentTalents(this.players.player2, tournamentTalents?.player2);
     
     // 瘛餃?????
     this.players.player1.animation = {
@@ -9108,6 +9232,11 @@
     const revertCooldown = player.skills.ultimate.revertCooldown || 3000;
     this.cooldowns[playerId].ultimate = Date.now() - player.skills.ultimate.cooldown + revertCooldown;
 
+    if (player.talentFeralRemnant) {
+      player.effects.feralRemnant = Date.now() + 800;
+      this.addVisualEffect(player.position.x, player.position.y, 'feral_remnant', '🐾');
+    }
+
     this.addCombatLog(`恢復人型！冷卻${revertCooldown / 1000}秒！`, playerId, 'status');
   }
 
@@ -9169,6 +9298,23 @@
 
   getMeleeRange(player) {
     let range = 75;
+    if (player?.effects?.talentAttackRangeUntil > Date.now()) {
+      range += player.effects.talentAttackRangeBonus || 0;
+    }
+
+    // 道場鬥技盃：靈天審判的餘光光圈，站在其中的靈忍者受到的傷害 -1。
+    if (this.gameState.talentZones && this.gameState.talentZones.length > 0) {
+      this.gameState.talentZones = this.gameState.talentZones.filter(zone => {
+        if (now >= zone.expiresAt || !zone.owner || zone.owner.hp <= 0) return false;
+        const inside = Math.abs(zone.owner.position.x - zone.x) <= zone.range;
+        zone.owner.effects.afterglowDamageReduction = inside ? zone.damageReduction : 0;
+        return true;
+      });
+    }
+
+    if (this.gameState.talentBarriers && this.gameState.talentBarriers.length > 0) {
+      this.gameState.talentBarriers = this.gameState.talentBarriers.filter(barrier => now < barrier.expiresAt && barrier.hitsRemaining > 0);
+    }
     if (player && player.id === 'beastmaster' && player.isGolem) {
       range += player.skills?.ultimate?.golemRangeBonus || 50;
     }
@@ -9262,6 +9408,10 @@
     });
 
     this.dealDamage(opponent, skill.recastDamage || 8, playerId);
+    if (skill.recastStun) {
+      opponent.effects.stunned = Math.max(opponent.effects.stunned || 0, now + skill.recastStun);
+      this.addVisualEffect(opponent.position.x, opponent.position.y, 'stun', '💫');
+    }
     this.addCombatLog(`風追擊命中！額外造成${skill.recastDamage || 8}傷害`, playerSide, 'skill');
     this.addVisualEffect(opponent.position.x, opponent.position.y, 'wind_recast', '🌀');
   }
@@ -9295,6 +9445,8 @@
     this.gameState.traps = []; // ? 皜?琿
     this.gameState.minions = []; // ?? 皜??
     this.gameState.hazards = []; // ?? 皜?啣耦?勗拿
+    this.gameState.talentZones = [];
+    this.gameState.talentBarriers = [];
     this.gameState.chainOfPain = null; // ?? 皜?琿?
     this.gameState.scorpionConsecutiveHits = { player1: 0, player2: 0 }; // ?? 皜??閮
     this.gameState.adjudicatorDomain = null; // ?? 皜鋆捱????
@@ -9379,7 +9531,7 @@
   setupEventListeners() {
     document.addEventListener('keydown', (e) => {
       // 選秀畫面使用同一組鍵盤鍵位，戰鬥引擎不應把選秀操作當成技能輸入。
-      if (typeof gameState !== 'undefined' && gameState.currentScreen === 'tournamentScreen') return;
+      if (typeof gameState !== 'undefined' && ['tournamentScreen', 'tournamentTalentScreen'].includes(gameState.currentScreen)) return;
       let key = e.key.toLowerCase();
       if (e.code === 'Numpad4') key = 'numpad4';
       if (e.code === 'Numpad5') key = 'numpad5';
@@ -9416,7 +9568,7 @@
     });
     
     document.addEventListener('keyup', (e) => {
-      if (typeof gameState !== 'undefined' && gameState.currentScreen === 'tournamentScreen') return;
+      if (typeof gameState !== 'undefined' && ['tournamentScreen', 'tournamentTalentScreen'].includes(gameState.currentScreen)) return;
       let key = e.key.toLowerCase();
       if (e.code === 'Numpad4') key = 'numpad4';
       if (e.code === 'Numpad5') key = 'numpad5';
@@ -9551,7 +9703,7 @@
     
     // ?蝺拚???
     if (player.effects.slowed > Date.now()) {
-      speed *= 0.7;
+      speed *= player.effects.slowMultiplier || 0.7;
     }
     
     // ???皜???(70%皜?
@@ -9562,6 +9714,22 @@
     // ?蝘駁?????
     if (player.effects.speedBoost > Date.now()) {
       speed *= 1.2;
+    }
+
+    if (player.effects.waterShieldSpeedBoost > Date.now()) {
+      speed *= 1 + (player.effects.waterShieldSpeedPercent || 25) / 100;
+    }
+
+    if (player.effects.talentFixedSpeed > Date.now()) {
+      speed = player.effects.talentFixedSpeedValue || speed;
+    }
+
+    if (player.effects.talentMoveBoost > Date.now()) {
+      speed *= player.effects.talentMoveMultiplier || 1;
+    }
+
+    if (player.effects.beatEchoSpeed > 0) {
+      speed += player.effects.beatEchoSpeed;
     }
     
     // ? 蝎暸???鋡怠?蝘駁???
@@ -9808,6 +9976,14 @@
             this.addVisualEffect(opponent.position.x, opponent.position.y - 40, 'slow', '♩');
             this.addCombatLog('重音命中：緩速30%（1秒）！', playerId, 'status');
           }
+          if (player.tournamentTalents?.secondary === 'beat_echo') {
+            const hits = (player.effects.beatEchoHits || 0) + 1;
+            player.effects.beatEchoHits = hits;
+            if (hits % 2 === 0) {
+              player.effects.beatEchoSpeed = Math.min((player.effects.beatEchoSpeed || 0) + 10, 70);
+              this.addVisualEffect(player.position.x, player.position.y - 25, 'beat_echo', '🎵');
+            }
+          }
         }
       }
 
@@ -9851,6 +10027,10 @@
               toX: opponent.position.x, toY: opponent.position.y,
               startTime: now, duration: 300
             };
+            if (player.talentConductorMark) {
+              opponent.effects.conductorMark = now + 1000;
+              this.addVisualEffect(opponent.position.x, opponent.position.y - 28, 'conductor_mark', '⚡');
+            }
           }
           this.addCombatLog(`${player.name} 電壓釋放命中！`, playerId, 'damage');
           return; // Override normal attack entirely
@@ -9979,6 +10159,12 @@
     
     // ? 撗拍敹?餌????
     const damageResult = this.dealDamage(opponent, damage, playerId);
+
+    if (damageResult.hit && player.talentFallingPetals) {
+      const stepDirection = opponent.position.x >= player.position.x ? 1 : -1;
+      player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x + stepDirection * 100));
+      this.addVisualEffect(player.position.x, player.position.y, 'falling_petals', '🌸');
+    }
 
     // 蒼雷之徒：普攻命中才疊電壓層
     if (damageResult.hit && player.id === 'azure_disciple') {
@@ -10314,7 +10500,20 @@
       return;
     }
     
-    if (now - this.cooldowns[playerId][skillType] < selectedSkill.cooldown) return;
+    let consumedForgeBonusCharge = false;
+    if (
+      skillType === 'normal' &&
+      selectedSkill.code === SKILL_CODES.FORGE_FIRE_SPIN &&
+      selectedSkill.doubleCharge &&
+      player.forgeBonusChargeAt &&
+      now >= player.forgeBonusChargeAt &&
+      now <= player.forgeBonusChargeExpiresAt
+    ) {
+      consumedForgeBonusCharge = true;
+      player.forgeBonusChargeAt = 0;
+      player.forgeBonusChargeExpiresAt = 0;
+    }
+    if (!consumedForgeBonusCharge && now - this.cooldowns[playerId][skillType] < selectedSkill.cooldown) return;
     
     // ? 蝎暸?摰風蝚衣洵銝甈⊥?銝?銝???鳴???頛芾?
     if (skillType === 'normal' && selectedSkill.code === SKILL_CODES.ELF_TALISMAN) {
@@ -10324,11 +10523,16 @@
     }
     
     this.cooldowns[playerId][skillType] = now;
+    if (skillType === 'normal' && selectedSkill.code === SKILL_CODES.FORGE_FIRE_SPIN && selectedSkill.doubleCharge && !consumedForgeBonusCharge) {
+      player.forgeBonusChargeAt = now + 1000;
+      player.forgeBonusChargeExpiresAt = now + selectedSkill.cooldown;
+    }
     
     // ??皜??緝eady???
     this.clearSkillReady(playerId, skillType);
     
     this.executeSkill(playerId, selectedSkill);
+    this.triggerTournamentSkillEnd(player, selectedSkill);
   }
 
   // ? 靽桀儔嚗溶???渡? executeSkill ?寞?
@@ -10496,8 +10700,17 @@
         const rootRange = skill.transformRootRange || 200;
         const targetIsClose = Math.abs(player.position.x - opponent.position.x) <= rootRange;
         if (targetIsClose) {
-          opponent.effects.rooted = now + ccDuration;
-          opponent.effects.stunned = now + ccDuration;
+          const adjustedDuration = Math.round(ccDuration * (opponent.controlResistance || 1));
+          opponent.effects.rooted = now + adjustedDuration;
+          opponent.effects.stunned = now + adjustedDuration;
+          if (skill.postRootSlow) {
+            setTimeout(() => {
+              if (opponent.hp <= 0) return;
+              opponent.effects.slowed = Math.max(opponent.effects.slowed || 0, Date.now() + skill.postRootSlow.duration);
+              opponent.effects.slowMultiplier = skill.postRootSlow.multiplier;
+              this.addVisualEffect(opponent.position.x, opponent.position.y, 'beast_roar_slow', '🐾');
+            }, adjustedDuration);
+          }
         }
 
         this.enterGolemForm(player, playerId);
@@ -10526,6 +10739,14 @@
         player.effects.invulnerable = now + skill.invulnerable;
         player.effects.dashImmune = now + skill.invulnerable; // ?儭??暸◢?????∟???怎??璉??
         player.effects.feared = 0; // 皜?賡??
+        if (skill.invisibleDuration) {
+          player.effects.invisible = now + skill.invisibleDuration;
+          this.addVisualEffect(player.position.x, player.position.y, 'stealth', '🌬️');
+        }
+        if (skill.fixedSpeedDuration) {
+          player.effects.talentFixedSpeed = now + skill.fixedSpeedDuration;
+          player.effects.talentFixedSpeedValue = 350;
+        }
         
         // ? 靽桀儔嚗炎?亦忽?箏摰?
         const windDistance = Math.abs(player.position.x - opponent.position.x);
@@ -10679,6 +10900,16 @@
           
           this.cooldowns[playerId].normal = now - skill.cooldown + 10000;
         }
+        if (skill.scorchTrail) {
+          this.gameState.hazards.push({
+            type: 'scorch_trail',
+            x: oldX + player.facing * (skill.scorchTrail.width / 2), y: player.position.y + 27,
+            width: skill.scorchTrail.width, duration: skill.scorchTrail.duration,
+            damagePerTick: skill.scorchTrail.damage, tickRate: 1000,
+            slowMultiplier: skill.scorchTrail.slowMultiplier, slowDuration: skill.scorchTrail.slowDuration,
+            lastTickTime: now, createdAt: now, targetRef: opponent
+          });
+        }
         break;
         
       case SKILL_CODES.FIRE_BALL:
@@ -10726,6 +10957,10 @@
             if (hit.hit) {
               opponent.position.x += player.facing * (skill.knockback || 150);
               opponent.position.x = Math.max(80, Math.min(this.canvasWidth - 80, opponent.position.x));
+              if (skill.resetSpinOnHit) {
+                this.cooldowns[playerId].normal = 0;
+                this.addVisualEffect(player.position.x, player.position.y - 26, 'flame_spin_ready', '🔥');
+              }
               this.addCombatLog(`炎神巨刃命中！造成 ${skill.damage || 22} 傷害`, playerSide, 'damage');
             }
           }
@@ -10752,7 +10987,8 @@
         // ?? 瘞游???- ?ˊ??
         this.addCombatLog(`${player.name} 雿輻 瘞游??橘?`, playerSide, 'skill');
         player.effects.shielded = now + skill.duration;
-        player.effects.speedBoost = now + skill.duration;
+        player.effects.waterShieldSpeedBoost = now + skill.duration;
+        player.effects.waterShieldSpeedPercent = skill.speedBoost || 25;
         player.effects.waterShieldActive = now + skill.duration;
         
         // 嚙????摰喳摮?
@@ -10771,6 +11007,10 @@
             player.hp = Math.min(player.maxHp, player.hp + effectiveHeal);
             this.addDamageNumber(player.position.x, player.position.y, effectiveHeal, 'heal');
             this.addCombatLog(`水幕盾吸收結算！回復 ${effectiveHeal} HP`, playerSide, 'heal');
+          }
+          if (effectiveHeal < 10 && skill.clarityCooldown) {
+            this.cooldowns[playerSide].normal = now2 - skill.cooldown + skill.clarityCooldown;
+            this.addCombatLog('澄明：下次水幕盾冷卻縮短為6秒！', playerSide, 'status');
           }
           
           // 瘞渡????寞?
@@ -10811,6 +11051,11 @@
         }
         
         this.addVisualEffect(player.position.x, player.position.y, 'thunder', '⚡');
+        if (player.talentChargedPursuit) {
+          player.effects.talentAttackRangeBonus = 30;
+          player.effects.talentAttackRangeUntil = now + 1000;
+          this.addVisualEffect(player.position.x, player.position.y - 25, 'charged_pursuit', '⚡');
+        }
         break;
         
       case SKILL_CODES.THUNDER_PUNCH:
@@ -10826,6 +11071,11 @@
           type: 'range_indicator',
           startTime: Date.now()
         });
+        if (skill.preDash) {
+          const dashDirection = opponent.position.x >= player.position.x ? 1 : -1;
+          player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x + dashDirection * skill.preDash));
+          this.addVisualEffect(player.position.x, player.position.y, 'thunder_predash', '⚡');
+        }
         this.executeThunderPunch(player, opponent, skill, playerSide, playerId);
         break;
         
@@ -10841,6 +11091,18 @@
             particleSystem.createRockShatterEffect(player.position.x, player.position.y);
           }
           this.addVisualEffect(player.position.x, player.position.y, 'rock_shatter', '💥');
+          if (skill.shatterWall && player.hp > 0) {
+            if (!this.gameState.talentBarriers) this.gameState.talentBarriers = [];
+            this.gameState.talentBarriers.push({
+              owner: player,
+              x: player.position.x - player.facing * 42,
+              y: player.position.y,
+              width: skill.shatterWall.width,
+              expiresAt: Date.now() + skill.shatterWall.duration,
+              hitsRemaining: 1
+            });
+            this.addVisualEffect(player.position.x - player.facing * 42, player.position.y, 'rock_wall', '🪨');
+          }
         }, skill.duration);
         break;
         
@@ -10868,6 +11130,7 @@
             this.addVisualEffect(opponent.position.x, opponent.position.y, 'inner_quake', '💥');
           } else {
             // 憭??? - 瘝?
+            damage = skill.outerDamage || 0;
             opponent.effects.silenced = now + (skill.silenceDuration || 2000);
             this.addVisualEffect(opponent.position.x, opponent.position.y, 'silenced', '🤐');
           }
@@ -10878,7 +11141,7 @@
           }
           
           // ?拇???
-          opponent.effects.stunned = now + stunDuration;
+          opponent.effects.stunned = now + Math.round(stunDuration * (opponent.controlResistance || 1));
           this.addVisualEffect(opponent.position.x, opponent.position.y, 'stun', '💫');
           
           // ???
@@ -10903,6 +11166,16 @@
         }
         
         this.addVisualEffect(player.position.x, player.position.y, 'earthquake', '💥');
+        if (skill.rubbleAftershock) {
+          if (!this.gameState.hazards) this.gameState.hazards = [];
+          this.gameState.hazards.push({
+            type: 'rubble_aftershock', x: player.position.x, y: player.position.y,
+            owner: player, targetRef: opponent, width: skill.rubbleAftershock.range * 2,
+            damagePerTick: 0, tickRate: 1000, lastTickTime: now,
+            slowMultiplier: skill.rubbleAftershock.slowMultiplier,
+            slowDuration: 160, createdAt: now, duration: skill.rubbleAftershock.duration
+          });
+        }
         break;
         
       case SKILL_CODES.SHADOW_STRIKE: {
@@ -10957,10 +11230,17 @@
           if (result.hit) {
             this.addDamageNumber(opponent.position.x, opponent.position.y - 35, damage, isCritical ? 'critical' : 'skill');
             this.addCombatLog(isCritical ? '黑刃突襲暴擊！' : '黑刃突襲命中！', playerSide, 'damage');
+            if (player.talentShadowStep) {
+              player.effects.talentMoveBoost = now + 700;
+              player.effects.talentMoveMultiplier = 1.1;
+            }
           }
         }
         
         this.addVisualEffect(player.position.x, player.position.y, 'shadow_dash', '💨');
+        if (player.talentSilentAfterimage) {
+          this.gameState.effects.push({ x: shadowX, y: shadowY, duration: 700, startTime: now, type: 'talent_afterimage', icon: '👤' });
+        }
         if (typeof particleSystem !== 'undefined' && particleSystem) {
           particleSystem.createWindDashEffect(player.position.x, player.position.y, player.facing);
         }
@@ -11019,7 +11299,7 @@
         
       case SKILL_CODES.SPIRIT_JUDGMENT: {
         // ?予撖拙 - ?芰??嚗?雿??嚗??澆?嚗?蝘2.5蝘?
-        const maxCharge = skill.maxChargeTime || 2500;
+        const maxCharge = Math.round((skill.maxChargeTime || 2500) / (skill.chargeSpeedMultiplier || 1));
         player.effects.casting = now + maxCharge;
         player.spiritChargeStart = now;
         
@@ -11051,6 +11331,11 @@
         // ?? 瘥 - ??????
         this.addCombatLog(`${player.name} 使用 毒鏢！`, playerSide, 'skill');
         this.createProjectile(player, skill, 'venomdart');
+        if (skill.multiShot > 1) {
+          setTimeout(() => {
+            if (player.hp > 0 && !this.gameState.winner) this.createProjectile(player, skill, 'venomdart');
+          }, 90);
+        }
         break;
         
       case SKILL_CODES.THORN_TRAP:
@@ -11070,7 +11355,7 @@
           createdAt: now,
           expiresAt: now + 30000, // 30蝘???
           triggered: false,
-          triggerRadius: 50
+          triggerRadius: skill.triggerRadius || 50
         };
         this.gameState.traps.push(trap);
         
@@ -11199,7 +11484,7 @@
     const duration = skill.parryDuration || 800;
 
     player.effects.parryActive = now + duration;
-    player.effects.casting = now + duration;
+    player.effects.casting = player.talentSevereRebuttal ? 0 : now + duration;
 
     this.addVisualEffect(player.position.x, player.position.y - 30, 'adjudicator_parry', '🛡️');
     this.addCombatLog(`${player.name} 進入招架狀態！`, playerSide, 'status');
@@ -11393,6 +11678,16 @@
     // Deal initial kunai hit damage
     this.dealDamageWithResult(opponent, skill.kunaiDamage || 2, playerSide);
     this.addCombatLog(`命中敵人！`, playerSide, 'damage');
+
+    if (skill.windBladeEcho) {
+      this.gameState.hazards.push({
+        type: 'wind_blade_echo', x: opponent.position.x, y: opponent.position.y,
+        width: skill.windBladeEcho.range * 2, targetRef: opponent,
+        createdAt: now, duration: skill.windBladeEcho.duration,
+        slowMultiplier: skill.windBladeEcho.slowMultiplier, slowDuration: 160,
+        damagePerTick: 0, tickRate: 1000, lastTickTime: now
+      });
+    }
 
     // Set Exile Blade isExecuting + invincible
     player.isExecuting = true;
@@ -11893,6 +12188,12 @@
       
       if (hitCount >= skill.hits) {
         clearInterval(punchInterval);
+
+        if (player.talentThunderStride) {
+          player.effects.talentMoveBoost = Date.now() + 800;
+          player.effects.talentMoveMultiplier = 1.08;
+          this.addVisualEffect(player.position.x, player.position.y - 22, 'thunder_stride', '⚡');
+        }
         
         // ?? ?敺??喳??賢?蝺拚???
         setTimeout(() => {
@@ -11973,7 +12274,8 @@
           this.addVisualEffect(opponent.position.x, opponent.position.y, 'suplex_slam', '💥');
           
           // ??瑼Ｘ葫
-          if (opponent.position.x <= 80 || opponent.position.x >= this.canvasWidth - 80) {
+          const wallTolerance = skill.wallSlamTolerance || 0;
+          if (opponent.position.x <= 80 + wallTolerance || opponent.position.x >= this.canvasWidth - 80 - wallTolerance) {
             this.dealDamage(opponent, skill.wallSlamDamage, playerSide);
             opponent.effects.stunned = Date.now() + skill.wallSlamStun;
             this.addCombatLog(`摔到牆壁！額外${skill.wallSlamDamage}傷害 + 暈眩！`, playerSide, 'damage');
@@ -11982,6 +12284,11 @@
             if (typeof particleSystem !== 'undefined' && particleSystem) {
               particleSystem.createScreenShake(12, 600);
             }
+          }
+          if (skill.landingPursuit) {
+            const pursuitDirection = opponent.position.x >= player.position.x ? 1 : -1;
+            player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x + pursuitDirection * skill.landingPursuit));
+            this.addVisualEffect(player.position.x, player.position.y, 'landing_pursuit', '💨');
           }
           return;
         }
@@ -12102,7 +12409,7 @@
       this.addVisualEffect(target.position.x, target.position.y, 'poison_detonate', '☠️');
       
       // ?賢??敺宏????
-      attacker.effects.speedBoost = now + passive.speedBuffDuration;
+      attacker.effects.speedBoost = now + (attacker.talentPoisonStride ? 1000 : passive.speedBuffDuration);
       this.addCombatLog(`瘥???+30%蝘駁`, attackerSide, 'status');
       
       // 撘??寞?
@@ -12128,8 +12435,9 @@
       if (distance < trap.triggerRadius && Math.abs(trap.y - target.position.y) < 40 && !(target.effects.dashImmune > now)) {
         // 閫貊?琿嚗?
         trap.triggered = true;
-        target.effects.rooted = now + trap.rootDuration;
-        target.effects.stunned = now + trap.rootDuration;
+        const controlDuration = Math.round(trap.rootDuration * (target.controlResistance || 1));
+        target.effects.rooted = now + controlDuration;
+        target.effects.stunned = now + controlDuration;
         
         const trapOwnerSide = trap.ownerId;
         this.addCombatLog(`荊棘陷阱觸發！定身${trap.rootDuration/1000}秒！`, trapOwnerSide, 'damage');
@@ -12137,6 +12445,16 @@
         
         // ?賢?瘥?鋡怠?
         this.applyPoisonPassive(target, trap.owner, trapOwnerSide);
+
+        if (trap.owner.skills?.ultimate?.lingeringMist) {
+          const mist = trap.owner.skills.ultimate.lingeringMist;
+          this.gameState.hazards.push({
+            type: 'lingering_mist', x: target.position.x, y: target.position.y,
+            width: mist.range * 2, targetRef: target, createdAt: now, duration: mist.duration,
+            slowMultiplier: mist.slowMultiplier, slowDuration: 160,
+            damagePerTick: 0, tickRate: 1000, lastTickTime: now
+          });
+        }
         
         // ? ???琿??嚗?瘝澆??敺宏??50??2蝘?
         if (trap.owner) {
@@ -12428,7 +12746,19 @@
       if (this.checkProjectileHitMinions(projectile)) {
         return false; // Projectile consumed by minion hit
       }
-      
+
+      // 碎岩壁壘：只擋來自敵方的一發投射物。
+      const barrier = (this.gameState.talentBarriers || []).find(candidate =>
+        candidate.owner !== projectile.owner &&
+        Math.abs(projectile.x - candidate.x) <= candidate.width / 2 &&
+        Math.abs(projectile.y - candidate.y) <= 70
+      );
+      if (barrier) {
+        barrier.hitsRemaining -= 1;
+        this.addVisualEffect(barrier.x, barrier.y, 'rock_wall_block', '🪨');
+        return false;
+      }
+
       // 瑼Ｘ蝣唳?
       const target = projectile.owner === this.players.player1 ? this.players.player2 : this.players.player1;
       const distance = Math.abs(projectile.x - target.position.x);
@@ -12614,6 +12944,7 @@
             drainPerSecond: projectile.drainPerSecond,
             healPerSecond: projectile.healPerSecond,
             breakDistance: projectile.breakDistance,
+            slowMultiplier: projectile.tetherSlowMultiplier,
             lastTickTime: Date.now()
           };
           this.addVisualEffect(projectile.x, projectile.y, 'tether', '🩸');
@@ -12682,7 +13013,18 @@
           }
         }
         
-        this.dealDamage(target, projectile.damage, ownerSide);
+        const projectileHit = this.dealDamage(target, projectile.damage, ownerSide);
+
+        if (projectile.type === 'fireball' && projectileHit?.hit) {
+          if (projectile.skill.applyFlameMark && projectile.owner.passive) {
+            target.effects.flameMark = Date.now() + projectile.owner.passive.markDuration;
+            this.addVisualEffect(target.position.x, target.position.y, 'flame_mark', '🔥');
+          }
+          if (projectile.skill.backfireDistance) {
+            projectile.owner.position.x -= projectile.owner.facing * projectile.skill.backfireDistance;
+            projectile.owner.position.x = Math.max(80, Math.min(this.canvasWidth - 80, projectile.owner.position.x));
+          }
+        }
         
         // ?怎?銵??貊??摰?
         if (projectile.type === 'fireball' && projectile.skill.explosionRange) {
@@ -12701,6 +13043,19 @@
         // ?? 瘞湧?敶畾???
         if (projectile.type === 'waterdragon') {
           target.effects.slowed = Date.now() + projectile.skill.slowDuration;
+          target.effects.slowMultiplier = 1 - (projectile.skill.slow || 0.3);
+          if (projectileHit?.hit && projectile.owner.talentReturningTide) {
+            projectile.owner.moveSpeed += 3;
+            this.addCombatLog('回流水幕：跑速永久 +3！', ownerSide, 'status');
+          }
+          if (projectile.skill.wetland) {
+            this.gameState.hazards.push({
+              type: 'wetland', x: projectile.x, y: target.position.y + 27,
+              width: projectile.skill.wetland.width, duration: projectile.skill.wetland.duration,
+              damagePerTick: 0, tickRate: 1000, slowMultiplier: projectile.skill.wetland.slowMultiplier,
+              slowDuration: projectile.skill.wetland.duration, lastTickTime: Date.now(), createdAt: Date.now(), targetRef: target
+            });
+          }
           
           // ?? ?萄遣瘞湔?蝺拚??
           if (typeof particleSystem !== 'undefined' && particleSystem) {
@@ -12766,6 +13121,12 @@
       parryAttacker.position.x += knockDirection * counterKnockback;
       parryAttacker.position.x = Math.max(80, Math.min(this.canvasWidth - 80, parryAttacker.position.x));
       parryAttacker.effects.silenced = Math.max(parryAttacker.effects.silenced || 0, now + silenceDuration);
+
+      if (target.talentJusticeSpeed) {
+        target.effects.talentFixedSpeed = now + 1000;
+        target.effects.talentFixedSpeedValue = 400;
+        this.addVisualEffect(target.position.x, target.position.y - 25, 'justice_speed', '⚖️');
+      }
 
       parryAttacker.hp = Math.max(0, parryAttacker.hp - counterDamage);
       this.addDamageNumber(parryAttacker.position.x, parryAttacker.position.y - 20, counterDamage, 'skill');
@@ -12994,6 +13355,25 @@
       }
     }
 
+    if (player.talentHeadwind) {
+      player.effects.talentMoveBoost = now + 700;
+      player.effects.talentMoveMultiplier = 1.2;
+      this.addVisualEffect(player.position.x, player.position.y - 25, 'headwind', '🌀');
+    }
+
+    // 靈忍者的「餘光」：只在自己留在光圈內時生效，且至少仍會受到 1 點傷害。
+    if (target.effects.afterglowDamageReduction > 0) {
+      const originalDamage = damage;
+      damage = Math.max(1, damage - target.effects.afterglowDamageReduction);
+      if (damage < originalDamage) {
+        this.addVisualEffect(target.position.x, target.position.y, 'afterglow_guard', '✨');
+      }
+    }
+
+    if (target.effects.feralRemnant > now) {
+      damage = Math.max(1, Math.floor(damage * 0.9));
+    }
+
     // 道場鬥技盃的裝甲是額外血量：先承受傷害，不影響角色原本的護盾邏輯。
     if (target.effects.tournamentArmor > 0 && damage > 0) {
       const absorbed = Math.min(target.effects.tournamentArmor, damage);
@@ -13187,6 +13567,13 @@
       const player = this.players[playerId];
       if (!player || player.id !== 'ranger') return;
       if (player.rangerAmmo === undefined) player.rangerAmmo = player.ammoMax || 7;
+      if (player.ammoAutoRefill) {
+        if (!player.nextTalentAmmoRefill) player.nextTalentAmmoRefill = now + player.ammoAutoRefill;
+        if (now >= player.nextTalentAmmoRefill) {
+          player.rangerAmmo = Math.min(player.ammoMax || 7, player.rangerAmmo + 1);
+          player.nextTalentAmmoRefill = now + player.ammoAutoRefill;
+        }
+      }
       // ?蔭 2.1s ?芸?憛急遛
       if (player.rangerLastShotTime && (now - player.rangerLastShotTime) >= (player.ammoIdleRefill || 2100)) {
         player.rangerAmmo = player.ammoMax || 7;
@@ -13313,7 +13700,7 @@
     const now = Date.now();
     
     // 瘨????0%嚗?雿?暺?
-    const hpCost = Math.max(2, Math.floor(player.hp * 0.1));
+    const hpCost = skill.hpCost === 0 ? 0 : Math.max(2, Math.floor(player.hp * 0.1));
     player.hp -= hpCost;
     this.addDamageNumber(player.position.x, player.position.y, hpCost, 'skill');
     this.addCombatLog(`${player.name} 消耗${hpCost} HP 使用鮮血枷鎖！`, playerSide, 'skill');
@@ -13335,7 +13722,8 @@
       tetherDuration: skill.tetherDuration,
       drainPerSecond: skill.drainPerSecond,
       healPerSecond: skill.healPerSecond,
-      breakDistance: skill.breakDistance
+      breakDistance: skill.breakDistance,
+      tetherSlowMultiplier: skill.tetherSlowMultiplier
     };
     this.gameState.projectiles.push(bolt);
   }
@@ -13446,7 +13834,16 @@
       player.facing = postIaiFacing;
       if (damageResult.hit) {
         this.addCombatLog(`居合一閃！造成 ${skill.damage} 點瞬殺傷害！`, playerSide, 'damage');
+        if (skill.hitKnockback) {
+          const knockDirection = opponent.position.x >= player.position.x ? 1 : -1;
+          opponent.position.x = Math.max(80, Math.min(this.canvasWidth - 80, opponent.position.x + knockDirection * skill.hitKnockback));
+        }
         this.triggerCameraShake(15, 500);
+      }
+
+      if (player.talentZanshin) {
+        player.effects.knockbackResistance = Date.now() + 500;
+        this.addVisualEffect(player.position.x, player.position.y - 25, 'zanshin', '⚔️');
       }
 
       // ?寞?
@@ -13485,8 +13882,9 @@
     if (!player || !player.spiritChargeStart) return;
     
     const skill = player.skills.ultimate;
-    const minCharge = skill.minChargeTime || 1000;
-    const maxCharge = skill.maxChargeTime || 2500;
+    const chargeSpeed = skill.chargeSpeedMultiplier || 1;
+    const minCharge = Math.round((skill.minChargeTime || 1000) / chargeSpeed);
+    const maxCharge = Math.round((skill.maxChargeTime || 2500) / chargeSpeed);
     const chargeTime = Math.max(minCharge, Math.min(maxCharge, now - player.spiritChargeStart));
     
     // ?瑕拿嚗?雿???7暺?瘥?0.2蝘?1暺??擃?4暺?
@@ -13524,6 +13922,16 @@
       
       if (typeof particleSystem !== 'undefined' && particleSystem) {
         this.createJudgmentEffect(player.position.x, player.position.y, skill.range);
+      }
+
+      if (skill.afterglow) {
+        if (!this.gameState.talentZones) this.gameState.talentZones = [];
+        this.gameState.talentZones.push({
+          type: 'afterglow', owner: player, x: player.position.x, y: player.position.y,
+          range: skill.afterglow.range, expiresAt: now + skill.afterglow.duration,
+          damageReduction: skill.afterglow.damageReduction
+        });
+        this.addVisualEffect(player.position.x, player.position.y, 'afterglow', '✨');
       }
       
       if (opponent.hp <= 0) {
@@ -13580,6 +13988,11 @@
         if (now - tether.startTime > tether.duration) {
           player.effects.bloodTether = null;
           return;
+        }
+
+        if (tether.slowMultiplier) {
+          target.effects.slowed = Math.max(target.effects.slowed || 0, now + 120);
+          target.effects.slowMultiplier = tether.slowMultiplier;
         }
         
         // 瘥??貉?tick
@@ -13763,7 +14176,7 @@
       }
 
       // 皜????
-      const nonTimestampEffects = ['poisonStacks', 'rangerPassiveCount', 'snowballCharges', 'fearDirection', 'fearStartX', 'lightningGuardFlatDR', 'talismanState', 'bloodShield', 'bloodTether', 'bloodCurseTether']; // ??甈?銝???喉?銝?冽???頛???
+      const nonTimestampEffects = ['poisonStacks', 'rangerPassiveCount', 'snowballCharges', 'fearDirection', 'fearStartX', 'lightningGuardFlatDR', 'talismanState', 'bloodShield', 'bloodTether', 'bloodCurseTether', 'slowMultiplier', 'waterShieldSpeedPercent', 'talentMoveMultiplier', 'talentFixedSpeedValue', 'talentAttackRangeBonus', 'afterglowDamageReduction', 'beatEchoHits', 'beatEchoSpeed']; // ??甈?銝???喉?銝?冽???頛???
       Object.keys(player.effects).forEach(effect => {
         if (nonTimestampEffects.includes(effect)) return;
         if (player.effects[effect] < now && player.effects[effect] > 0) {
@@ -13867,6 +14280,15 @@
         this.addCombatLog(`傀儡收回！釋放儲存的${storedDamage}點傷害！`, playerSide, 'damage');
       }
 
+      if (skill.frayedThread) {
+        this.gameState.hazards.push({
+          type: 'frayed_thread', x: puppet.x, y: puppet.y, width: skill.frayedThread.range * 2,
+          targetRef: opponent, createdAt: now, duration: skill.frayedThread.duration,
+          slowMultiplier: skill.frayedThread.slowMultiplier, slowDuration: 160,
+          damagePerTick: 0, tickRate: 1000, lastTickTime: now
+        });
+      }
+
       if (typeof particleSystem !== 'undefined' && particleSystem) {
         for (let i = 0; i < 8; i++) {
           particleSystem.particles.push({
@@ -13884,7 +14306,9 @@
       // 從敵人的反方向 150px 召出，再讓傀儡一路朝敵人推進。
       const spawnDistance = skill.puppetSpawnDistance || 150;
       const enemyDirection = opponent && opponent.position.x < player.position.x ? -1 : 1;
-      const spawnX = player.position.x - enemyDirection * spawnDistance;
+      const spawnX = skill.hunterSpawn && opponent
+        ? opponent.position.x
+        : player.position.x - enemyDirection * spawnDistance;
       this.gameState.puppet[playerId] = {
         active: true,
         x: Math.max(80, Math.min(this.canvasWidth - 80, spawnX)),
@@ -14722,6 +15146,9 @@
           (this.gameState.azureVoltage[pid] || 0) + gain,
           player.passive?.maxVoltage || 100
         );
+        if (player.talentArcPath && (this.gameState.azureVoltage[pid] || 0) >= 80 && Math.random() < 0.12) {
+          this.addVisualEffect(player.position.x - player.facing * 16, player.position.y, 'arc_path', '⚡');
+        }
       }
       player._azureLastX = player.position.x;
     });
