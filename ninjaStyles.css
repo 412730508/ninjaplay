@@ -726,6 +726,36 @@ body::after {
 .talent-selected-state { margin-top: 11px; color: #ffe292; font-size: .78rem; font-weight: 800; }
 @media (max-width: 760px) { .talent-loadout-board { grid-template-columns: 1fr; } .talent-topline { flex-wrap: wrap; } .talent-card { min-height: 145px; } }
 
+/* 道場鬥技盃百科：讓已熟悉角色的人先看招式，必要時才展開數據。 */
+.tournament-top-actions { display: flex; align-items: center; gap: 9px; }
+.dojo-encyclopedia-btn { border-color: rgba(255, 215, 117, .5); color: #ffefbb; background: rgba(71, 48, 21, .62); }
+.dojo-encyclopedia-btn:hover { border-color: #ffe08c; background: rgba(119, 78, 22, .72); }
+.dojo-encyclopedia-overlay { position: fixed; inset: 0; z-index: 2200; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(3, 5, 13, .84); opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility .2s ease; backdrop-filter: blur(10px); }
+.dojo-encyclopedia-overlay.active { opacity: 1; visibility: visible; }
+.dojo-encyclopedia-panel { position: relative; width: min(1280px, 100%); max-height: min(880px, 92vh); overflow: auto; padding: 26px; border: 1px solid rgba(255, 215, 117, .35); border-radius: 22px; background: linear-gradient(145deg, rgba(17, 15, 28, .98), rgba(10, 20, 34, .98)); box-shadow: 0 28px 90px rgba(0, 0, 0, .6); }
+.dojo-encyclopedia-header { margin-bottom: 18px; padding: 0 42px 16px 0; border-bottom: 1px solid rgba(255, 224, 152, .2); }
+.dojo-encyclopedia-header h2 { margin: 5px 0; color: #fff0bc; font-size: clamp(1.5rem, 3vw, 2.25rem); }
+.dojo-encyclopedia-header p { margin: 0; color: #b8c5dd; font-size: .9rem; }
+.dojo-encyclopedia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(245px, 1fr)); gap: 12px; }
+.dojo-encyclopedia-card { padding: 14px; border: 1px solid rgba(255, 255, 255, .1); border-radius: 14px; background: linear-gradient(145deg, rgba(49, 52, 78, .46), rgba(14, 18, 33, .78)); }
+.dojo-encyclopedia-card header { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
+.dojo-encyclopedia-card header img, .dojo-fallback-icon { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 10px; object-fit: cover; image-rendering: pixelated; background: #0c1020; }
+.dojo-fallback-icon { display: grid; place-items: center; }
+.dojo-encyclopedia-card header span { color: #aebbd5; font-size: .68rem; letter-spacing: .08em; }
+.dojo-encyclopedia-card h3 { margin: 2px 0 0; color: #ffebae; font-size: 1rem; }
+.dojo-skill-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.dojo-skill-list li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 8px; background: rgba(0, 0, 0, .2); }
+.dojo-skill-list li span { color: #8cc5ff; font-size: .69rem; font-weight: 800; }
+.dojo-skill-list li strong { min-width: 0; overflow: hidden; color: #f5f7ff; font-size: .84rem; text-overflow: ellipsis; white-space: nowrap; }
+.dojo-skill-list li em { color: #aeb8ce; font-size: .67rem; font-style: normal; white-space: nowrap; }
+.dojo-character-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 0 0 9px; }
+.dojo-character-stats span, .dojo-detail-block span { padding: 4px 5px; border-radius: 6px; background: rgba(255, 222, 135, .1); color: #f9e8b8; font-size: .66rem; text-align: center; }
+.dojo-detail-block { display: none; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .08); }
+.dojo-encyclopedia-grid.is-detailed .dojo-detail-block { display: grid; }
+.dojo-detail-block b { color: #9bcaff; font-size: .7rem; }
+.dojo-detail-block div { display: flex; flex-wrap: wrap; gap: 4px; }
+@media (max-width: 680px) { .dojo-encyclopedia-overlay { padding: 9px; } .dojo-encyclopedia-panel { padding: 18px; } .dojo-encyclopedia-grid { grid-template-columns: 1fr; } .dojo-skill-list li { grid-template-columns: 34px minmax(0, 1fr); } .dojo-skill-list li em { grid-column: 2; } .tournament-top-actions { width: 100%; justify-content: flex-end; } }
+
 /* 1v1 role tags: the player's win condition, visible before reading any skill text. */
 .character-role-tags {
   display: flex;

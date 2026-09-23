@@ -224,7 +224,10 @@
                 <div id="tournamentScore" class="tournament-score" aria-label="賽事比分">
                     <span class="tournament-score-p1">玩家 1　0</span><b>FIRST TO 2</b><span class="tournament-score-p2">0　玩家 2</span>
                 </div>
-                <button class="ninja-btn-small tournament-exit" type="button" onclick="exitTournament()">退出錦標賽</button>
+                <div class="tournament-top-actions">
+                    <button class="ninja-btn-small dojo-encyclopedia-btn" type="button" onclick="openDojoEncyclopedia()" title="中鍵切換詳細數據">📚 鬥技百科</button>
+                    <button class="ninja-btn-small tournament-exit" type="button" onclick="exitTournament()">退出錦標賽</button>
+                </div>
             </div>
 
             <section class="tournament-status-card">
@@ -261,7 +264,10 @@
             <div class="talent-topline">
                 <span class="tournament-eyebrow">DOJO DUEL LEAGUE · ROUND LOADOUT</span>
                 <div id="talentRoundScore" class="tournament-score"></div>
-                <button class="ninja-btn-small tournament-exit" type="button" onclick="exitTournament()">退出錦標賽</button>
+                <div class="tournament-top-actions">
+                    <button class="ninja-btn-small dojo-encyclopedia-btn" type="button" onclick="openDojoEncyclopedia()" title="中鍵切換詳細數據">📚 鬥技百科</button>
+                    <button class="ninja-btn-small tournament-exit" type="button" onclick="exitTournament()">退出錦標賽</button>
+                </div>
             </div>
             <section class="talent-status-card">
                 <span id="talentPhase" class="tournament-phase">主選</span>
@@ -270,6 +276,19 @@
             </section>
             <div id="talentLoadoutBoard" class="talent-loadout-board"></div>
         </div>
+    </div>
+
+    <!-- 道場鬥技盃專用百科：預設只讀招式，中鍵切換詳細數據。 -->
+    <div id="dojoEncyclopediaOverlay" class="dojo-encyclopedia-overlay" aria-hidden="true">
+        <section class="dojo-encyclopedia-panel" role="dialog" aria-modal="true" aria-labelledby="dojoEncyclopediaTitle">
+            <button class="close-guide-btn" type="button" onclick="closeDojoEncyclopedia()" aria-label="關閉鬥技百科">×</button>
+            <header class="dojo-encyclopedia-header">
+                <span class="tournament-eyebrow">DOJO DUEL LEAGUE · FIELD MANUAL</span>
+                <h2 id="dojoEncyclopediaTitle">📚 鬥技百科</h2>
+                <p id="dojoEncyclopediaModeHint">簡潔模式：只看招式用途。按滑鼠中鍵切換詳細數據。</p>
+            </header>
+            <div id="dojoEncyclopediaGrid" class="dojo-encyclopedia-grid"></div>
+        </section>
     </div>
 
     <!-- ⚔️ 界面 3：戰鬥 -->
@@ -695,6 +714,90 @@
             startBattle({ tournament: true, talents: state.roundTalents });
             watchTournamentWinner();
         }
+
+        let dojoEncyclopediaDetailed = false;
+
+        function dojoSkillLine(character, slot) {
+            const skill = slot === 'passive' ? character.passive : character.skills?.[slot];
+            if (!skill) return '';
+            const label = slot === 'passive' ? '被動' : slot === 'normal' ? '小招' : '奧義';
+            return `<li><span>${label}</span><strong>${skill.name}</strong><em>${skill.type || '戰鬥招式'}</em></li>`;
+        }
+
+        function dojoDetailTags(character, skill) {
+            const labels = {
+                cooldown: '冷卻', damage: '傷害', range: '範圍', duration: '持續',
+                dashDistance: '位移', knockback: '擊退', stunDuration: '暈眩',
+                rootDuration: '定身', speedBoost: '移速', cloneCount: '分身',
+                damagePerTick: '每跳傷害', tickInterval: '跳傷間隔', maxRadius: '半徑'
+            };
+            const tags = [];
+            Object.entries(skill || {}).forEach(([key, value]) => {
+                if (!Object.prototype.hasOwnProperty.call(labels, key) || typeof value !== 'number') return;
+                const isTime = ['cooldown', 'duration', 'stunDuration', 'rootDuration', 'tickInterval'].includes(key);
+                const isDistance = ['range', 'dashDistance', 'knockback', 'maxRadius'].includes(key);
+                const display = isTime ? `${value / 1000}s` : isDistance ? `${value}px` : value;
+                tags.push(`<span>${labels[key]} ${display}</span>`);
+            });
+            return tags.join('');
+        }
+
+        function renderDojoEncyclopedia() {
+            const grid = document.getElementById('dojoEncyclopediaGrid');
+            const hint = document.getElementById('dojoEncyclopediaModeHint');
+            const ids = Object.keys(TOURNAMENT_TALENTS || {}).filter(id => characters[id]);
+            hint.textContent = dojoEncyclopediaDetailed
+                ? '詳細模式：顯示角色與招式數據。按滑鼠中鍵返回簡潔模式。'
+                : '簡潔模式：只看招式用途。按滑鼠中鍵切換詳細數據。';
+            grid.classList.toggle('is-detailed', dojoEncyclopediaDetailed);
+            grid.innerHTML = ids.map(id => {
+                const character = characters[id];
+                const portrait = characterPortraits[id];
+                const role = characterRoles[id]?.primary || character.organization;
+                return `<article class="dojo-encyclopedia-card">
+                    <header>${portrait ? `<img data-portrait="${portrait}" alt="">` : '<span class="dojo-fallback-icon">🥷</span>'}<div><span>${role}</span><h3>${character.name}</h3></div></header>
+                    ${dojoEncyclopediaDetailed ? `<div class="dojo-character-stats"><span>HP ${character.maxHp}</span><span>攻擊 ${character.attackDamage}</span><span>速度 ${Math.round(character.moveSpeed / 10)}</span><span>攻速 ${character.attackSpeed}ms</span></div>` : ''}
+                    <ul class="dojo-skill-list">${dojoSkillLine(character, 'passive')}${dojoSkillLine(character, 'normal')}${dojoSkillLine(character, 'ultimate')}</ul>
+                    ${dojoEncyclopediaDetailed ? `<div class="dojo-detail-block"><b>小招數據</b><div>${dojoDetailTags(character, character.skills.normal)}</div><b>奧義數據</b><div>${dojoDetailTags(character, character.skills.ultimate)}</div></div>` : ''}
+                </article>`;
+            }).join('');
+            grid.querySelectorAll('[data-portrait]').forEach(image => { image.src = image.dataset.portrait; });
+        }
+
+        function openDojoEncyclopedia() {
+            const overlay = document.getElementById('dojoEncyclopediaOverlay');
+            overlay.classList.add('active');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            renderDojoEncyclopedia();
+        }
+
+        function closeDojoEncyclopedia() {
+            const overlay = document.getElementById('dojoEncyclopediaOverlay');
+            overlay.classList.remove('active');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = 'auto';
+        }
+
+        function toggleDojoEncyclopediaDetail() {
+            dojoEncyclopediaDetailed = !dojoEncyclopediaDetailed;
+            renderDojoEncyclopedia();
+        }
+
+        document.addEventListener('auxclick', event => {
+            if (event.button !== 1) return;
+            const overlay = document.getElementById('dojoEncyclopediaOverlay');
+            if (event.target.closest('.dojo-encyclopedia-btn') || overlay.classList.contains('active')) {
+                event.preventDefault();
+                if (!overlay.classList.contains('active')) openDojoEncyclopedia();
+                dojoEncyclopediaDetailed = !dojoEncyclopediaDetailed;
+                renderDojoEncyclopedia();
+            }
+        });
+
+        document.getElementById('dojoEncyclopediaOverlay').addEventListener('click', event => {
+            if (event.target === event.currentTarget) closeDojoEncyclopedia();
+        });
 
         function watchTournamentWinner() {
             if (tournamentWinnerWatcher) clearInterval(tournamentWinnerWatcher);
