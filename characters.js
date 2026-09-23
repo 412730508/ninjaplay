@@ -574,7 +574,7 @@ const characters = {
     facing: 1,
     passive: {
       name: '血之護盾',
-      description: '溢出治療轉化為護盾，上限15。護盾存在時+5%移速。',
+      description: '普攻命中回復2 HP；溢出治療轉化為護盾，上限15。護盾存在時+5%移速。',
       shieldCap: 15,
       speedBonus: 0.05
     },
