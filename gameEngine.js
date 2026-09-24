@@ -11602,6 +11602,13 @@
       this.addCombatLog('鋆征蝒?賭葉', playerSide, 'status');
     }
 
+    // 「逆風」：裂空突結束後短暫加速。
+    if (player.talentHeadwind) {
+      player.effects.talentMoveBoost = now + 700;
+      player.effects.talentMoveMultiplier = 1.2;
+      this.addVisualEffect(player.position.x, player.position.y - 25, 'headwind', '🌀');
+    }
+
     // Visual: dark-cyan horizontal motion blur slash effect
     this.gameState.effects.push({
       type: 'exile_gale_dash',
@@ -13353,12 +13360,6 @@
       if (absorbed > 0) {
         this.addVisualEffect(target.position.x, target.position.y, 'shield_absorb', '🛡️');
       }
-    }
-
-    if (player.talentHeadwind) {
-      player.effects.talentMoveBoost = now + 700;
-      player.effects.talentMoveMultiplier = 1.2;
-      this.addVisualEffect(player.position.x, player.position.y - 25, 'headwind', '🌀');
     }
 
     // 靈忍者的「餘光」：只在自己留在光圈內時生效，且至少仍會受到 1 點傷害。
