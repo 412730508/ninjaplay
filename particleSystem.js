@@ -3779,9 +3779,26 @@
       const shakeY = (Math.random() - 0.5) * this.screenShake.intensity;
       ctx.translate(shakeX, shakeY);
     }
-    
+
+    // 粒子可在同一幀被建立、更新與繪製；為避免壽命插值短暫超出 0~1，
+    // 所有圓形半徑都在進入 Canvas API 前統一限制在合法範圍。
+    const renderProgress = particle => {
+      const life = Number(particle.life);
+      const maxLife = Number(particle.maxLife);
+      if (!Number.isFinite(life) || !Number.isFinite(maxLife) || maxLife <= 0) return 0;
+      return Math.max(0, Math.min(1, 1 - life / maxLife));
+    };
+    const nonNegative = value => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+
     this.particles.forEach(particle => {
       ctx.save();
+      if (!Number.isFinite(particle.x) || !Number.isFinite(particle.y)) {
+        ctx.restore();
+        return;
+      }
+      if (particle.size !== undefined) particle.size = nonNegative(particle.size);
+      if (particle.radius !== undefined) particle.radius = nonNegative(particle.radius);
+      if (particle.maxRadius !== undefined) particle.maxRadius = nonNegative(particle.maxRadius);
       ctx.globalAlpha = particle.alpha || 1;
       
       // ? ?怎?寞?皜脫?
@@ -3826,7 +3843,7 @@
       // ?? ?蔣????郭
       else if (particle.type === 'shadow_ring' || particle.type === 'shadow_impact_wave' || 
                particle.type === 'counter_wave' || particle.type === 'shadow_wave') {
-        const progress = 1 - (particle.life / particle.maxLife);
+        const progress = renderProgress(particle);
         particle.radius = particle.maxRadius * progress;
         
         ctx.strokeStyle = particle.color;
@@ -4031,7 +4048,7 @@
       else if (particle.type.includes('_ring') || particle.type.includes('_wave') || 
                particle.type.includes('_glow') || particle.type.includes('_circle')) {
         if (particle.radius !== undefined && particle.maxRadius !== undefined) {
-          const progress = 1 - (particle.life / particle.maxLife);
+          const progress = renderProgress(particle);
           particle.radius = particle.maxRadius * progress;
           
           ctx.strokeStyle = particle.color;
@@ -4071,7 +4088,7 @@
       }
       // Shamisen expanding sound wave ring
       else if (particle.type === 'shamisen_wave_ring') {
-        const progress = 1 - (particle.life / particle.maxLife);
+        const progress = renderProgress(particle);
         const r = particle.radius + progress * (particle.maxRadius - particle.radius);
         const alpha = (particle.alpha || 0.5) * (particle.life / particle.maxLife);
         ctx.strokeStyle = particle.color || '#F5DEB3';
@@ -4087,7 +4104,7 @@
       }
       // Shamisen bright flash circle
       else if (particle.type === 'shamisen_flash') {
-        const progress = 1 - (particle.life / particle.maxLife);
+        const progress = renderProgress(particle);
         const r = progress * (particle.maxRadius || 40);
         const alpha = (particle.alpha || 0.8) * (1 - progress);
         ctx.fillStyle = particle.color || '#FFFFFF';
