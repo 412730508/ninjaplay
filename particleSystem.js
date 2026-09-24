@@ -27,6 +27,12 @@
       case 'FIR_002': // ?怎?銵?
         this.createFireBallEffect(x, y, facing);
         break;
+      case 'FRG_001': // 鍛炎忍者・烈火旋斬
+        this.createFireRushEffect(x, y, facing);
+        break;
+      case 'FRG_002': // 鍛炎忍者・炎神巨刃
+        this.createFireBallEffect(x, y, facing);
+        break;
       case 'WAT_001': // 瘞游???
         this.createWaterShieldEffect(x, y);
         break;
@@ -86,6 +92,48 @@
         break;
       case 'RNN_002': // 撅?繚銝??
         this.createIaiFlashEffect(x, y);
+        break;
+      case 'BST_001': // 御獸忍者・深淵觸手
+        this.createShadowStrikeEffect(x, y, facing);
+        break;
+      case 'BST_002': // 御獸忍者・巨獸解放
+        this.createRockGuardEffect(x, y);
+        break;
+      case 'BST_003': // 御獸忍者・巨岩投擲
+        this.createGroundCrackEffect(x, y);
+        break;
+      case 'BST_004': // 御獸忍者・解除御獸
+        this.createRockGuardEffect(x, y);
+        break;
+      case 'SCP_001': // 蠍子・叛軍
+        this.createThornTrapEffect(x, y);
+        break;
+      case 'SCP_002': // 蠍子・痛苦枷鎖
+        this.createVenomDartEffect(x, y, facing);
+        break;
+      case 'ADJ_001': // 裁決者・異議駁回
+        this.createRockGuardEffect(x, y);
+        break;
+      case 'ADJ_002': // 裁決者・最終判決
+        this.createGroundCrackEffect(x, y);
+        break;
+      case 'EXL_001': // 叛風之刃・裂空突
+        this.createWindDashEffect(x, y, facing);
+        break;
+      case 'EXL_002': // 叛風之刃・狂風百裂
+        this.createWindSlashEffect(x, y);
+        break;
+      case 'PUP_001': // 千機傀儡師・召喚/收回
+        this.createShadowCloneEffect(x, y);
+        break;
+      case 'PUP_002': // 千機傀儡師・幻影交錯
+        this.createShadowStrikeEffect(x, y, facing);
+        break;
+      case 'AZR_001': // 蒼雷之徒・天罰
+        this.createThunderPunchEffect(x, y);
+        break;
+      case 'AZR_002': // 蒼雷之徒・萬雷蒼穹斬
+        this.createThunderStepEffect(x, y);
         break;
 
       case 'SHM_001': // Staccato Strike

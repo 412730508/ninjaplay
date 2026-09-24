@@ -315,6 +315,7 @@ const characters = {
       ultimate: {
         name: '地裂震',
         code: SKILL_CODES.EARTH_QUAKE,
+        type: '範圍控制',
         description: '震撼大地，內圈造成傷害，外圈造成沉默',
         cooldown: 15000,
         innerRange: 150,

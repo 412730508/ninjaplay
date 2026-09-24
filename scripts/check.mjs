@@ -104,5 +104,77 @@ try {
   failed = true;
 }
 
+// Every selectable skill must have a complete UI label, a game-engine handler,
+// an animation mapping and a particle effect. This catches omissions when a
+// new character is added without updating all four systems.
+try {
+  const rosterContext = vm.createContext({ console });
+  vm.runInContext(readFileSync(resolve(root, 'characters.js'), 'utf8'), rosterContext);
+  const roster = vm.runInContext('characters', rosterContext);
+  const skillCodes = vm.runInContext('SKILL_CODES', rosterContext);
+  const engineSource = readFileSync(resolve(root, 'gameEngine.js'), 'utf8');
+  const selectableSkills = Object.values(roster)
+    .filter(Boolean)
+    .flatMap((character) => Object.values(character.skills || {}).filter(Boolean));
+
+  const missingTypes = selectableSkills.filter((skill) => !skill.type).map((skill) => skill.name);
+  if (missingTypes.length) {
+    throw new Error(`skills missing a display type: ${missingTypes.join(', ')}`);
+  }
+
+  const missingHandlers = [];
+  const missingAnimations = [];
+  for (const [codeName, code] of Object.entries(skillCodes)) {
+    if (!engineSource.includes(`case SKILL_CODES.${codeName}:`)) {
+      missingHandlers.push(code);
+    }
+    if (!engineSource.includes(`[SKILL_CODES.${codeName}]:`)) {
+      missingAnimations.push(code);
+    }
+  }
+  if (missingHandlers.length || missingAnimations.length) {
+    throw new Error([
+      missingHandlers.length && `skills missing handlers: ${missingHandlers.join(', ')}`,
+      missingAnimations.length && `skills missing animations: ${missingAnimations.join(', ')}`
+    ].filter(Boolean).join('; '));
+  }
+
+  const particleWarnings = [];
+  const particleContext = vm.createContext({
+    console: { warn: (...args) => particleWarnings.push(args.join(' ')) },
+    setTimeout: () => 0,
+    clearTimeout: () => {}
+  });
+  vm.runInContext(readFileSync(resolve(root, 'particleSystem.js'), 'utf8'), particleContext);
+  const ParticleSystem = vm.runInContext('ParticleSystem', particleContext);
+  const particleSystem = new ParticleSystem();
+  const renderContext = new Proxy({
+    arc(_x, _y, radius) {
+      if (!Number.isFinite(radius) || radius < 0) {
+        throw new Error(`invalid Canvas arc radius: ${radius}`);
+      }
+    },
+    createRadialGradient() { return { addColorStop() {} }; },
+    createLinearGradient() { return { addColorStop() {} }; }
+  }, {
+    get(target, property) {
+      return property in target ? target[property] : () => {};
+    },
+    set() { return true; }
+  });
+
+  for (const code of Object.values(skillCodes)) {
+    particleSystem.createSkillEffect(code, 320, 280, 1);
+  }
+  if (particleWarnings.length) {
+    throw new Error(`skills missing particle effects: ${particleWarnings.join(' | ')}`);
+  }
+  particleSystem.update(16);
+  particleSystem.render(renderContext);
+} catch (error) {
+  console.error(`Skill integration check failed: ${error.message}`);
+  failed = true;
+}
+
 if (failed) process.exit(1);
 console.log(`Checked ${localAssets.length} local page assets and JavaScript syntax successfully.`);

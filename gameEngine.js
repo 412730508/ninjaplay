@@ -8363,7 +8363,17 @@
       [SKILL_CODES.BOULDER_TOSS]: 'earthQuake',
       [SKILL_CODES.BEAST_REVERT]: 'idle',
       [SKILL_CODES.REBEL_MINION]: 'rebelMinion',
-      [SKILL_CODES.CHAIN_OF_PAIN]: 'chainOfPain'
+      [SKILL_CODES.CHAIN_OF_PAIN]: 'chainOfPain',
+      [SKILL_CODES.OBJECTION_PARRY]: 'gavelSmash',
+      [SKILL_CODES.FINAL_VERDICT]: 'gavelSmash',
+      [SKILL_CODES.EXILE_GALE_DASH]: 'windDash',
+      [SKILL_CODES.STORM_EXECUTION]: 'windSlash',
+      [SKILL_CODES.PUPPET_DEPLOY]: 'shadowClone',
+      [SKILL_CODES.PHANTOM_SWAP]: 'shadowStrike',
+      [SKILL_CODES.DIVINE_SMITE]: 'thunderPunch',
+      [SKILL_CODES.GRAND_THUNDER_SLASH]: 'thunderStep',
+      [SKILL_CODES.STACCATO_STRIKE]: 'attack',
+      [SKILL_CODES.DEADLY_CANON]: 'windSlash'
     };
     
     const animation = animationMap[skillCode] || 'idle';
