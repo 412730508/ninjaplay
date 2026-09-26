@@ -147,7 +147,7 @@
 
   }
 
-  // 四名基礎忍者的普攻不再共用同一種命中火花；這些效果只負責演出，不改變判定。
+  // 八名基礎忍者的普攻不再共用同一種命中火花；這些效果只負責演出，不改變判定。
   createElementalBasicAttackEffect(element, x, y, facing, reach = 74) {
     const handX = x + facing * 24;
     const handY = y - 28;
@@ -211,6 +211,61 @@
           life: 120 + bolt * 25, maxLife: 190, alpha: 1 - bolt * 0.18, type: 'thunder_lightning_bolt'
         });
       }
+      return;
+    }
+
+    if (element === 'doton') {
+      for (let chip = 0; chip < 7; chip++) {
+        const angle = -1.35 + Math.random() * 1.1;
+        this.particles.push({
+          x: handX + facing * 16, y: handY + 18,
+          vx: facing * (44 + Math.random() * 62), vy: Math.sin(angle) * (45 + Math.random() * 42) - 38,
+          size: 3 + Math.random() * 4, color: chip % 2 ? '#A1887F' : '#6D4C41',
+          life: 390, maxLife: 390, alpha: 0.92, type: 'rock_debris'
+        });
+      }
+      this.particles.push({ x: handX + facing * 24, y: handY + 26, endX: tipX, endY: handY + 30, color: '#5D4037', width: 3, life: 260, maxLife: 260, alpha: 0.8, type: 'ground_crack' });
+      return;
+    }
+
+    if (element === 'kage') {
+      for (let shade = 0; shade < 4; shade++) {
+        this.particles.push({
+          x: handX - facing * shade * 13, y: handY - 8 + shade * 7,
+          vx: facing * (34 + shade * 13), vy: -12 + shade * 7,
+          size: 7 - shade, color: shade === 0 ? '#C4B5FD' : '#3B1B63',
+          life: 235 + shade * 35, maxLife: 340, alpha: 0.68, type: 'shadow_trail'
+        });
+      }
+      this.particles.push({ x: handX, y: handY - 4, endX: tipX, endY: handY - 15, color: '#D8B4FE', width: 2.5, life: 185, maxLife: 185, alpha: 0.9, type: 'blade_slash' });
+      return;
+    }
+
+    if (element === 'rei') {
+      for (let charm = 0; charm < 5; charm++) {
+        const progress = (charm + 1) / 6;
+        this.particles.push({
+          x: handX + facing * reach * progress, y: handY - 10 + Math.sin(progress * Math.PI) * -12,
+          vx: facing * (12 + charm * 5), vy: -34 - charm * 6,
+          size: 3 + (charm % 2), color: charm % 2 ? '#FCE4EC' : '#F48FB1',
+          life: 390, maxLife: 390, alpha: 0.88, type: 'spirit_burst'
+        });
+      }
+      this.particles.push({ x: tipX, y: handY - 8, radius: 3, maxRadius: 20, color: '#F8BBD0', life: 270, maxLife: 270, alpha: 0.72, type: 'spirit_attack_ring' });
+      return;
+    }
+
+    if (element === 'dokusei') {
+      for (let drop = 0; drop < 7; drop++) {
+        const spread = (drop - 3) * 6;
+        this.particles.push({
+          x: handX + facing * (15 + drop * 5), y: handY + spread * 0.32,
+          vx: facing * (42 + Math.random() * 52), vy: spread - 38 - Math.random() * 20,
+          size: 2 + Math.random() * 2.5, color: drop % 2 ? '#B6FF52' : '#42C978',
+          life: 360, maxLife: 360, alpha: 0.9, type: 'poison_drip'
+        });
+      }
+      this.particles.push({ x: tipX, y: handY + 2, radius: 4, maxRadius: 24, color: '#76FF03', life: 280, maxLife: 280, alpha: 0.56, type: 'poison_attack_ring' });
     }
   }
 
@@ -241,6 +296,35 @@
       for (let spark = 0; spark < 12; spark++) {
         const angle = (Math.PI * 2 / 12) * spark;
         this.particles.push({ x, y: y - 18, endX: x + Math.cos(angle) * (22 + Math.random() * 32), endY: y - 18 + Math.sin(angle) * (22 + Math.random() * 32), color: spark % 3 ? '#FFEB3B' : '#FFFFFF', width: 2, life: 220, maxLife: 220, alpha: 1, type: 'thunder_lightning_bolt' });
+      }
+      return;
+    }
+    if (element === 'doton') {
+      this.particles.push({ x, y: y - 5, radius: 3, maxRadius: 54, color: '#A1887F', life: 300, maxLife: 300, alpha: 0.72, type: 'rock_impact_ring' });
+      for (let chip = 0; chip < 12; chip++) {
+        this.particles.push({ x, y: y - 10, vx: (Math.random() - 0.5) * 155, vy: -48 - Math.random() * 84, size: 3 + Math.random() * 4, color: chip % 2 ? '#8D6E63' : '#BCAAA4', life: 430, maxLife: 430, alpha: 0.95, type: 'rock_debris' });
+      }
+      return;
+    }
+    if (element === 'kage') {
+      for (let slash = 0; slash < 3; slash++) {
+        const lift = (slash - 1) * 14;
+        this.particles.push({ x: x - 24, y: y - 20 + lift, endX: x + 28, endY: y - 27 - lift, color: slash === 1 ? '#E9D5FF' : '#6D28D9', width: slash === 1 ? 3 : 2, life: 230, maxLife: 230, alpha: 0.9, type: 'blade_slash' });
+      }
+      this.particles.push({ x, y: y - 18, radius: 4, maxRadius: 38, color: '#4C1D95', life: 280, maxLife: 280, alpha: 0.65, type: 'shadow_impact_wave' });
+      return;
+    }
+    if (element === 'rei') {
+      this.particles.push({ x, y: y - 20, radius: 3, maxRadius: 48, color: '#FCE4EC', life: 340, maxLife: 340, alpha: 0.8, type: 'spirit_impact_ring' });
+      for (let wisp = 0; wisp < 10; wisp++) {
+        this.particles.push({ x, y: y - 18, vx: (Math.random() - 0.5) * 105, vy: -48 - Math.random() * 74, size: 2 + Math.random() * 3, color: wisp % 2 ? '#F48FB1' : '#FFF1F7', life: 440, maxLife: 440, alpha: 0.9, type: 'spirit_burst' });
+      }
+      return;
+    }
+    if (element === 'dokusei') {
+      this.particles.push({ x, y: y - 16, radius: 4, maxRadius: 42, color: '#9CFF39', life: 360, maxLife: 360, alpha: 0.7, type: 'poison_impact_ring' });
+      for (let splash = 0; splash < 11; splash++) {
+        this.particles.push({ x, y: y - 16, vx: (Math.random() - 0.5) * 125, vy: -34 - Math.random() * 78, size: 2 + Math.random() * 3, color: splash % 2 ? '#7CFF5B' : '#21A35A', life: 430, maxLife: 430, alpha: 0.9, type: 'poison_drip' });
       }
     }
   }

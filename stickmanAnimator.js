@@ -911,11 +911,111 @@
       };
     });
   }
-  createRockGuardAnimation() { return this.createGenericSkillAnimation('guard'); }
-  createShadowCloneAnimation() { return this.createGenericSkillAnimation('clone'); }
-  createSpiritBombAnimation() { return this.createGenericSkillAnimation('throw'); }
-  createVenomDartAnimation() { return this.createGenericSkillAnimation('throw'); }
-  createThornTrapAnimation() { return this.createGenericSkillAnimation('cast'); }
+  // 岩壁護體：沉下重心、雙臂交叉擋在身前，像把身體鎖進岩甲裡。
+  createRockGuardAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const brace = Math.min(1, t / 0.42);
+      const settle = t > 0.66 ? (t - 0.66) / 0.34 : 0;
+      return {
+        head: { x: -2 * brace, y: 4 * brace, rotation: -12 * brace + 5 * settle }, body: { rotation: -20 * brace + 8 * settle },
+        leftArm: { upperRotation: -32 - 65 * brace + 20 * settle, lowerRotation: -12 - 80 * brace + 28 * settle },
+        rightArm: { upperRotation: 35 + 68 * brace - 20 * settle, lowerRotation: 15 + 83 * brace - 28 * settle },
+        leftLeg: { upperRotation: 26 * brace, lowerRotation: 40 * brace }, rightLeg: { upperRotation: -24 * brace, lowerRotation: 38 * brace }
+      };
+    });
+  }
+
+  // 影分身：先壓低並向兩側張手，爆發時回正，讓動作本身也像「分裂」。
+  createShadowCloneAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      if (t < 0.38) {
+        const crouch = t / 0.38;
+        return {
+          head: { x: 0, y: 8 * crouch, rotation: -16 * crouch }, body: { rotation: -28 * crouch },
+          leftArm: { upperRotation: -45 - 80 * crouch, lowerRotation: -25 - 75 * crouch }, rightArm: { upperRotation: 42 + 80 * crouch, lowerRotation: 22 + 75 * crouch },
+          leftLeg: { upperRotation: 35 * crouch, lowerRotation: 50 * crouch }, rightLeg: { upperRotation: -32 * crouch, lowerRotation: 48 * crouch }
+        };
+      }
+      const burst = Math.min(1, (t - 0.38) / 0.22);
+      const recover = Math.max(0, (t - 0.64) / 0.36);
+      return {
+        head: { x: 2 * burst * (1 - recover), y: 2 * (1 - burst), rotation: 10 * burst * (1 - recover) }, body: { rotation: 16 * burst * (1 - recover) },
+        leftArm: { upperRotation: -125 + 80 * burst + 45 * recover, lowerRotation: -100 + 70 * burst + 35 * recover },
+        rightArm: { upperRotation: 125 - 80 * burst - 45 * recover, lowerRotation: 100 - 70 * burst - 35 * recover },
+        leftLeg: { upperRotation: 30 * (1 - burst), lowerRotation: 45 * (1 - burst) }, rightLeg: { upperRotation: -28 * (1 - burst), lowerRotation: 42 * (1 - burst) }
+      };
+    });
+  }
+
+  // 靈爆符：一手畫符、一手將符紙向前送出；和一般丟射物的甩手不同。
+  createSpiritBombAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      if (t < 0.45) {
+        const draw = t / 0.45;
+        return {
+          head: { x: -2 * draw, y: 1 * draw, rotation: -10 * draw }, body: { rotation: -18 * draw },
+          leftArm: { upperRotation: -50 - 55 * draw, lowerRotation: -22 - 62 * draw }, rightArm: { upperRotation: 20 - 25 * draw, lowerRotation: 15 - 30 * draw },
+          leftLeg: { upperRotation: 14 * draw, lowerRotation: 20 * draw }, rightLeg: { upperRotation: -12 * draw, lowerRotation: 18 * draw }
+        };
+      }
+      const seal = Math.min(1, (t - 0.45) / 0.28);
+      const recover = Math.max(0, (t - 0.73) / 0.27);
+      return {
+        head: { x: 8 * seal * (1 - recover), y: -3 * seal * (1 - recover), rotation: 22 * seal * (1 - recover) }, body: { rotation: 34 * seal * (1 - recover) },
+        leftArm: { upperRotation: -105 + 40 * seal + 35 * recover, lowerRotation: -84 + 45 * seal + 32 * recover },
+        rightArm: { upperRotation: -5 + 135 * seal * (1 - recover), lowerRotation: -15 + 105 * seal * (1 - recover) },
+        leftLeg: { upperRotation: -35 * seal * (1 - recover), lowerRotation: 44 * seal * (1 - recover) }, rightLeg: { upperRotation: 26 * seal * (1 - recover), lowerRotation: -20 * seal * (1 - recover) }
+      };
+    });
+  }
+
+  // 毒鏢：低姿勢從側腰抽鏢，手腕快速彈出，塑造陰狠的短促感。
+  createVenomDartAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      if (t < 0.32) {
+        const draw = t / 0.32;
+        return {
+          head: { x: -3 * draw, y: 5 * draw, rotation: -18 * draw }, body: { rotation: -28 * draw },
+          leftArm: { upperRotation: -40 - 30 * draw, lowerRotation: -22 - 35 * draw }, rightArm: { upperRotation: 8 - 92 * draw, lowerRotation: 5 - 84 * draw },
+          leftLeg: { upperRotation: 24 * draw, lowerRotation: 32 * draw }, rightLeg: { upperRotation: -22 * draw, lowerRotation: 30 * draw }
+        };
+      }
+      const flick = Math.min(1, (t - 0.32) / 0.2);
+      const recover = Math.max(0, (t - 0.6) / 0.4);
+      return {
+        head: { x: 10 * flick * (1 - recover), y: 1 * flick, rotation: 30 * flick * (1 - recover) }, body: { rotation: 44 * flick * (1 - recover) },
+        leftArm: { upperRotation: -66 + 26 * flick + 28 * recover, lowerRotation: -55 + 22 * flick + 26 * recover },
+        rightArm: { upperRotation: -84 + 190 * flick * (1 - recover), lowerRotation: -78 + 148 * flick * (1 - recover) },
+        leftLeg: { upperRotation: -43 * flick * (1 - recover), lowerRotation: 54 * flick * (1 - recover) }, rightLeg: { upperRotation: 32 * flick * (1 - recover), lowerRotation: -26 * flick * (1 - recover) }
+      };
+    });
+  }
+
+  // 荊棘陷阱：雙掌向下壓入地面，再猛然拉起，讓陷阱像從地底刺出。
+  createThornTrapAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      if (t < 0.48) {
+        const plant = t / 0.48;
+        return {
+          head: { x: 0, y: 8 * plant, rotation: 12 * plant }, body: { rotation: 25 * plant },
+          leftArm: { upperRotation: 28 + 82 * plant, lowerRotation: 15 + 75 * plant }, rightArm: { upperRotation: 38 + 90 * plant, lowerRotation: 22 + 80 * plant },
+          leftLeg: { upperRotation: 28 * plant, lowerRotation: 38 * plant }, rightLeg: { upperRotation: -24 * plant, lowerRotation: 34 * plant }
+        };
+      }
+      const rip = Math.min(1, (t - 0.48) / 0.23);
+      const recover = Math.max(0, (t - 0.71) / 0.29);
+      return {
+        head: { x: -3 * rip * (1 - recover), y: 5 * (1 - rip), rotation: -18 * rip * (1 - recover) }, body: { rotation: -30 * rip * (1 - recover) },
+        leftArm: { upperRotation: 110 - 155 * rip + 45 * recover, lowerRotation: 92 - 132 * rip + 38 * recover }, rightArm: { upperRotation: 120 - 160 * rip + 45 * recover, lowerRotation: 102 - 135 * rip + 38 * recover },
+        leftLeg: { upperRotation: 28 * (1 - rip), lowerRotation: 38 * (1 - rip) }, rightLeg: { upperRotation: -24 * (1 - rip), lowerRotation: 34 * (1 - rip) }
+      };
+    });
+  }
   createSavageSuplexAnimation() { return this.createGenericSkillAnimation('dash'); }
   createRoyalExecutionAnimation() { return this.createGenericSkillAnimation('punch'); }
   createElfTalismanAnimation() { return this.createGenericSkillAnimation('cast'); }

@@ -533,9 +533,9 @@
     if (flourishes.length > 48) flourishes.splice(0, flourishes.length - 48);
   }
 
-  // 風、火、水、雷的戰鬥筆觸各自獨立，避免所有角色最後都只剩同一種彩色圓環。
+  // 基礎忍者的戰鬥筆觸各自獨立，避免所有角色最後都只剩同一種彩色圓環。
   renderElementalCombatFlourish(ctx, effect, progress, fade) {
-    const elemental = ['fujin', 'katon', 'suijin', 'raijin'];
+    const elemental = ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei'];
     if (!elemental.includes(effect.element)) return false;
 
     const isImpact = effect.kind === 'impact';
@@ -625,30 +625,171 @@
     }
 
     // 雷：用折線和瞬白替代圓環；每次攻擊都像電流跳過距離。
-    ctx.shadowColor = '#FFF176';
-    ctx.shadowBlur = 16 * power;
-    const endX = isImpact ? x : x + facing * reach;
-    const startX = isImpact ? x - facing * (reach * 0.28) : x + facing * 10;
-    for (let bolt = 0; bolt < 3; bolt++) {
-      const offset = (bolt - 1) * 9;
-      ctx.globalAlpha = fade * (0.9 - bolt * 0.18);
-      ctx.strokeStyle = bolt === 1 ? '#FFFFFF' : '#FFEB3B';
-      ctx.lineWidth = bolt === 1 ? 3.5 : 2;
-      ctx.beginPath();
-      ctx.moveTo(startX, y + offset);
-      const segments = 4;
-      for (let step = 1; step < segments; step++) {
-        const ratio = step / segments;
-        const zig = (step % 2 ? -1 : 1) * (10 + bolt * 3);
-        ctx.lineTo(startX + (endX - startX) * ratio, y + offset + zig);
+    if (effect.element === 'raijin') {
+      ctx.shadowColor = '#FFF176';
+      ctx.shadowBlur = 16 * power;
+      const endX = isImpact ? x : x + facing * reach;
+      const startX = isImpact ? x - facing * (reach * 0.28) : x + facing * 10;
+      for (let bolt = 0; bolt < 3; bolt++) {
+        const offset = (bolt - 1) * 9;
+        ctx.globalAlpha = fade * (0.9 - bolt * 0.18);
+        ctx.strokeStyle = bolt === 1 ? '#FFFFFF' : '#FFEB3B';
+        ctx.lineWidth = bolt === 1 ? 3.5 : 2;
+        ctx.beginPath();
+        ctx.moveTo(startX, y + offset);
+        const segments = 4;
+        for (let step = 1; step < segments; step++) {
+          const ratio = step / segments;
+          const zig = (step % 2 ? -1 : 1) * (10 + bolt * 3);
+          ctx.lineTo(startX + (endX - startX) * ratio, y + offset + zig);
+        }
+        ctx.lineTo(endX, y - offset * 0.35);
+        ctx.stroke();
       }
-      ctx.lineTo(endX, y - offset * 0.35);
-      ctx.stroke();
+      if (isImpact) {
+        ctx.globalAlpha = fade * 0.32;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(x - 8 - progress * 18, y - 26 - progress * 18, 16 + progress * 36, 38 + progress * 36);
+      }
+      return true;
     }
-    if (isImpact) {
-      ctx.globalAlpha = fade * 0.32;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(x - 8 - progress * 18, y - 26 - progress * 18, 16 + progress * 36, 38 + progress * 36);
+
+    if (effect.element === 'doton') {
+      ctx.shadowColor = effect.shade;
+      ctx.shadowBlur = 6 * power;
+      if (!isImpact) {
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 5;
+        ctx.globalAlpha = fade * 0.82;
+        ctx.beginPath();
+        ctx.moveTo(x + facing * 4, y + 22);
+        ctx.lineTo(x + facing * (reach * 0.36), y + 9);
+        ctx.lineTo(x + facing * (reach * 0.72), y + 25);
+        ctx.lineTo(x + facing * reach, y + 18);
+        ctx.stroke();
+        ctx.strokeStyle = effect.shade;
+        ctx.lineWidth = 2;
+        for (let crack = 0; crack < 3; crack++) {
+          const offset = crack * 19 + progress * 12;
+          ctx.beginPath();
+          ctx.moveTo(x + facing * offset, y + 25);
+          ctx.lineTo(x + facing * (offset + 10), y + 34 + (crack % 2) * 7);
+          ctx.stroke();
+        }
+      } else {
+        ctx.fillStyle = effect.color;
+        ctx.globalAlpha = fade * 0.32;
+        ctx.beginPath();
+        ctx.ellipse(x, y + 17, 20 + progress * 48, 7 + progress * 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = fade * 0.82;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 3;
+        for (let shard = 0; shard < 5; shard++) {
+          const shardX = x + (shard - 2) * 16;
+          ctx.beginPath();
+          ctx.moveTo(shardX, y + 12);
+          ctx.lineTo(shardX + (shard - 2) * 7, y - 18 - progress * 20);
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
+
+    if (effect.element === 'kage') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 16 * power;
+      if (!isImpact) {
+        for (let ghost = 0; ghost < 3; ghost++) {
+          const ghostX = x - facing * (ghost + 1) * (17 + progress * 9);
+          ctx.globalAlpha = fade * (0.38 - ghost * 0.09);
+          ctx.fillStyle = ghost === 0 ? effect.highlight : effect.shade;
+          ctx.fillRect(ghostX - 7, y - 33, 14, 42);
+        }
+        ctx.globalAlpha = fade * 0.94;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x - facing * 2, y + 13);
+        ctx.lineTo(x + facing * (reach * 0.38), y - 19);
+        ctx.lineTo(x + facing * reach, y + 4);
+        ctx.stroke();
+      } else {
+        ctx.globalAlpha = fade * 0.74;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 3;
+        for (let slash = -1; slash <= 1; slash++) {
+          ctx.beginPath();
+          ctx.moveTo(x - 31, y - 14 + slash * 12);
+          ctx.lineTo(x + 30, y - 27 - slash * 12);
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
+
+    if (effect.element === 'rei') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 13 * power;
+      if (!isImpact) {
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 2.5;
+        for (let charm = 0; charm < 4; charm++) {
+          const charmedX = x + facing * (20 + charm * 21 + progress * 10);
+          const charmedY = y - 16 - Math.sin(progress * Math.PI + charm) * 16;
+          ctx.globalAlpha = fade * (0.82 - charm * 0.13);
+          ctx.strokeRect(charmedX - 5, charmedY - 8, 10, 16);
+          ctx.beginPath();
+          ctx.moveTo(charmedX - 2, charmedY);
+          ctx.lineTo(charmedX + 2, charmedY);
+          ctx.stroke();
+        }
+      } else {
+        ctx.globalAlpha = fade * 0.72;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 2.5;
+        for (let seal = 0; seal < 3; seal++) {
+          ctx.beginPath();
+          ctx.arc(x, y - 10, 12 + seal * 13 + progress * 16, progress * Math.PI, progress * Math.PI + Math.PI * 1.55);
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
+
+    if (effect.element === 'dokusei') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 12 * power;
+      if (!isImpact) {
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 3.5;
+        ctx.globalAlpha = fade * 0.84;
+        ctx.beginPath();
+        ctx.moveTo(x + facing * 6, y - 3);
+        ctx.quadraticCurveTo(x + facing * (reach * 0.45), y - 34, x + facing * reach, y + 7);
+        ctx.stroke();
+        ctx.fillStyle = effect.color;
+        for (let drop = 0; drop < 4; drop++) {
+          const dropX = x + facing * (22 + drop * 18 + progress * 10);
+          ctx.globalAlpha = fade * (0.76 - drop * 0.12);
+          ctx.beginPath();
+          ctx.arc(dropX, y - 11 + (drop % 2) * 16, 3 + drop % 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.globalAlpha = fade * 0.45;
+        ctx.fillStyle = effect.color;
+        ctx.beginPath();
+        ctx.ellipse(x, y + 8, 12 + progress * 34, 7 + progress * 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = fade * 0.8;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y - 7, 10 + progress * 24, 0.1, Math.PI * 1.35);
+        ctx.stroke();
+      }
+      return true;
     }
     return true;
   }
@@ -9937,7 +10078,7 @@
           : 'attack'
     );
     this.spawnCombatFlourish('swing', player, opponent, player.id === 'forgefire' || player.id === 'adjudicator' ? 1.35 : 1);
-    if (['fujin', 'katon', 'suijin', 'raijin'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createElementalBasicAttackEffect(
         player.id,
         player.position.x,
@@ -13597,7 +13738,7 @@
     if (typeof particleSystem !== 'undefined' && particleSystem && particleSystem.createEnhancedHitEffect) {
       particleSystem.createEnhancedHitEffect(target.position.x, target.position.y, damage, isCritical);
     }
-    if (attacker && ['fujin', 'katon', 'suijin', 'raijin'].includes(attacker.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+    if (attacker && ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei'].includes(attacker.id) && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createElementalImpactEffect(attacker.id, target.position.x, target.position.y);
     }
     
