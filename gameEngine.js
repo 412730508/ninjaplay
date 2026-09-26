@@ -535,7 +535,7 @@
 
   // 基礎忍者的戰鬥筆觸各自獨立，避免所有角色最後都只剩同一種彩色圓環。
   renderElementalCombatFlourish(ctx, effect, progress, fade) {
-    const elemental = ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei'];
+    const elemental = ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin'];
     if (!elemental.includes(effect.element)) return false;
 
     const isImpact = effect.kind === 'impact';
@@ -788,6 +788,126 @@
         ctx.beginPath();
         ctx.arc(x, y - 7, 10 + progress * 24, 0.1, Math.PI * 1.35);
         ctx.stroke();
+      }
+      return true;
+    }
+
+    if (effect.element === 'taijutsu') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 12 * power;
+      if (!isImpact) {
+        ctx.globalAlpha = fade * 0.9;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(x + facing * 5, y + 6);
+        ctx.lineTo(x + facing * (reach * 0.68), y - 5);
+        ctx.stroke();
+        ctx.strokeStyle = effect.color;
+        ctx.lineWidth = 2.5;
+        for (let fist = 0; fist < 3; fist++) {
+          ctx.beginPath();
+          ctx.arc(x + facing * (34 + fist * 18), y - 4 + (fist - 1) * 10, 4 + fist, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else {
+        ctx.globalAlpha = fade * 0.76;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 4;
+        for (let ray = 0; ray < 8; ray++) {
+          const angle = Math.PI * 2 * ray / 8 + progress * 0.35;
+          ctx.beginPath();
+          ctx.moveTo(x + Math.cos(angle) * 8, y - 12 + Math.sin(angle) * 8);
+          ctx.lineTo(x + Math.cos(angle) * (22 + progress * 32), y - 12 + Math.sin(angle) * (18 + progress * 28));
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
+
+    if (effect.element === 'ranger') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 10 * power;
+      if (!isImpact) {
+        ctx.globalAlpha = fade * 0.86;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + facing * 12, y - 13);
+        ctx.lineTo(x + facing * (reach + 22), y - 20);
+        ctx.stroke();
+        ctx.fillStyle = effect.color;
+        for (let leaf = 0; leaf < 4; leaf++) {
+          const leafX = x + facing * (22 + leaf * 21);
+          ctx.globalAlpha = fade * (0.72 - leaf * 0.1);
+          ctx.beginPath();
+          ctx.ellipse(leafX, y - 5 - (leaf % 2) * 13, 7, 3, facing * 0.55, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.globalAlpha = fade * 0.78;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 2.5;
+        for (let leaf = 0; leaf < 5; leaf++) {
+          const angle = leaf * Math.PI * 2 / 5 + progress;
+          ctx.beginPath();
+          ctx.ellipse(x + Math.cos(angle) * (15 + progress * 15), y - 14 + Math.sin(angle) * (11 + progress * 11), 6, 2.5, angle, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
+
+    if (effect.element === 'warlock') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 15 * power;
+      if (!isImpact) {
+        ctx.globalAlpha = fade * 0.9;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + facing * 6, y - 4);
+        for (let link = 1; link <= 5; link++) {
+          ctx.lineTo(x + facing * (link * 19), y - 4 + (link % 2 ? -9 : 9));
+        }
+        ctx.stroke();
+      } else {
+        ctx.globalAlpha = fade * 0.5;
+        ctx.fillStyle = effect.color;
+        ctx.beginPath();
+        ctx.arc(x, y - 14, 12 + progress * 25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = fade * 0.85;
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 2;
+        for (let chain = 0; chain < 3; chain++) {
+          ctx.beginPath();
+          ctx.arc(x, y - 14, 13 + chain * 10 + progress * 10, chain * 0.7, chain * 0.7 + Math.PI * 1.1);
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
+
+    if (effect.element === 'ronin') {
+      ctx.shadowColor = effect.highlight;
+      ctx.shadowBlur = 9 * power;
+      ctx.globalAlpha = fade * 0.94;
+      ctx.strokeStyle = effect.highlight;
+      ctx.lineWidth = isImpact ? 3.5 : 4;
+      if (!isImpact) {
+        ctx.beginPath();
+        ctx.moveTo(x - facing * 8, y + 18);
+        ctx.lineTo(x + facing * (reach * 0.48), y - 30);
+        ctx.lineTo(x + facing * reach, y - 7);
+        ctx.stroke();
+      } else {
+        for (let cut = 0; cut < 3; cut++) {
+          ctx.beginPath();
+          ctx.moveTo(x - 33, y - 2 + cut * 11);
+          ctx.lineTo(x + 35, y - 38 + cut * 13);
+          ctx.stroke();
+        }
       }
       return true;
     }
@@ -10078,7 +10198,7 @@
           : 'attack'
     );
     this.spawnCombatFlourish('swing', player, opponent, player.id === 'forgefire' || player.id === 'adjudicator' ? 1.35 : 1);
-    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createElementalBasicAttackEffect(
         player.id,
         player.position.x,
@@ -13738,7 +13858,7 @@
     if (typeof particleSystem !== 'undefined' && particleSystem && particleSystem.createEnhancedHitEffect) {
       particleSystem.createEnhancedHitEffect(target.position.x, target.position.y, damage, isCritical);
     }
-    if (attacker && ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei'].includes(attacker.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+    if (attacker && ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin'].includes(attacker.id) && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createElementalImpactEffect(attacker.id, target.position.x, target.position.y);
     }
     

@@ -166,7 +166,7 @@ try {
   for (const code of Object.values(skillCodes)) {
     particleSystem.createSkillEffect(code, 320, 280, 1);
   }
-  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei']) {
+  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin']) {
     particleSystem.createElementalBasicAttackEffect(elementalId, 320, 280, 1, 80);
     particleSystem.createElementalImpactEffect(elementalId, 400, 280);
   }
@@ -180,7 +180,7 @@ try {
   vm.runInContext(readFileSync(resolve(root, 'characters.js'), 'utf8'), engineContext);
   vm.runInContext(engineSource, engineContext);
   const NinjaGame = vm.runInContext('NinjaGame', engineContext);
-  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei']) {
+  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin']) {
     for (const kind of ['swing', 'impact']) {
       const rendered = NinjaGame.prototype.renderElementalCombatFlourish.call({}, renderContext, {
         element: elementalId, kind, x: 320, y: 250, targetX: 400, targetY: 250,

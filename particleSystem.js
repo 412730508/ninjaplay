@@ -266,6 +266,36 @@
         });
       }
       this.particles.push({ x: tipX, y: handY + 2, radius: 4, maxRadius: 24, color: '#76FF03', life: 280, maxLife: 280, alpha: 0.56, type: 'poison_attack_ring' });
+      return;
+    }
+
+    if (element === 'taijutsu') {
+      for (let burst = 0; burst < 8; burst++) {
+        const angle = -1.15 + Math.random() * 2.3;
+        this.particles.push({ x: handX + facing * 14, y: handY + 7, vx: Math.cos(angle) * (85 + Math.random() * 60) * facing, vy: Math.sin(angle) * (78 + Math.random() * 56), size: 2 + Math.random() * 3, color: burst % 2 ? '#FF8A80' : '#FF5252', life: 255, maxLife: 255, alpha: 0.92, type: 'rock_debris' });
+      }
+      this.particles.push({ x: handX + facing * 16, y: handY + 13, endX: tipX, endY: handY + 13, color: '#FFE2E2', width: 4, life: 145, maxLife: 145, alpha: 0.86, type: 'impact_fist_line' });
+      return;
+    }
+
+    if (element === 'ranger') {
+      this.particles.push({ x: handX, y: handY, endX: tipX + facing * 48, endY: handY - 6, color: '#E6FFB8', width: 1.5, life: 240, maxLife: 240, alpha: 0.78, type: 'ranger_arrow_line' });
+      for (let leaf = 0; leaf < 4; leaf++) {
+        this.particles.push({ x: handX + facing * (14 + leaf * 13), y: handY + (leaf - 1.5) * 7, vx: facing * (25 + leaf * 7), vy: -22 - leaf * 8, size: 2.5 + Math.random() * 2, color: leaf % 2 ? '#B8F58A' : '#4CAF50', life: 340, maxLife: 340, alpha: 0.82, type: 'wind_blade' });
+      }
+      return;
+    }
+
+    if (element === 'warlock') {
+      for (let link = 0; link < 5; link++) {
+        this.particles.push({ x: handX + facing * link * 13, y: handY + Math.sin(link * 1.8) * 7, endX: handX + facing * (link * 13 + 11), endY: handY + Math.sin((link + 1) * 1.8) * 7, color: link % 2 ? '#FF8A9A' : '#9B1028', width: 3, life: 300, maxLife: 300, alpha: 0.85, type: 'blood_chain_line' });
+      }
+      return;
+    }
+
+    if (element === 'ronin') {
+      this.particles.push({ x: handX - facing * 8, y: handY + 11, endX: tipX + facing * 18, endY: handY - 21, color: '#FFFFFF', width: 3.5, life: 175, maxLife: 175, alpha: 0.92, type: 'blade_slash' });
+      this.particles.push({ x: handX, y: handY + 18, endX: tipX, endY: handY - 5, color: '#90A4AE', width: 2, life: 240, maxLife: 240, alpha: 0.7, type: 'blade_slash' });
     }
   }
 
@@ -326,6 +356,35 @@
       for (let splash = 0; splash < 11; splash++) {
         this.particles.push({ x, y: y - 16, vx: (Math.random() - 0.5) * 125, vy: -34 - Math.random() * 78, size: 2 + Math.random() * 3, color: splash % 2 ? '#7CFF5B' : '#21A35A', life: 430, maxLife: 430, alpha: 0.9, type: 'poison_drip' });
       }
+      return;
+    }
+    if (element === 'taijutsu') {
+      this.particles.push({ x, y: y - 7, radius: 3, maxRadius: 58, color: '#FF8A80', life: 240, maxLife: 240, alpha: 0.85, type: 'taijutsu_impact_ring' });
+      for (let impact = 0; impact < 12; impact++) {
+        const angle = Math.PI * 2 * impact / 12;
+        this.particles.push({ x, y: y - 16, endX: x + Math.cos(angle) * (24 + Math.random() * 30), endY: y - 16 + Math.sin(angle) * (18 + Math.random() * 26), color: impact % 2 ? '#FF5252' : '#FFE2E2', width: 2.5, life: 185, maxLife: 185, alpha: 0.9, type: 'impact_fist_line' });
+      }
+      return;
+    }
+    if (element === 'ranger') {
+      this.particles.push({ x, y: y - 18, radius: 4, maxRadius: 34, color: '#D8FF83', life: 260, maxLife: 260, alpha: 0.76, type: 'ranger_leaf_ring' });
+      for (let leaf = 0; leaf < 7; leaf++) {
+        this.particles.push({ x, y: y - 17, vx: (Math.random() - 0.5) * 112, vy: -28 - Math.random() * 68, size: 2 + Math.random() * 2, color: leaf % 2 ? '#8BC34A' : '#E6FFB8', life: 330, maxLife: 330, alpha: 0.88, type: 'wind_blade' });
+      }
+      return;
+    }
+    if (element === 'warlock') {
+      this.particles.push({ x, y: y - 18, radius: 4, maxRadius: 42, color: '#FF4D67', life: 310, maxLife: 310, alpha: 0.72, type: 'blood_impact_ring' });
+      for (let drop = 0; drop < 9; drop++) {
+        this.particles.push({ x, y: y - 18, vx: (Math.random() - 0.5) * 112, vy: -30 - Math.random() * 76, size: 2 + Math.random() * 3, color: drop % 2 ? '#FF6B7B' : '#850019', life: 390, maxLife: 390, alpha: 0.88, type: 'poison_drip' });
+      }
+      return;
+    }
+    if (element === 'ronin') {
+      for (let cut = 0; cut < 3; cut++) {
+        this.particles.push({ x: x - 31, y: y - 10 + cut * 13, endX: x + 34, endY: y - 37 + cut * 10, color: cut === 1 ? '#FFFFFF' : '#B0BEC5', width: cut === 1 ? 3 : 2, life: 220, maxLife: 220, alpha: 0.88, type: 'blade_slash' });
+      }
+      this.particles.push({ x, y: y - 18, radius: 3, maxRadius: 35, color: '#ECEFF1', life: 210, maxLife: 210, alpha: 0.65, type: 'ronin_cut_ring' });
     }
   }
 

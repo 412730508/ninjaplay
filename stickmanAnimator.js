@@ -1016,14 +1016,123 @@
       };
     });
   }
-  createSavageSuplexAnimation() { return this.createGenericSkillAnimation('dash'); }
-  createRoyalExecutionAnimation() { return this.createGenericSkillAnimation('punch'); }
-  createElfTalismanAnimation() { return this.createGenericSkillAnimation('cast'); }
-  createStealthDashAnimation() { return this.createGenericSkillAnimation('dash'); }
-  createBloodShacklesAnimation() { return this.createGenericSkillAnimation('throw'); }
-  createBloodDevourAnimation() { return this.createGenericSkillAnimation('cast'); }
-  createFlashCutAnimation() { return this.createGenericSkillAnimation('dash'); }
-  createIaiFlashAnimation() { return this.createGenericSkillAnimation('cast'); }
+  // 體術：壓低、抓取、轉肩往下砸；不是普通衝刺。
+  createSavageSuplexAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const grab = Math.min(1, t / 0.36);
+      const slam = Math.max(0, Math.min(1, (t - 0.36) / 0.3));
+      const recover = Math.max(0, (t - 0.68) / 0.32);
+      return {
+        head: { x: 13 * slam * (1 - recover), y: 8 * grab - 12 * slam, rotation: -22 * grab + 66 * slam * (1 - recover) }, body: { rotation: -34 * grab + 86 * slam * (1 - recover) },
+        leftArm: { upperRotation: -32 - 88 * grab + 150 * slam, lowerRotation: -22 - 72 * grab + 120 * slam }, rightArm: { upperRotation: 20 - 96 * grab + 162 * slam, lowerRotation: 16 - 78 * grab + 130 * slam },
+        leftLeg: { upperRotation: 42 * grab - 76 * slam * (1 - recover), lowerRotation: 56 * grab + 44 * slam }, rightLeg: { upperRotation: -35 * grab + 65 * slam * (1 - recover), lowerRotation: 50 * grab + 38 * slam }
+      };
+    });
+  }
+
+  // 體術奧義：連段收於一記重拳，動作有明顯的肩膀蓄力與貫穿。
+  createRoyalExecutionAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const windup = Math.min(1, t / 0.44);
+      const hit = Math.max(0, Math.min(1, (t - 0.44) / 0.18));
+      const recover = Math.max(0, (t - 0.62) / 0.38);
+      return {
+        head: { x: -9 * windup + 15 * hit * (1 - recover), y: 4 * windup, rotation: -36 * windup + 58 * hit * (1 - recover) }, body: { rotation: -54 * windup + 76 * hit * (1 - recover) },
+        leftArm: { upperRotation: -65 - 75 * windup + 98 * hit, lowerRotation: -42 - 68 * windup + 83 * hit }, rightArm: { upperRotation: 12 - 122 * windup + 232 * hit * (1 - recover), lowerRotation: 8 - 104 * windup + 185 * hit * (1 - recover) },
+        leftLeg: { upperRotation: 38 * windup - 78 * hit * (1 - recover), lowerRotation: 46 * windup + 48 * hit }, rightLeg: { upperRotation: -32 * windup + 66 * hit * (1 - recover), lowerRotation: 42 * windup + 34 * hit }
+      };
+    });
+  }
+
+  // 遊俠：拉弓停留一拍，再放開；能讀出是遠程術式而不是泛用施法。
+  createElfTalismanAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const draw = Math.min(1, t / 0.5);
+      const release = Math.max(0, Math.min(1, (t - 0.5) / 0.16));
+      const recover = Math.max(0, (t - 0.66) / 0.34);
+      return {
+        head: { x: -3 * draw + 5 * release, y: 0, rotation: -14 * draw + 14 * release }, body: { rotation: -22 * draw + 27 * release },
+        leftArm: { upperRotation: -35 - 78 * draw + 48 * release + 30 * recover, lowerRotation: -18 - 62 * draw + 45 * release + 22 * recover }, rightArm: { upperRotation: 22 + 26 * draw + 124 * release * (1 - recover), lowerRotation: 12 + 20 * draw + 92 * release * (1 - recover) },
+        leftLeg: { upperRotation: 12 * draw - 20 * release, lowerRotation: 18 * draw }, rightLeg: { upperRotation: -10 * draw + 18 * release, lowerRotation: 16 * draw }
+      };
+    });
+  }
+
+  // 脫隱：先縮身，出現時前傾跨出，保留刺客爆發感。
+  createStealthDashAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      if (t < 0.34) {
+        const hide = t / 0.34;
+        return { head: { x: -3 * hide, y: 9 * hide, rotation: -22 * hide }, body: { rotation: -34 * hide }, leftArm: { upperRotation: -42 - 62 * hide, lowerRotation: -20 - 58 * hide }, rightArm: { upperRotation: 32 - 70 * hide, lowerRotation: 18 - 65 * hide }, leftLeg: { upperRotation: 38 * hide, lowerRotation: 54 * hide }, rightLeg: { upperRotation: -34 * hide, lowerRotation: 50 * hide } };
+      }
+      const burst = Math.min(1, (t - 0.34) / 0.2);
+      const recover = Math.max(0, (t - 0.62) / 0.38);
+      return { head: { x: 22 * burst * (1 - recover), y: -7 * burst, rotation: 38 * burst * (1 - recover) }, body: { rotation: 56 * burst * (1 - recover) }, leftArm: { upperRotation: -104 + 55 * burst + 45 * recover, lowerRotation: -78 + 42 * burst + 32 * recover }, rightArm: { upperRotation: -38 + 150 * burst * (1 - recover), lowerRotation: -30 + 115 * burst * (1 - recover) }, leftLeg: { upperRotation: -68 * burst * (1 - recover), lowerRotation: 85 * burst * (1 - recover) }, rightLeg: { upperRotation: 54 * burst * (1 - recover), lowerRotation: -44 * burst * (1 - recover) } };
+    });
+  }
+
+  // 血契：由心口拉出血鏈再甩出，兩手刻意不對稱。
+  createBloodShacklesAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const pull = Math.min(1, t / 0.42);
+      const cast = Math.max(0, Math.min(1, (t - 0.42) / 0.22));
+      const recover = Math.max(0, (t - 0.67) / 0.33);
+      return {
+        head: { x: -4 * pull + 10 * cast * (1 - recover), y: 3 * pull, rotation: -20 * pull + 33 * cast * (1 - recover) }, body: { rotation: -28 * pull + 48 * cast * (1 - recover) },
+        leftArm: { upperRotation: -40 - 82 * pull + 54 * cast, lowerRotation: -22 - 70 * pull + 48 * cast }, rightArm: { upperRotation: 28 - 98 * pull + 202 * cast * (1 - recover), lowerRotation: 15 - 82 * pull + 152 * cast * (1 - recover) },
+        leftLeg: { upperRotation: 19 * pull - 42 * cast * (1 - recover), lowerRotation: 27 * pull + 28 * cast }, rightLeg: { upperRotation: -16 * pull + 34 * cast * (1 - recover), lowerRotation: 24 * pull + 22 * cast }
+      };
+    });
+  }
+
+  // 血咒吞噬：雙手收攏在胸前，讓角色呈現被力量反噬又控制住的姿勢。
+  createBloodDevourAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const draw = Math.min(1, t / 0.48);
+      const hold = t > 0.48 && t < 0.75 ? 1 : Math.max(0, 1 - (t - 0.75) / 0.25);
+      return {
+        head: { x: 0, y: -4 * draw, rotation: -8 * draw }, body: { rotation: -13 * draw },
+        leftArm: { upperRotation: -42 - 68 * draw + 28 * (1 - hold), lowerRotation: -22 - 82 * draw + 35 * (1 - hold) }, rightArm: { upperRotation: 42 + 68 * draw - 28 * (1 - hold), lowerRotation: 22 + 82 * draw - 35 * (1 - hold) },
+        leftLeg: { upperRotation: 15 * draw, lowerRotation: 24 * draw }, rightLeg: { upperRotation: -15 * draw, lowerRotation: 24 * draw }
+      };
+    });
+  }
+
+  // 瞬影斬：納刀低姿勢後一個長跨步橫切，動作不再是一般 dash。
+  createFlashCutAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const sheath = Math.min(1, t / 0.4);
+      const cut = Math.max(0, Math.min(1, (t - 0.4) / 0.18));
+      const recover = Math.max(0, (t - 0.62) / 0.38);
+      return {
+        head: { x: -7 * sheath + 20 * cut * (1 - recover), y: 5 * sheath - 7 * cut, rotation: -28 * sheath + 52 * cut * (1 - recover) }, body: { rotation: -42 * sheath + 72 * cut * (1 - recover) },
+        leftArm: { upperRotation: -34 - 72 * sheath + 120 * cut, lowerRotation: -18 - 55 * sheath + 95 * cut }, rightArm: { upperRotation: 18 - 108 * sheath + 236 * cut * (1 - recover), lowerRotation: 12 - 94 * sheath + 184 * cut * (1 - recover) },
+        leftLeg: { upperRotation: 36 * sheath - 90 * cut * (1 - recover), lowerRotation: 48 * sheath + 60 * cut }, rightLeg: { upperRotation: -30 * sheath + 72 * cut * (1 - recover), lowerRotation: 44 * sheath + 44 * cut }
+      };
+    });
+  }
+
+  // 居合：真正的收刀蓄勢，出刀一瞬後立刻回到收刀姿態。
+  createIaiFlashAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const sheath = Math.min(1, t / 0.52);
+      const draw = Math.max(0, Math.min(1, (t - 0.52) / 0.12));
+      const resheath = Math.max(0, (t - 0.64) / 0.36);
+      return {
+        head: { x: -4 * sheath + 11 * draw * (1 - resheath), y: 3 * sheath, rotation: -18 * sheath + 38 * draw * (1 - resheath) }, body: { rotation: -27 * sheath + 58 * draw * (1 - resheath) },
+        leftArm: { upperRotation: -25 - 38 * sheath + 106 * draw - 55 * resheath, lowerRotation: -12 - 35 * sheath + 92 * draw - 46 * resheath }, rightArm: { upperRotation: 15 - 112 * sheath + 246 * draw * (1 - resheath), lowerRotation: 10 - 90 * sheath + 192 * draw * (1 - resheath) },
+        leftLeg: { upperRotation: 21 * sheath - 55 * draw * (1 - resheath), lowerRotation: 27 * sheath + 35 * draw }, rightLeg: { upperRotation: -18 * sheath + 45 * draw * (1 - resheath), lowerRotation: 24 * sheath + 28 * draw }
+      };
+    });
+  }
 
   // Scorpion whip attack animation - wide sweeping arm motion
   createScorpionWhipAnimation() {
