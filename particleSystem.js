@@ -144,7 +144,105 @@
         break;      default:
         console.warn('?芰??賭誨蝣?', skillCode);
     }
-    
+
+  }
+
+  // 四名基礎忍者的普攻不再共用同一種命中火花；這些效果只負責演出，不改變判定。
+  createElementalBasicAttackEffect(element, x, y, facing, reach = 74) {
+    const handX = x + facing * 24;
+    const handY = y - 28;
+    const tipX = x + facing * reach;
+
+    if (element === 'fujin') {
+      for (let trail = 0; trail < 3; trail++) {
+        const lift = -18 + trail * 13;
+        this.particles.push({
+          x: handX, y: handY + lift,
+          endX: tipX, endY: handY - lift * 0.35,
+          color: trail === 1 ? '#E7FFFF' : '#59D9F5', width: 2 + (trail === 1 ? 1 : 0),
+          life: 170 + trail * 35, maxLife: 275, alpha: 0.9 - trail * 0.16, type: 'wind_attack_cut'
+        });
+      }
+      return;
+    }
+
+    if (element === 'katon') {
+      for (let spark = 0; spark < 10; spark++) {
+        const spread = (Math.random() - 0.5) * 42;
+        this.particles.push({
+          x: handX + facing * (12 + Math.random() * 18), y: handY + spread * 0.24,
+          vx: facing * (85 + Math.random() * 90), vy: spread - 55 - Math.random() * 35,
+          size: 2 + Math.random() * 3, color: spark % 3 === 0 ? '#FFF3B0' : spark % 2 ? '#FF8A00' : '#FF3D21',
+          life: 280 + Math.random() * 130, maxLife: 410, alpha: 0.95, type: 'fire_spark'
+        });
+      }
+      this.particles.push({ x: handX + facing * 28, y: handY, radius: 4, maxRadius: 26, color: '#FF5A1F', life: 230, maxLife: 230, alpha: 0.55, type: 'fire_attack_ring' });
+      return;
+    }
+
+    if (element === 'suijin') {
+      this.particles.push({ x: handX, y: handY + 4, endX: tipX, endY: handY - 5, color: '#B8F4FF', width: 4, life: 260, maxLife: 260, alpha: 0.75, type: 'water_stream' });
+      for (let drop = 0; drop < 7; drop++) {
+        const progress = (drop + 1) / 8;
+        this.particles.push({
+          x: handX + facing * reach * progress, y: handY + Math.sin(progress * Math.PI) * -16 + (Math.random() - 0.5) * 10,
+          vx: facing * (12 + Math.random() * 18), vy: -20 - Math.random() * 24,
+          size: 2 + Math.random() * 2, color: drop % 2 ? '#4FC3F7' : '#E1F5FE',
+          life: 330, maxLife: 330, alpha: 0.85, type: 'water_splash'
+        });
+      }
+      return;
+    }
+
+    if (element === 'raijin') {
+      const midpointX = x + facing * (reach * 0.48);
+      for (let bolt = 0; bolt < 3; bolt++) {
+        const offset = (bolt - 1) * 9;
+        this.particles.push({
+          x: handX, y: handY + offset,
+          endX: midpointX + facing * 12, endY: handY - offset * 1.6,
+          color: bolt === 1 ? '#FFFFFF' : '#FFE94A', width: bolt === 1 ? 3 : 2,
+          life: 130 + bolt * 25, maxLife: 190, alpha: 1 - bolt * 0.18, type: 'thunder_lightning_bolt'
+        });
+        this.particles.push({
+          x: midpointX + facing * 12, y: handY - offset * 1.6,
+          endX: tipX, endY: handY + offset * 0.5,
+          color: bolt === 1 ? '#FFFFFF' : '#FFF176', width: bolt === 1 ? 3 : 2,
+          life: 120 + bolt * 25, maxLife: 190, alpha: 1 - bolt * 0.18, type: 'thunder_lightning_bolt'
+        });
+      }
+    }
+  }
+
+  createElementalImpactEffect(element, x, y) {
+    if (element === 'fujin') {
+      for (let ring = 0; ring < 2; ring++) {
+        this.particles.push({ x, y: y - 18, radius: 6, maxRadius: 35 + ring * 18, color: ring ? '#4FC3F7' : '#E7FFFF', life: 260, maxLife: 260, alpha: 0.7 - ring * 0.18, type: 'wind_impact_ring' });
+      }
+      return;
+    }
+    if (element === 'katon') {
+      for (let ember = 0; ember < 14; ember++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 55 + Math.random() * 75;
+        this.particles.push({ x, y: y - 20, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 36, size: 2 + Math.random() * 3, color: ember % 3 ? '#FF5A1F' : '#FFE082', life: 360, maxLife: 360, alpha: 1, type: 'explosion_fire' });
+      }
+      return;
+    }
+    if (element === 'suijin') {
+      this.particles.push({ x, y: y - 18, radius: 4, maxRadius: 48, color: '#E1F5FE', life: 320, maxLife: 320, alpha: 0.8, type: 'water_ripple_ring' });
+      for (let splash = 0; splash < 10; splash++) {
+        this.particles.push({ x, y: y - 16, vx: (Math.random() - 0.5) * 130, vy: -55 - Math.random() * 85, size: 2 + Math.random() * 3, color: splash % 2 ? '#4FC3F7' : '#B3E5FC', life: 420, maxLife: 420, alpha: 0.9, type: 'water_splash' });
+      }
+      return;
+    }
+    if (element === 'raijin') {
+      this.particles.push({ x, y: y - 18, radius: 4, maxRadius: 52, color: '#FFFFFF', life: 170, maxLife: 170, alpha: 0.9, type: 'thunder_punch_ring' });
+      for (let spark = 0; spark < 12; spark++) {
+        const angle = (Math.PI * 2 / 12) * spark;
+        this.particles.push({ x, y: y - 18, endX: x + Math.cos(angle) * (22 + Math.random() * 32), endY: y - 18 + Math.sin(angle) * (22 + Math.random() * 32), color: spark % 3 ? '#FFEB3B' : '#FFFFFF', width: 2, life: 220, maxLife: 220, alpha: 1, type: 'thunder_lightning_bolt' });
+      }
+    }
   }
 
   // ?儭?憸函頂?寞?

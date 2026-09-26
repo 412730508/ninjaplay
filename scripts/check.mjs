@@ -166,11 +166,29 @@ try {
   for (const code of Object.values(skillCodes)) {
     particleSystem.createSkillEffect(code, 320, 280, 1);
   }
+  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin']) {
+    particleSystem.createElementalBasicAttackEffect(elementalId, 320, 280, 1, 80);
+    particleSystem.createElementalImpactEffect(elementalId, 400, 280);
+  }
   if (particleWarnings.length) {
     throw new Error(`skills missing particle effects: ${particleWarnings.join(' | ')}`);
   }
   particleSystem.update(16);
   particleSystem.render(renderContext);
+
+  const engineContext = vm.createContext({ console, setTimeout: () => 0, clearTimeout: () => {} });
+  vm.runInContext(readFileSync(resolve(root, 'characters.js'), 'utf8'), engineContext);
+  vm.runInContext(engineSource, engineContext);
+  const NinjaGame = vm.runInContext('NinjaGame', engineContext);
+  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin']) {
+    for (const kind of ['swing', 'impact']) {
+      const rendered = NinjaGame.prototype.renderElementalCombatFlourish.call({}, renderContext, {
+        element: elementalId, kind, x: 320, y: 250, targetX: 400, targetY: 250,
+        facing: 1, power: 1, color: '#00AAFF', shade: '#003366', highlight: '#FFFFFF'
+      }, 0.4, 0.6);
+      if (!rendered) throw new Error(`elemental flourish did not render: ${elementalId} ${kind}`);
+    }
+  }
 } catch (error) {
   console.error(`Skill integration check failed: ${error.message}`);
   failed = true;

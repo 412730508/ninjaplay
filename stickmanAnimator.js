@@ -809,10 +809,108 @@
   }
 
   // ?嗡???賢??思蝙?券????
-  createFireBallAnimation() { return this.createGenericSkillAnimation('throw'); }
-  createWaterShieldAnimation() { return this.createGenericSkillAnimation('shield'); }
-  createWaterDragonAnimation() { return this.createGenericSkillAnimation('cast'); }
-  createThunderPunchAnimation() { return this.createGenericSkillAnimation('punch'); }
+  // 火球不是一般投擲：先把火焰壓進掌心，再以身體前傾的爆發姿勢推出去。
+  createFireBallAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      if (t < 0.36) {
+        const charge = t / 0.36;
+        return {
+          head: { x: -2 * charge, y: 2 * charge, rotation: -14 * charge }, body: { rotation: -20 * charge },
+          leftArm: { upperRotation: -55 - 40 * charge, lowerRotation: -30 - 45 * charge },
+          rightArm: { upperRotation: -48 - 45 * charge, lowerRotation: -20 - 55 * charge },
+          leftLeg: { upperRotation: 15 * charge, lowerRotation: 22 * charge }, rightLeg: { upperRotation: -12 * charge, lowerRotation: 16 * charge }
+        };
+      }
+      if (t < 0.65) {
+        const throwPower = (t - 0.36) / 0.29;
+        return {
+          head: { x: 8 * throwPower, y: -4 * throwPower, rotation: 20 * throwPower }, body: { rotation: 34 * throwPower },
+          leftArm: { upperRotation: -90 + 45 * throwPower, lowerRotation: -70 + 55 * throwPower },
+          rightArm: { upperRotation: 30 + 120 * throwPower, lowerRotation: 50 + 70 * throwPower },
+          leftLeg: { upperRotation: -38 * throwPower, lowerRotation: 48 * throwPower }, rightLeg: { upperRotation: 28 * throwPower, lowerRotation: -22 * throwPower }
+        };
+      }
+      const recover = (t - 0.65) / 0.35;
+      return {
+        head: { x: 7 * (1 - recover), y: -3 * (1 - recover), rotation: 15 * (1 - recover) }, body: { rotation: 25 * (1 - recover) },
+        leftArm: { upperRotation: -45 * (1 - recover), lowerRotation: -28 * (1 - recover) },
+        rightArm: { upperRotation: 105 * (1 - recover), lowerRotation: 62 * (1 - recover) },
+        leftLeg: { upperRotation: -22 * (1 - recover), lowerRotation: 28 * (1 - recover) }, rightLeg: { upperRotation: 18 * (1 - recover), lowerRotation: -12 * (1 - recover) }
+      };
+    });
+  }
+
+  // 水幕盾是雙手引水包覆身體，結尾維持防守架勢，不沿用一般施法姿勢。
+  createWaterShieldAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const raise = Math.min(1, t / 0.45);
+      const settle = t > 0.58 ? (t - 0.58) / 0.42 : 0;
+      return {
+        head: { x: 0, y: -3 * raise + settle, rotation: -5 * raise }, body: { rotation: -8 * raise + 5 * settle },
+        leftArm: { upperRotation: -30 - 85 * raise + 26 * settle, lowerRotation: -12 - 70 * raise + 22 * settle },
+        rightArm: { upperRotation: 30 + 85 * raise - 26 * settle, lowerRotation: 12 + 70 * raise - 22 * settle },
+        leftLeg: { upperRotation: 8 * raise, lowerRotation: 14 * raise }, rightLeg: { upperRotation: -8 * raise, lowerRotation: 14 * raise }
+      };
+    });
+  }
+
+  // 水龍彈是由下往上抽水，再向前甩出；和護盾的封閉手勢刻意相反。
+  createWaterDragonAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      if (t < 0.42) {
+        const draw = t / 0.42;
+        return {
+          head: { x: -2 * draw, y: 3 * draw, rotation: -12 * draw }, body: { rotation: -24 * draw },
+          leftArm: { upperRotation: -35 - 80 * draw, lowerRotation: -20 - 95 * draw },
+          rightArm: { upperRotation: 32 - 55 * draw, lowerRotation: 15 - 70 * draw },
+          leftLeg: { upperRotation: 20 * draw, lowerRotation: 26 * draw }, rightLeg: { upperRotation: -18 * draw, lowerRotation: 22 * draw }
+        };
+      }
+      const cast = Math.min(1, (t - 0.42) / 0.38);
+      const recover = Math.max(0, (t - 0.8) / 0.2);
+      return {
+        head: { x: 10 * cast * (1 - recover), y: -5 * cast * (1 - recover), rotation: 26 * cast * (1 - recover) }, body: { rotation: 42 * cast * (1 - recover) },
+        leftArm: { upperRotation: -115 + 65 * cast, lowerRotation: -115 + 90 * cast },
+        rightArm: { upperRotation: 5 + 150 * cast * (1 - recover), lowerRotation: 15 + 95 * cast * (1 - recover) },
+        leftLeg: { upperRotation: -42 * cast * (1 - recover), lowerRotation: 58 * cast * (1 - recover) }, rightLeg: { upperRotation: 30 * cast * (1 - recover), lowerRotation: -26 * cast * (1 - recover) }
+      };
+    });
+  }
+
+  // 雷電拳先壓低重心蓄電，接著是一記直線爆發拳，不再沿用所有角色共用的 punch 動作。
+  createThunderPunchAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      if (t < 0.3) {
+        const charge = t / 0.3;
+        return {
+          head: { x: -3 * charge, y: 5 * charge, rotation: -18 * charge }, body: { rotation: -28 * charge },
+          leftArm: { upperRotation: -75 - 35 * charge, lowerRotation: -55 - 30 * charge },
+          rightArm: { upperRotation: -30 - 62 * charge, lowerRotation: -15 - 68 * charge },
+          leftLeg: { upperRotation: 28 * charge, lowerRotation: 35 * charge }, rightLeg: { upperRotation: -25 * charge, lowerRotation: 30 * charge }
+        };
+      }
+      if (t < 0.58) {
+        const strike = (t - 0.3) / 0.28;
+        return {
+          head: { x: 16 * strike, y: -5 * strike, rotation: 35 * strike }, body: { rotation: 50 * strike },
+          leftArm: { upperRotation: -105 + 52 * strike, lowerRotation: -85 + 35 * strike },
+          rightArm: { upperRotation: -92 + 190 * strike, lowerRotation: -82 + 130 * strike },
+          leftLeg: { upperRotation: -48 * strike, lowerRotation: 64 * strike }, rightLeg: { upperRotation: 38 * strike, lowerRotation: -32 * strike }
+        };
+      }
+      const recover = (t - 0.58) / 0.42;
+      return {
+        head: { x: 10 * (1 - recover), y: -2 * (1 - recover), rotation: 22 * (1 - recover) }, body: { rotation: 32 * (1 - recover) },
+        leftArm: { upperRotation: -52 * (1 - recover), lowerRotation: -36 * (1 - recover) },
+        rightArm: { upperRotation: 92 * (1 - recover), lowerRotation: 58 * (1 - recover) },
+        leftLeg: { upperRotation: -26 * (1 - recover), lowerRotation: 34 * (1 - recover) }, rightLeg: { upperRotation: 20 * (1 - recover), lowerRotation: -16 * (1 - recover) }
+      };
+    });
+  }
   createRockGuardAnimation() { return this.createGenericSkillAnimation('guard'); }
   createShadowCloneAnimation() { return this.createGenericSkillAnimation('clone'); }
   createSpiritBombAnimation() { return this.createGenericSkillAnimation('throw'); }

@@ -523,6 +523,7 @@
       color,
       shade,
       highlight,
+      element: attacker.id,
       power,
       startTime: Date.now(),
       duration: kind === 'ultimate' ? 850 : kind === 'skill' ? 580 : 320
@@ -530,6 +531,126 @@
 
     // Guard against unusually fast attacks building an unbounded visual queue.
     if (flourishes.length > 48) flourishes.splice(0, flourishes.length - 48);
+  }
+
+  // 風、火、水、雷的戰鬥筆觸各自獨立，避免所有角色最後都只剩同一種彩色圓環。
+  renderElementalCombatFlourish(ctx, effect, progress, fade) {
+    const elemental = ['fujin', 'katon', 'suijin', 'raijin'];
+    if (!elemental.includes(effect.element)) return false;
+
+    const isImpact = effect.kind === 'impact';
+    const x = isImpact ? effect.targetX : effect.x;
+    const y = isImpact ? effect.targetY : effect.y;
+    const facing = effect.facing || 1;
+    const power = effect.power || 1;
+    const reach = 52 + power * 32 + progress * 34;
+
+    if (effect.element === 'fujin') {
+      ctx.strokeStyle = effect.highlight;
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 14 * power;
+      ctx.lineCap = 'round';
+      for (let ribbon = 0; ribbon < 3; ribbon++) {
+        const radius = 22 + ribbon * 13 + progress * 28;
+        const start = (-1.35 + ribbon * 0.48) * facing;
+        const end = start + (1.55 + progress * 1.1) * facing;
+        ctx.globalAlpha = fade * (0.76 - ribbon * 0.16);
+        ctx.lineWidth = 4 - ribbon * 0.7;
+        ctx.beginPath();
+        ctx.arc(x + facing * 7, y - 8, radius, start, end, facing < 0);
+        ctx.stroke();
+      }
+      if (isImpact) {
+        ctx.globalAlpha = fade * 0.6;
+        ctx.strokeStyle = effect.color;
+        ctx.lineWidth = 2;
+        for (let cut = -1; cut <= 1; cut++) {
+          ctx.beginPath();
+          ctx.moveTo(x - facing * 12, y + cut * 13);
+          ctx.lineTo(x + facing * (reach * 0.62), y - cut * 20);
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
+
+    if (effect.element === 'katon') {
+      const flameHeight = (38 + power * 40) * (isImpact ? 1.15 : 0.85) * (0.72 + progress * 0.35);
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 18 * power;
+      for (let flame = 0; flame < 3; flame++) {
+        const offset = (flame - 1) * 12;
+        ctx.globalAlpha = fade * (0.8 - flame * 0.13);
+        ctx.fillStyle = flame === 1 ? effect.highlight : flame === 0 ? effect.color : '#FF3D21';
+        ctx.beginPath();
+        ctx.moveTo(x + offset - 13, y + 18);
+        ctx.quadraticCurveTo(x + facing * (14 + flame * 7), y - flameHeight, x + offset + 15, y + 18);
+        ctx.quadraticCurveTo(x + offset, y + 7, x + offset - 13, y + 18);
+        ctx.fill();
+      }
+      ctx.globalAlpha = fade * 0.72;
+      ctx.strokeStyle = '#FFD166';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(x, y + 7, 18 + progress * 38 * power, 0.15, Math.PI * 1.85);
+      ctx.stroke();
+      return true;
+    }
+
+    if (effect.element === 'suijin') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 11 * power;
+      ctx.strokeStyle = effect.highlight;
+      ctx.lineCap = 'round';
+      if (!isImpact) {
+        for (let stream = 0; stream < 3; stream++) {
+          const lift = (stream - 1) * 13;
+          ctx.globalAlpha = fade * (0.78 - stream * 0.12);
+          ctx.lineWidth = 5 - stream;
+          ctx.beginPath();
+          ctx.moveTo(x + facing * 10, y + lift);
+          ctx.quadraticCurveTo(x + facing * (reach * 0.48), y - 28 - lift, x + facing * reach, y + lift * 0.5);
+          ctx.stroke();
+        }
+      } else {
+        for (let ripple = 0; ripple < 3; ripple++) {
+          ctx.globalAlpha = fade * (0.72 - ripple * 0.16);
+          ctx.lineWidth = 3 - ripple * 0.45;
+          ctx.beginPath();
+          ctx.ellipse(x, y + 8, 18 + progress * (26 + ripple * 15), 6 + progress * (9 + ripple * 5), 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
+
+    // 雷：用折線和瞬白替代圓環；每次攻擊都像電流跳過距離。
+    ctx.shadowColor = '#FFF176';
+    ctx.shadowBlur = 16 * power;
+    const endX = isImpact ? x : x + facing * reach;
+    const startX = isImpact ? x - facing * (reach * 0.28) : x + facing * 10;
+    for (let bolt = 0; bolt < 3; bolt++) {
+      const offset = (bolt - 1) * 9;
+      ctx.globalAlpha = fade * (0.9 - bolt * 0.18);
+      ctx.strokeStyle = bolt === 1 ? '#FFFFFF' : '#FFEB3B';
+      ctx.lineWidth = bolt === 1 ? 3.5 : 2;
+      ctx.beginPath();
+      ctx.moveTo(startX, y + offset);
+      const segments = 4;
+      for (let step = 1; step < segments; step++) {
+        const ratio = step / segments;
+        const zig = (step % 2 ? -1 : 1) * (10 + bolt * 3);
+        ctx.lineTo(startX + (endX - startX) * ratio, y + offset + zig);
+      }
+      ctx.lineTo(endX, y - offset * 0.35);
+      ctx.stroke();
+    }
+    if (isImpact) {
+      ctx.globalAlpha = fade * 0.32;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(x - 8 - progress * 18, y - 26 - progress * 18, 16 + progress * 36, 38 + progress * 36);
+    }
+    return true;
   }
 
   renderCombatFlourishes() {
@@ -547,6 +668,11 @@
       ctx.save();
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+
+      if (this.renderElementalCombatFlourish(ctx, effect, progress, fade)) {
+        ctx.restore();
+        return true;
+      }
 
       if (effect.kind === 'swing') {
         const cx = effect.x + effect.facing * 18;
@@ -9811,6 +9937,15 @@
           : 'attack'
     );
     this.spawnCombatFlourish('swing', player, opponent, player.id === 'forgefire' || player.id === 'adjudicator' ? 1.35 : 1);
+    if (['fujin', 'katon', 'suijin', 'raijin'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+      particleSystem.createElementalBasicAttackEffect(
+        player.id,
+        player.position.x,
+        player.position.y,
+        player.facing,
+        this.getMeleeRange(player)
+      );
+    }
 
     // ? ???餅?嚗撠?撠
     if (player.isRanged) {
@@ -13461,6 +13596,9 @@
     const isCritical = damage >= 15;
     if (typeof particleSystem !== 'undefined' && particleSystem && particleSystem.createEnhancedHitEffect) {
       particleSystem.createEnhancedHitEffect(target.position.x, target.position.y, damage, isCritical);
+    }
+    if (attacker && ['fujin', 'katon', 'suijin', 'raijin'].includes(attacker.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+      particleSystem.createElementalImpactEffect(attacker.id, target.position.x, target.position.y);
     }
     
     // ? ?萄遣???頠楚?寞?
