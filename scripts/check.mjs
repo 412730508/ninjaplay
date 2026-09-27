@@ -166,7 +166,7 @@ try {
   for (const code of Object.values(skillCodes)) {
     particleSystem.createSkillEffect(code, 320, 280, 1);
   }
-  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade']) {
+  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen']) {
     particleSystem.createElementalBasicAttackEffect(elementalId, 320, 280, 1, 80);
     particleSystem.createElementalImpactEffect(elementalId, 400, 280);
   }
@@ -175,12 +175,19 @@ try {
   }
   particleSystem.update(16);
   particleSystem.render(renderContext);
+  particleSystem.particles = Array.from({ length: particleSystem.maxParticles + 120 }, (_, index) => ({
+    x: index, y: 0, life: 500, maxLife: 500, alpha: 1, type: 'generic'
+  }));
+  particleSystem.update(16);
+  if (particleSystem.particles.length > particleSystem.maxParticles) {
+    throw new Error('particle safety limit did not prune an overloaded frame');
+  }
 
   const engineContext = vm.createContext({ console, setTimeout: () => 0, clearTimeout: () => {} });
   vm.runInContext(readFileSync(resolve(root, 'characters.js'), 'utf8'), engineContext);
   vm.runInContext(engineSource, engineContext);
   const NinjaGame = vm.runInContext('NinjaGame', engineContext);
-  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade']) {
+  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen']) {
     for (const kind of ['swing', 'impact']) {
       const rendered = NinjaGame.prototype.renderElementalCombatFlourish.call({}, renderContext, {
         element: elementalId, kind, x: 320, y: 250, targetX: 400, targetY: 250,

@@ -9,6 +9,9 @@
     this.comboTrail = []; // ???頠楚
     this.impactRings = []; // 銵?瘜Ｙ
     this.currentMap = 'grassland'; // ?嗅??啣?
+    // 大招與延遲粒子可能在同一小段時間內集中出現。保留最新畫面，
+    // 但避免弱一點的電腦在一幀繪製數千顆過期粒子。
+    this.maxParticles = 900;
   }
   
   // ?萄遣??賜??
@@ -28,10 +31,10 @@
         this.createFireBallEffect(x, y, facing);
         break;
       case 'FRG_001': // 鍛炎忍者・烈火旋斬
-        this.createFireRushEffect(x, y, facing);
+        this.createForgeFireSpinEffect(x, y, facing);
         break;
       case 'FRG_002': // 鍛炎忍者・炎神巨刃
-        this.createFireBallEffect(x, y, facing);
+        this.createFlameGodBladeEffect(x, y, facing);
         break;
       case 'WAT_001': // 瘞游???
         this.createWaterShieldEffect(x, y);
@@ -124,16 +127,16 @@
         this.createStormExecutionEffect(x, y, facing);
         break;
       case 'PUP_001': // 千機傀儡師・召喚/收回
-        this.createShadowCloneEffect(x, y);
+        this.createPuppetDeployEffect(x, y, facing);
         break;
       case 'PUP_002': // 千機傀儡師・幻影交錯
-        this.createShadowStrikeEffect(x, y, facing);
+        this.createPhantomSwapEffect(x, y, facing);
         break;
       case 'AZR_001': // 蒼雷之徒・天罰
-        this.createThunderPunchEffect(x, y);
+        this.createDivineSmiteEffect(x, y, facing);
         break;
       case 'AZR_002': // 蒼雷之徒・萬雷蒼穹斬
-        this.createThunderStepEffect(x, y);
+        this.createGrandThunderSlashEffect(x, y, facing);
         break;
 
       case 'SHM_001': // Staccato Strike
@@ -326,6 +329,23 @@
       for (let blade = 0; blade < 3; blade++) {
         this.particles.push({ x: handX - facing * blade * 10, y: handY + (blade - 1) * 11, endX: tipX + facing * (16 + blade * 9), endY: handY - (blade - 1) * 10, color: blade === 1 ? '#E5FFFF' : '#49D8D3', width: blade === 1 ? 3 : 2, life: 175 + blade * 35, maxLife: 260, alpha: 0.86, type: 'exile_wind_blade' });
       }
+      return;
+    }
+    if (element === 'forgefire') {
+      this.particles.push({ x: handX, y: handY + 8, endX: tipX + facing * 22, endY: handY - 19, color: '#FFE08A', width: 5, life: 210, maxLife: 210, alpha: 0.9, type: 'flame_blade_line' });
+      for (let spark = 0; spark < 5; spark++) this.particles.push({ x: handX + facing * (20 + spark * 9), y: handY + (spark - 2) * 7, vx: facing * (38 + spark * 7), vy: -28 - spark * 6, size: 2 + Math.random() * 2, color: spark % 2 ? '#FFB000' : '#FF5A1F', life: 280, maxLife: 280, alpha: 0.88, type: 'fire_spark' });
+      return;
+    }
+    if (element === 'puppeteer') {
+      for (let thread = 0; thread < 4; thread++) this.particles.push({ x: handX, y: handY + (thread - 1.5) * 9, endX: tipX, endY: handY - (thread - 1.5) * 10, color: thread % 2 ? '#E9D5FF' : '#A855F7', width: 1.5, life: 240, maxLife: 240, alpha: 0.8, type: 'puppet_thread_line' });
+      return;
+    }
+    if (element === 'azure_disciple') {
+      for (let bolt = 0; bolt < 3; bolt++) this.particles.push({ x: handX, y: handY + (bolt - 1) * 8, endX: tipX, endY: handY - (bolt - 1) * 10, color: bolt === 1 ? '#FFFFFF' : '#75D9FF', width: bolt === 1 ? 3 : 2, life: 160, maxLife: 160, alpha: 0.9, type: 'thunder_lightning_bolt' });
+      return;
+    }
+    if (element === 'shamisen') {
+      for (let wave = 0; wave < 3; wave++) this.particles.push({ x: handX, y: handY + (wave - 1) * 8, endX: tipX, endY: handY + (wave - 1) * 14, color: wave === 1 ? '#FFF0D6' : '#FFD180', width: wave === 1 ? 3 : 2, life: 260, maxLife: 260, alpha: 0.82, type: 'shamisen_attack_wave' });
     }
   }
 
@@ -435,6 +455,24 @@
     if (element === 'exileblade') {
       this.particles.push({ x, y: y - 17, radius: 4, maxRadius: 44, color: '#83FFF6', life: 250, maxLife: 250, alpha: 0.76, type: 'exile_impact_ring' });
       for (let cut = 0; cut < 4; cut++) this.particles.push({ x: x - 27, y: y - 25 + cut * 13, endX: x + 30, endY: y - 38 + cut * 10, color: cut % 2 ? '#E5FFFF' : '#4DE6DD', width: 2.5, life: 210, maxLife: 210, alpha: 0.88, type: 'exile_wind_blade' });
+      return;
+    }
+    if (element === 'forgefire') {
+      this.particles.push({ x, y: y - 17, radius: 4, maxRadius: 48, color: '#FFB000', life: 240, maxLife: 240, alpha: 0.75, type: 'forge_impact_ring' });
+      for (let ember = 0; ember < 9; ember++) this.particles.push({ x, y: y - 17, vx: (Math.random() - 0.5) * 130, vy: -35 - Math.random() * 75, size: 2 + Math.random() * 3, color: ember % 2 ? '#FFB000' : '#FF4D00', life: 340, maxLife: 340, alpha: 0.9, type: 'explosion_fire' });
+      return;
+    }
+    if (element === 'puppeteer') {
+      this.particles.push({ x, y: y - 16, radius: 4, maxRadius: 40, color: '#D8B4FE', life: 300, maxLife: 300, alpha: 0.72, type: 'puppet_impact_ring' });
+      for (let needle = 0; needle < 6; needle++) { const angle = Math.PI * 2 * needle / 6; this.particles.push({ x, y: y - 16, endX: x + Math.cos(angle) * 38, endY: y - 16 + Math.sin(angle) * 30, color: '#F3E5F5', width: 1.5, life: 250, maxLife: 250, alpha: 0.82, type: 'phantom_needle_line' }); }
+      return;
+    }
+    if (element === 'azure_disciple') {
+      this.particles.push({ x, y: y - 17, radius: 4, maxRadius: 46, color: '#FFFFFF', life: 190, maxLife: 190, alpha: 0.86, type: 'azure_impact_ring' });
+      return;
+    }
+    if (element === 'shamisen') {
+      for (let ring = 0; ring < 3; ring++) this.particles.push({ x, y: y - 16, radius: 4, maxRadius: 30 + ring * 17, color: ring === 1 ? '#FFF0D6' : '#FFD180', life: 320, maxLife: 320, alpha: 0.74 - ring * 0.13, type: 'shamisen_impact_ring' });
     }
   }
 
@@ -491,6 +529,43 @@
     for (let cut = 0; cut < 6; cut++) {
       const lift = (cut - 2.5) * 13;
       this.particles.push({ x: x - facing * (14 + cut * 8), y: y - 20 + lift, endX: x + facing * (46 + cut * 11), endY: y - 28 - lift * 0.3, color: cut % 2 ? '#73F3ED' : '#F2FFFF', width: cut % 2 ? 2 : 3, life: 300 + cut * 38, maxLife: 490, alpha: 0.82, type: 'storm_execution_cut' });
+    }
+  }
+
+  createForgeFireSpinEffect(x, y, facing) {
+    for (let arc = 0; arc < 4; arc++) {
+      const angle = Math.PI * 2 * arc / 4;
+      this.particles.push({ x, y: y - 18, endX: x + Math.cos(angle) * 96, endY: y - 18 + Math.sin(angle) * 54, color: arc % 2 ? '#FFB000' : '#FF5A1F', width: 5, life: 260 + arc * 50, maxLife: 440, alpha: 0.82, type: 'forge_spin_arc' });
+    }
+  }
+
+  createFlameGodBladeEffect(x, y, facing) {
+    this.particles.push({ x: x + facing * 20, y: y - 85, endX: x + facing * 330, endY: y + 20, color: '#FFE08A', width: 18, life: 420, maxLife: 420, alpha: 0.88, type: 'flame_god_blade_line' });
+    for (let ember = 0; ember < 16; ember++) this.particles.push({ x: x + facing * (20 + Math.random() * 220), y: y - 28 + (Math.random() - 0.5) * 70, vx: facing * (25 + Math.random() * 65), vy: -30 - Math.random() * 85, size: 2 + Math.random() * 4, color: ember % 2 ? '#FFB000' : '#FF4D00', life: 480, maxLife: 480, alpha: 0.9, type: 'explosion_fire' });
+  }
+
+  createPuppetDeployEffect(x, y, facing) {
+    for (let thread = 0; thread < 5; thread++) this.particles.push({ x: x + facing * 6, y: y - 20 + (thread - 2) * 11, endX: x + facing * (48 + thread * 16), endY: y - 20 - (thread - 2) * 17, color: thread % 2 ? '#E9D5FF' : '#8B5CF6', width: 1.5, life: 420, maxLife: 420, alpha: 0.86, type: 'puppet_thread_line' });
+    this.particles.push({ x: x + facing * 135, y: y - 15, radius: 4, maxRadius: 42, color: '#D8B4FE', life: 340, maxLife: 340, alpha: 0.7, type: 'puppet_deploy_ring' });
+  }
+
+  createPhantomSwapEffect(x, y, facing) {
+    for (let needle = 0; needle < 10; needle++) {
+      const angle = Math.PI * 2 * needle / 10;
+      this.particles.push({ x, y: y - 18, endX: x + Math.cos(angle) * 82, endY: y - 18 + Math.sin(angle) * 56, color: needle % 2 ? '#F3E5F5' : '#9C5CE0', width: 2, life: 330, maxLife: 330, alpha: 0.88, type: 'phantom_needle_line' });
+    }
+    this.particles.push({ x: x - facing * 36, y: y - 18, radius: 6, maxRadius: 70, color: '#4A148C', life: 440, maxLife: 440, alpha: 0.62, type: 'phantom_swap_ring' });
+  }
+
+  createDivineSmiteEffect(x, y, facing) {
+    this.particles.push({ x: x + facing * 130, y: y - 170, endX: x + facing * 130, endY: y + 20, color: '#E1F5FE', width: 8, life: 280, maxLife: 280, alpha: 0.92, type: 'divine_smite_bolt' });
+    this.particles.push({ x: x + facing * 130, y: y + 16, radius: 5, maxRadius: 54, color: '#75D9FF', life: 300, maxLife: 300, alpha: 0.8, type: 'divine_smite_ring' });
+  }
+
+  createGrandThunderSlashEffect(x, y, facing) {
+    for (let bolt = 0; bolt < 5; bolt++) {
+      const offset = (bolt - 2) * 55;
+      this.particles.push({ x: x + offset, y: y - 190, endX: x + offset + facing * 38, endY: y + 22, color: bolt === 2 ? '#FFFFFF' : '#5CCBFF', width: bolt === 2 ? 7 : 4, life: 440 + bolt * 60, maxLife: 680, alpha: 0.86, type: 'grand_thunder_bolt' });
     }
   }
 
@@ -4018,6 +4093,9 @@
   }
 
   update(deltaTime) {
+    if (this.particles.length > this.maxParticles) {
+      this.particles.splice(0, this.particles.length - this.maxParticles);
+    }
     // 雿輻?憯葬隞? filter()嚗??撟?萄遣?圈??
     let writeIdx = 0;
     for (let readIdx = 0; readIdx < this.particles.length; readIdx++) {

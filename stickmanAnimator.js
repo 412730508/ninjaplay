@@ -391,6 +391,14 @@
       exileGaleDash: this.createExileGaleDashAnimation(),
       stormExecution: this.createStormExecutionAnimation(),
 
+      // 後期角色：技能節奏各自獨立，不能退回共用招式動畫
+      puppetDeploy: this.createPuppetDeployAnimation(),
+      phantomSwap: this.createPhantomSwapAnimation(),
+      divineSmite: this.createDivineSmiteAnimation(),
+      grandThunderSlash: this.createGrandThunderSlashAnimation(),
+      staccatoStrike: this.createStaccatoStrikeAnimation(),
+      deadlyCanon: this.createDeadlyCanonAnimation(),
+
       // ?????
       hit: this.createHitAnimation(),
       victory: this.createVictoryAnimation(),
@@ -1221,6 +1229,72 @@
       const slash = t > 0.25 ? Math.sin((t - 0.25) * Math.PI * 3.5) : 0;
       const recover = Math.max(0, (t - 0.78) / 0.22);
       return { head: { x: 10 * throwPower + 5 * slash, y: -2 * throwPower, rotation: 30 * throwPower + 24 * slash }, body: { rotation: 42 * throwPower + 32 * slash }, leftArm: { upperRotation: -48 - 45 * throwPower - 35 * slash, lowerRotation: -28 - 38 * throwPower - 28 * slash }, rightArm: { upperRotation: -28 + 172 * throwPower * (1 - recover) + 80 * slash, lowerRotation: -18 + 132 * throwPower * (1 - recover) + 65 * slash }, leftLeg: { upperRotation: -38 * throwPower - 42 * slash, lowerRotation: 48 * throwPower + 32 * slash }, rightLeg: { upperRotation: 30 * throwPower + 35 * slash, lowerRotation: -24 * throwPower - 26 * slash } };
+    });
+  }
+
+  // 傀儡師：雙手收線、放線；收回時同一個動作也可讀成拉回傀儡。
+  createPuppetDeployAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const weave = Math.min(1, t / 0.45);
+      const release = Math.max(0, Math.min(1, (t - 0.45) / 0.22));
+      const recover = Math.max(0, (t - 0.7) / 0.3);
+      return { head: { x: -2 * weave + 7 * release, y: -2 * weave, rotation: -12 * weave + 20 * release }, body: { rotation: -18 * weave + 29 * release * (1 - recover) }, leftArm: { upperRotation: -38 - 56 * weave + 100 * release, lowerRotation: -18 - 55 * weave + 85 * release }, rightArm: { upperRotation: 38 + 56 * weave - 100 * release, lowerRotation: 18 + 55 * weave - 85 * release }, leftLeg: { upperRotation: 13 * weave - 24 * release, lowerRotation: 18 * weave }, rightLeg: { upperRotation: -13 * weave + 24 * release, lowerRotation: 18 * weave } };
+    });
+  }
+
+  // 幻影交錯：縮身消失、另一側伸手現身，讓瞬移比單純 dash 更有交換感。
+  createPhantomSwapAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      if (t < 0.36) {
+        const vanish = t / 0.36;
+        return { head: { x: -4 * vanish, y: 8 * vanish, rotation: -26 * vanish }, body: { rotation: -38 * vanish }, leftArm: { upperRotation: -42 - 68 * vanish, lowerRotation: -20 - 58 * vanish }, rightArm: { upperRotation: 36 - 75 * vanish, lowerRotation: 18 - 62 * vanish }, leftLeg: { upperRotation: 36 * vanish, lowerRotation: 50 * vanish }, rightLeg: { upperRotation: -34 * vanish, lowerRotation: 48 * vanish } };
+      }
+      const appear = Math.min(1, (t - 0.36) / 0.22);
+      const settle = Math.max(0, (t - 0.65) / 0.35);
+      return { head: { x: 18 * appear * (1 - settle), y: -5 * appear, rotation: 38 * appear * (1 - settle) }, body: { rotation: 52 * appear * (1 - settle) }, leftArm: { upperRotation: -108 + 82 * appear + 38 * settle, lowerRotation: -86 + 66 * appear + 30 * settle }, rightArm: { upperRotation: -25 + 145 * appear * (1 - settle), lowerRotation: -18 + 110 * appear * (1 - settle) }, leftLeg: { upperRotation: -58 * appear * (1 - settle), lowerRotation: 72 * appear }, rightLeg: { upperRotation: 45 * appear * (1 - settle), lowerRotation: -35 * appear } };
+    });
+  }
+
+  // 天罰是指向天空再壓下手掌，讓落雷來源清楚。
+  createDivineSmiteAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const point = Math.min(1, t / 0.42);
+      const call = Math.max(0, Math.min(1, (t - 0.42) / 0.18));
+      const recover = Math.max(0, (t - 0.65) / 0.35);
+      return { head: { x: 0, y: -3 * point, rotation: -8 * point + 18 * call }, body: { rotation: -12 * point + 28 * call * (1 - recover) }, leftArm: { upperRotation: -42 - 80 * point + 125 * call, lowerRotation: -22 - 65 * point + 104 * call }, rightArm: { upperRotation: -34 - 116 * point + 196 * call * (1 - recover), lowerRotation: -20 - 94 * point + 152 * call * (1 - recover) }, leftLeg: { upperRotation: 14 * point - 24 * call, lowerRotation: 20 * point }, rightLeg: { upperRotation: -12 * point + 20 * call, lowerRotation: 18 * point } };
+    });
+  }
+
+  // 萬雷蒼穹斬：雙手把雷抬至頭頂後往前劈開，給全場大招足夠的起手辨識。
+  createGrandThunderSlashAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const charge = Math.min(1, t / 0.56);
+      const cleave = Math.max(0, Math.min(1, (t - 0.56) / 0.16));
+      const recover = Math.max(0, (t - 0.72) / 0.28);
+      return { head: { x: 0, y: -6 * charge + 5 * cleave, rotation: -14 * charge + 35 * cleave }, body: { rotation: -23 * charge + 48 * cleave * (1 - recover) }, leftArm: { upperRotation: -80 - 82 * charge + 160 * cleave, lowerRotation: -52 - 65 * charge + 130 * cleave }, rightArm: { upperRotation: -88 - 88 * charge + 220 * cleave * (1 - recover), lowerRotation: -58 - 68 * charge + 175 * cleave * (1 - recover) }, leftLeg: { upperRotation: 18 * charge - 35 * cleave, lowerRotation: 25 * charge + 25 * cleave }, rightLeg: { upperRotation: 15 * charge - 28 * cleave, lowerRotation: 22 * charge + 20 * cleave } };
+    });
+  }
+
+  // 撥弦：一手穩琴、一手短促撥弦；命中節奏才有理由。
+  createStaccatoStrikeAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const pluck = Math.sin(Math.min(1, t / 0.62) * Math.PI * 2.5) * (1 - Math.max(0, (t - 0.72) / 0.28));
+      return { head: { x: 2 * pluck, y: 0, rotation: 9 * pluck }, body: { rotation: 13 * pluck }, leftArm: { upperRotation: -52, lowerRotation: -38 }, rightArm: { upperRotation: 18 + 86 * pluck, lowerRotation: 12 + 74 * pluck }, leftLeg: { upperRotation: 5, lowerRotation: 10 }, rightLeg: { upperRotation: -5, lowerRotation: 10 } };
+    });
+  }
+
+  // 輪唱殺陣：坐穩樂器、拉長撥弦，持續引導時不會被看成普通攻擊。
+  createDeadlyCanonAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const draw = Math.min(1, t / 0.46);
+      const sustain = t > 0.46 ? 1 - Math.max(0, (t - 0.78) / 0.22) * 0.35 : draw;
+      return { head: { x: -2 * draw, y: -3 * draw, rotation: -10 * draw }, body: { rotation: -16 * draw }, leftArm: { upperRotation: -58 - 34 * draw, lowerRotation: -42 - 26 * draw }, rightArm: { upperRotation: 24 + 76 * sustain, lowerRotation: 14 + 64 * sustain }, leftLeg: { upperRotation: 12 * draw, lowerRotation: 18 * draw }, rightLeg: { upperRotation: -12 * draw, lowerRotation: 18 * draw } };
     });
   }
 
