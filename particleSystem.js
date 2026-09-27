@@ -94,13 +94,13 @@
         this.createIaiFlashEffect(x, y);
         break;
       case 'BST_001': // 御獸忍者・深淵觸手
-        this.createShadowStrikeEffect(x, y, facing);
+        this.createAbyssTentacleEffect(x, y, facing);
         break;
       case 'BST_002': // 御獸忍者・巨獸解放
-        this.createRockGuardEffect(x, y);
+        this.createBeastLiberationEffect(x, y);
         break;
       case 'BST_003': // 御獸忍者・巨岩投擲
-        this.createGroundCrackEffect(x, y);
+        this.createBoulderTossEffect(x, y, facing);
         break;
       case 'BST_004': // 御獸忍者・解除御獸
         this.createRockGuardEffect(x, y);
@@ -112,16 +112,16 @@
         this.createVenomDartEffect(x, y, facing);
         break;
       case 'ADJ_001': // 裁決者・異議駁回
-        this.createRockGuardEffect(x, y);
+        this.createObjectionParryEffect(x, y);
         break;
       case 'ADJ_002': // 裁決者・最終判決
-        this.createGroundCrackEffect(x, y);
+        this.createFinalVerdictEffect(x, y);
         break;
       case 'EXL_001': // 叛風之刃・裂空突
-        this.createWindDashEffect(x, y, facing);
+        this.createExileGaleDashEffect(x, y, facing);
         break;
       case 'EXL_002': // 叛風之刃・狂風百裂
-        this.createWindSlashEffect(x, y);
+        this.createStormExecutionEffect(x, y, facing);
         break;
       case 'PUP_001': // 千機傀儡師・召喚/收回
         this.createShadowCloneEffect(x, y);
@@ -296,6 +296,36 @@
     if (element === 'ronin') {
       this.particles.push({ x: handX - facing * 8, y: handY + 11, endX: tipX + facing * 18, endY: handY - 21, color: '#FFFFFF', width: 3.5, life: 175, maxLife: 175, alpha: 0.92, type: 'blade_slash' });
       this.particles.push({ x: handX, y: handY + 18, endX: tipX, endY: handY - 5, color: '#90A4AE', width: 2, life: 240, maxLife: 240, alpha: 0.7, type: 'blade_slash' });
+      return;
+    }
+
+    if (element === 'beastmaster') {
+      for (let claw = 0; claw < 3; claw++) {
+        const lift = (claw - 1) * 12;
+        this.particles.push({ x: handX, y: handY + lift, endX: tipX, endY: handY + lift - 18, color: claw === 1 ? '#FFE0A5' : '#9B7650', width: claw === 1 ? 4 : 2.5, life: 210, maxLife: 210, alpha: 0.86, type: 'beast_claw_line' });
+      }
+      return;
+    }
+
+    if (element === 'scorpion') {
+      const segments = Math.max(4, Math.round(reach / 35));
+      for (let segment = 0; segment < segments; segment++) {
+        const offsetY = Math.sin(segment * 1.25) * 11;
+        this.particles.push({ x: handX + facing * segment * 34, y: handY + offsetY, endX: handX + facing * (segment + 1) * 34, endY: handY + Math.sin((segment + 1) * 1.25) * 11, color: segment === segments - 1 ? '#FF7A7A' : '#8B1E2D', width: segment === segments - 1 ? 4 : 2.5, life: 280, maxLife: 280, alpha: 0.85, type: 'scorpion_whip_line' });
+      }
+      return;
+    }
+
+    if (element === 'adjudicator') {
+      this.particles.push({ x: handX, y: handY - 24, endX: tipX, endY: handY + 22, color: '#FFF8D5', width: 6, life: 230, maxLife: 230, alpha: 0.84, type: 'gavel_swing_line' });
+      this.particles.push({ x: tipX, y: handY + 22, radius: 3, maxRadius: 24, color: '#D4A72C', life: 220, maxLife: 220, alpha: 0.72, type: 'gavel_stamp_ring' });
+      return;
+    }
+
+    if (element === 'exileblade') {
+      for (let blade = 0; blade < 3; blade++) {
+        this.particles.push({ x: handX - facing * blade * 10, y: handY + (blade - 1) * 11, endX: tipX + facing * (16 + blade * 9), endY: handY - (blade - 1) * 10, color: blade === 1 ? '#E5FFFF' : '#49D8D3', width: blade === 1 ? 3 : 2, life: 175 + blade * 35, maxLife: 260, alpha: 0.86, type: 'exile_wind_blade' });
+      }
     }
   }
 
@@ -385,6 +415,82 @@
         this.particles.push({ x: x - 31, y: y - 10 + cut * 13, endX: x + 34, endY: y - 37 + cut * 10, color: cut === 1 ? '#FFFFFF' : '#B0BEC5', width: cut === 1 ? 3 : 2, life: 220, maxLife: 220, alpha: 0.88, type: 'blade_slash' });
       }
       this.particles.push({ x, y: y - 18, radius: 3, maxRadius: 35, color: '#ECEFF1', life: 210, maxLife: 210, alpha: 0.65, type: 'ronin_cut_ring' });
+      return;
+    }
+    if (element === 'beastmaster') {
+      this.particles.push({ x, y: y - 16, radius: 3, maxRadius: 46, color: '#D7B980', life: 260, maxLife: 260, alpha: 0.7, type: 'beast_claw_ring' });
+      for (let claw = 0; claw < 3; claw++) this.particles.push({ x: x - 22, y: y - 9 + claw * 12, endX: x + 26, endY: y - 28 + claw * 12, color: claw === 1 ? '#FFE0A5' : '#8C6544', width: 3, life: 230, maxLife: 230, alpha: 0.9, type: 'beast_claw_line' });
+      return;
+    }
+    if (element === 'scorpion') {
+      this.particles.push({ x, y: y - 15, radius: 4, maxRadius: 38, color: '#FF6B6B', life: 300, maxLife: 300, alpha: 0.72, type: 'scorpion_sting_ring' });
+      for (let drop = 0; drop < 7; drop++) this.particles.push({ x, y: y - 16, vx: (Math.random() - 0.5) * 95, vy: -38 - Math.random() * 60, size: 2 + Math.random() * 2, color: drop % 2 ? '#D32F2F' : '#7A1522', life: 350, maxLife: 350, alpha: 0.88, type: 'poison_drip' });
+      return;
+    }
+    if (element === 'adjudicator') {
+      this.particles.push({ x, y: y - 10, radius: 4, maxRadius: 48, color: '#FFF8D5', life: 260, maxLife: 260, alpha: 0.76, type: 'verdict_stamp_ring' });
+      this.particles.push({ x: x - 28, y: y - 31, endX: x + 28, endY: y + 12, color: '#D4A72C', width: 4, life: 240, maxLife: 240, alpha: 0.88, type: 'gavel_swing_line' });
+      return;
+    }
+    if (element === 'exileblade') {
+      this.particles.push({ x, y: y - 17, radius: 4, maxRadius: 44, color: '#83FFF6', life: 250, maxLife: 250, alpha: 0.76, type: 'exile_impact_ring' });
+      for (let cut = 0; cut < 4; cut++) this.particles.push({ x: x - 27, y: y - 25 + cut * 13, endX: x + 30, endY: y - 38 + cut * 10, color: cut % 2 ? '#E5FFFF' : '#4DE6DD', width: 2.5, life: 210, maxLife: 210, alpha: 0.88, type: 'exile_wind_blade' });
+    }
+  }
+
+  // 御獸的畫面重點是「觸手越過距離抓回」，而不是單純的暗影爆炸。
+  createAbyssTentacleEffect(x, y, facing) {
+    for (let segment = 0; segment < 7; segment++) {
+      const fromX = x + facing * segment * 38;
+      const fromY = y - 18 + Math.sin(segment * 1.35) * 20;
+      this.particles.push({ x: fromX, y: fromY, endX: x + facing * (segment + 1) * 38, endY: y - 18 + Math.sin((segment + 1) * 1.35) * 20, color: segment % 2 ? '#452B66' : '#8A5CCB', width: 6 - segment * 0.45, life: 360, maxLife: 360, alpha: 0.82, type: 'abyss_tentacle_line' });
+    }
+    this.particles.push({ x: x + facing * 265, y: y - 20, radius: 5, maxRadius: 34, color: '#B89CFF', life: 260, maxLife: 260, alpha: 0.7, type: 'abyss_grab_ring' });
+  }
+
+  // 變身先有由內往外的岩殼，再留下短暫的巨獸輪廓提示。
+  createBeastLiberationEffect(x, y) {
+    for (let rock = 0; rock < 18; rock++) {
+      const angle = Math.PI * 2 * rock / 18;
+      this.particles.push({ x, y: y - 10, vx: Math.cos(angle) * (60 + Math.random() * 80), vy: Math.sin(angle) * (55 + Math.random() * 75) - 72, size: 4 + Math.random() * 6, color: rock % 3 ? '#795548' : '#D7B980', life: 680, maxLife: 680, alpha: 0.9, type: 'rock_debris' });
+    }
+    this.particles.push({ x, y: y + 17, radius: 4, maxRadius: 92, color: '#FFB74D', life: 500, maxLife: 500, alpha: 0.76, type: 'beast_transform_ring' });
+  }
+
+  createBoulderTossEffect(x, y, facing) {
+    for (let chip = 0; chip < 9; chip++) {
+      this.particles.push({ x: x + facing * (18 + chip * 4), y: y - 28 + (chip - 4) * 4, vx: facing * (70 + Math.random() * 60), vy: -42 + Math.random() * 56, size: 3 + Math.random() * 5, color: chip % 2 ? '#BCAAA4' : '#6D4C41', life: 460, maxLife: 460, alpha: 0.9, type: 'rock_debris' });
+    }
+    this.particles.push({ x: x + facing * 45, y: y - 28, endX: x + facing * 130, endY: y - 58, color: '#E6D1AE', width: 7, life: 260, maxLife: 260, alpha: 0.68, type: 'boulder_throw_line' });
+  }
+
+  // 招架不是攻擊：用一面明確的金色「判決面」讓雙方知道此刻不該硬打。
+  createObjectionParryEffect(x, y) {
+    this.particles.push({ x, y: y - 25, radius: 8, maxRadius: 54, color: '#FFE082', life: 460, maxLife: 460, alpha: 0.78, type: 'parry_verdict_ring' });
+    for (let line = 0; line < 4; line++) {
+      this.particles.push({ x: x - 30, y: y - 52 + line * 17, endX: x + 34, endY: y - 52 + line * 17, color: line % 2 ? '#FFF8D5' : '#D4A72C', width: 2, life: 440, maxLife: 440, alpha: 0.75, type: 'verdict_barrier_line' });
+    }
+  }
+
+  createFinalVerdictEffect(x, y) {
+    for (let seal = 0; seal < 3; seal++) {
+      this.particles.push({ x, y: y + 18, radius: 12 + seal * 24, maxRadius: 76 + seal * 32, color: seal === 0 ? '#FFF8D5' : '#C58C18', life: 700 + seal * 120, maxLife: 940, alpha: 0.7 - seal * 0.14, type: 'verdict_domain_ring' });
+    }
+    this.particles.push({ x, y: y - 55, endX: x, endY: y + 8, color: '#FFF8D5', width: 7, life: 320, maxLife: 320, alpha: 0.9, type: 'verdict_gavel_line' });
+  }
+
+  createExileGaleDashEffect(x, y, facing) {
+    for (let blade = 0; blade < 5; blade++) {
+      const lift = (blade - 2) * 10;
+      this.particles.push({ x: x - facing * blade * 20, y: y - 18 + lift, endX: x + facing * (52 + blade * 11), endY: y - 18 - lift * 0.45, color: blade === 2 ? '#E5FFFF' : '#32D6D1', width: blade === 2 ? 4 : 2, life: 250 + blade * 25, maxLife: 350, alpha: 0.86 - blade * 0.1, type: 'exile_wind_blade' });
+    }
+  }
+
+  createStormExecutionEffect(x, y, facing) {
+    this.particles.push({ x: x + facing * 14, y: y - 22, endX: x + facing * 112, endY: y - 30, color: '#E5FFFF', width: 2.5, life: 280, maxLife: 280, alpha: 0.92, type: 'storm_kunai_line' });
+    for (let cut = 0; cut < 6; cut++) {
+      const lift = (cut - 2.5) * 13;
+      this.particles.push({ x: x - facing * (14 + cut * 8), y: y - 20 + lift, endX: x + facing * (46 + cut * 11), endY: y - 28 - lift * 0.3, color: cut % 2 ? '#73F3ED' : '#F2FFFF', width: cut % 2 ? 2 : 3, life: 300 + cut * 38, maxLife: 490, alpha: 0.82, type: 'storm_execution_cut' });
     }
   }
 

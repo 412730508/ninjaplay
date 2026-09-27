@@ -377,12 +377,19 @@
       iaiFlash: this.createIaiFlashAnimation(),
       
       // ????賢???
+      abyssTentacle: this.createAbyssTentacleAnimation(),
+      beastLiberation: this.createBeastLiberationAnimation(),
+      boulderToss: this.createBoulderTossAnimation(),
       scorpionWhip: this.createScorpionWhipAnimation(),
       rebelMinion: this.createRebelMinionAnimation(),
       chainOfPain: this.createChainOfPainAnimation(),
       
       // ?? 鋆捱???冽????- 瘜???
       gavelSmash: this.createGavelSmashAnimation(),
+      objectionParry: this.createObjectionParryAnimation(),
+      finalVerdict: this.createFinalVerdictAnimation(),
+      exileGaleDash: this.createExileGaleDashAnimation(),
+      stormExecution: this.createStormExecutionAnimation(),
 
       // ?????
       hit: this.createHitAnimation(),
@@ -1131,6 +1138,89 @@
         leftArm: { upperRotation: -25 - 38 * sheath + 106 * draw - 55 * resheath, lowerRotation: -12 - 35 * sheath + 92 * draw - 46 * resheath }, rightArm: { upperRotation: 15 - 112 * sheath + 246 * draw * (1 - resheath), lowerRotation: 10 - 90 * sheath + 192 * draw * (1 - resheath) },
         leftLeg: { upperRotation: 21 * sheath - 55 * draw * (1 - resheath), lowerRotation: 27 * sheath + 35 * draw }, rightLeg: { upperRotation: -18 * sheath + 45 * draw * (1 - resheath), lowerRotation: 24 * sheath + 28 * draw }
       };
+    });
+  }
+
+  // 御獸・深淵觸手：後撤半步、單手壓低放出觸手，手勢要像控制遠方而不是揮刀。
+  createAbyssTentacleAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const command = Math.min(1, t / 0.44);
+      const retract = Math.max(0, (t - 0.68) / 0.32);
+      return {
+        head: { x: -4 * command, y: 3 * command, rotation: -18 * command + 6 * retract }, body: { rotation: -26 * command + 8 * retract },
+        leftArm: { upperRotation: -38 - 48 * command + 22 * retract, lowerRotation: -20 - 40 * command + 18 * retract },
+        rightArm: { upperRotation: 18 + 112 * command - 48 * retract, lowerRotation: 12 + 95 * command - 40 * retract },
+        leftLeg: { upperRotation: 24 * command, lowerRotation: 32 * command }, rightLeg: { upperRotation: -21 * command, lowerRotation: 29 * command }
+      };
+    });
+  }
+
+  // 巨獸解放：收攏後撐開身體，視覺節奏讓對手讀到「要變身」的壓迫感。
+  createBeastLiberationAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      if (t < 0.42) {
+        const coil = t / 0.42;
+        return { head: { x: 0, y: 7 * coil, rotation: -14 * coil }, body: { rotation: -22 * coil }, leftArm: { upperRotation: -34 - 74 * coil, lowerRotation: -18 - 68 * coil }, rightArm: { upperRotation: 34 + 74 * coil, lowerRotation: 18 + 68 * coil }, leftLeg: { upperRotation: 35 * coil, lowerRotation: 48 * coil }, rightLeg: { upperRotation: -33 * coil, lowerRotation: 46 * coil } };
+      }
+      const erupt = Math.min(1, (t - 0.42) / 0.22);
+      const settle = Math.max(0, (t - 0.64) / 0.36);
+      return { head: { x: 0, y: -10 * erupt * (1 - settle), rotation: 12 * erupt * (1 - settle) }, body: { rotation: 20 * erupt * (1 - settle) }, leftArm: { upperRotation: -108 + 188 * erupt - 50 * settle, lowerRotation: -88 + 165 * erupt - 42 * settle }, rightArm: { upperRotation: 108 - 188 * erupt + 50 * settle, lowerRotation: 88 - 165 * erupt + 42 * settle }, leftLeg: { upperRotation: 35 * (1 - erupt), lowerRotation: 48 * (1 - erupt) }, rightLeg: { upperRotation: -33 * (1 - erupt), lowerRotation: 46 * (1 - erupt) } };
+    });
+  }
+
+  // 巨岩投擲：抱石、轉腰、上拋，和地裂震的砸地動作分開。
+  createBoulderTossAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const lift = Math.min(1, t / 0.5);
+      const throwPower = Math.max(0, Math.min(1, (t - 0.5) / 0.18));
+      const recover = Math.max(0, (t - 0.68) / 0.32);
+      return { head: { x: -5 * lift + 12 * throwPower * (1 - recover), y: -3 * lift, rotation: -24 * lift + 46 * throwPower * (1 - recover) }, body: { rotation: -34 * lift + 65 * throwPower * (1 - recover) }, leftArm: { upperRotation: -42 - 72 * lift + 160 * throwPower, lowerRotation: -25 - 70 * lift + 145 * throwPower }, rightArm: { upperRotation: 36 - 68 * lift + 168 * throwPower * (1 - recover), lowerRotation: 20 - 66 * lift + 150 * throwPower * (1 - recover) }, leftLeg: { upperRotation: 26 * lift - 55 * throwPower, lowerRotation: 35 * lift + 35 * throwPower }, rightLeg: { upperRotation: -22 * lift + 46 * throwPower, lowerRotation: 31 * lift + 30 * throwPower } };
+    });
+  }
+
+  // 異議駁回：槌子橫在前方的判決架勢，成功與否都能從站姿讀出來。
+  createObjectionParryAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const guard = Math.min(1, t / 0.35);
+      const settle = t > 0.7 ? (t - 0.7) / 0.3 : 0;
+      return { head: { x: -2 * guard, y: 2 * guard, rotation: -10 * guard + 4 * settle }, body: { rotation: -16 * guard + 6 * settle }, leftArm: { upperRotation: -35 - 68 * guard + 25 * settle, lowerRotation: -15 - 62 * guard + 22 * settle }, rightArm: { upperRotation: 42 + 54 * guard - 22 * settle, lowerRotation: 24 + 52 * guard - 20 * settle }, leftLeg: { upperRotation: 20 * guard, lowerRotation: 28 * guard }, rightLeg: { upperRotation: -18 * guard, lowerRotation: 26 * guard } };
+    });
+  }
+
+  // 最終判決：先宣讀、再舉槌落印；不同於小招的純防守。
+  createFinalVerdictAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const raise = Math.min(1, t / 0.54);
+      const sentence = Math.max(0, Math.min(1, (t - 0.54) / 0.18));
+      const recover = Math.max(0, (t - 0.72) / 0.28);
+      return { head: { x: 0, y: -5 * raise + 5 * sentence, rotation: -12 * raise + 28 * sentence }, body: { rotation: -18 * raise + 42 * sentence * (1 - recover) }, leftArm: { upperRotation: -78 - 55 * raise + 145 * sentence, lowerRotation: -48 - 42 * raise + 112 * sentence }, rightArm: { upperRotation: -84 - 62 * raise + 210 * sentence * (1 - recover), lowerRotation: -52 - 48 * raise + 160 * sentence * (1 - recover) }, leftLeg: { upperRotation: 15 * raise - 36 * sentence, lowerRotation: 22 * raise + 22 * sentence }, rightLeg: { upperRotation: 12 * raise - 30 * sentence, lowerRotation: 20 * raise + 18 * sentence } };
+    });
+  }
+
+  // 裂空突：橫向蓄刃後用低重心刺出，刻意不沿用風影的疾風閃。
+  createExileGaleDashAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const load = Math.min(1, t / 0.36);
+      const pierce = Math.max(0, Math.min(1, (t - 0.36) / 0.2));
+      const recover = Math.max(0, (t - 0.62) / 0.38);
+      return { head: { x: -7 * load + 23 * pierce * (1 - recover), y: 6 * load - 8 * pierce, rotation: -30 * load + 44 * pierce * (1 - recover) }, body: { rotation: -46 * load + 63 * pierce * (1 - recover) }, leftArm: { upperRotation: -42 - 84 * load + 84 * pierce, lowerRotation: -25 - 70 * load + 70 * pierce }, rightArm: { upperRotation: 22 - 118 * load + 246 * pierce * (1 - recover), lowerRotation: 15 - 96 * load + 184 * pierce * (1 - recover) }, leftLeg: { upperRotation: 42 * load - 88 * pierce * (1 - recover), lowerRotation: 56 * load + 60 * pierce }, rightLeg: { upperRotation: -36 * load + 70 * pierce * (1 - recover), lowerRotation: 50 * load + 45 * pierce } };
+    });
+  }
+
+  // 狂風百裂：先投出苦無，再連續換位斬擊；用忽快忽慢的姿勢表現連段。
+  createStormExecutionAnimation() {
+    return Array.from({ length: 12 }, (_, frame) => {
+      const t = frame / 11;
+      const throwPower = Math.min(1, t / 0.25);
+      const slash = t > 0.25 ? Math.sin((t - 0.25) * Math.PI * 3.5) : 0;
+      const recover = Math.max(0, (t - 0.78) / 0.22);
+      return { head: { x: 10 * throwPower + 5 * slash, y: -2 * throwPower, rotation: 30 * throwPower + 24 * slash }, body: { rotation: 42 * throwPower + 32 * slash }, leftArm: { upperRotation: -48 - 45 * throwPower - 35 * slash, lowerRotation: -28 - 38 * throwPower - 28 * slash }, rightArm: { upperRotation: -28 + 172 * throwPower * (1 - recover) + 80 * slash, lowerRotation: -18 + 132 * throwPower * (1 - recover) + 65 * slash }, leftLeg: { upperRotation: -38 * throwPower - 42 * slash, lowerRotation: 48 * throwPower + 32 * slash }, rightLeg: { upperRotation: 30 * throwPower + 35 * slash, lowerRotation: -24 * throwPower - 26 * slash } };
     });
   }
 

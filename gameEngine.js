@@ -535,7 +535,7 @@
 
   // 基礎忍者的戰鬥筆觸各自獨立，避免所有角色最後都只剩同一種彩色圓環。
   renderElementalCombatFlourish(ctx, effect, progress, fade) {
-    const elemental = ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin'];
+    const elemental = ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade'];
     if (!elemental.includes(effect.element)) return false;
 
     const isImpact = effect.kind === 'impact';
@@ -906,6 +906,106 @@
           ctx.beginPath();
           ctx.moveTo(x - 33, y - 2 + cut * 11);
           ctx.lineTo(x + 35, y - 38 + cut * 13);
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
+
+    if (effect.element === 'beastmaster') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 11 * power;
+      ctx.strokeStyle = effect.highlight;
+      ctx.lineWidth = 4;
+      ctx.globalAlpha = fade * 0.86;
+      if (!isImpact) {
+        for (let claw = 0; claw < 3; claw++) {
+          ctx.beginPath();
+          ctx.moveTo(x + facing * 4, y + 13 + claw * 9);
+          ctx.quadraticCurveTo(x + facing * (reach * 0.42), y - 27 + claw * 12, x + facing * reach, y - 17 + claw * 12);
+          ctx.stroke();
+        }
+      } else {
+        for (let claw = 0; claw < 3; claw++) {
+          ctx.beginPath();
+          ctx.moveTo(x - 23, y - 9 + claw * 12);
+          ctx.lineTo(x + 26, y - 31 + claw * 12);
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
+
+    if (effect.element === 'scorpion') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 12 * power;
+      ctx.strokeStyle = effect.highlight;
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = fade * 0.88;
+      if (!isImpact) {
+        ctx.beginPath();
+        ctx.moveTo(x + facing * 7, y - 4);
+        for (let link = 1; link <= 6; link++) ctx.lineTo(x + facing * (link * 17), y - 4 + Math.sin(link * 1.5 + progress * 5) * 18);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = effect.color;
+        ctx.beginPath();
+        ctx.arc(x, y - 15, 8 + progress * 20, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = effect.highlight;
+        ctx.beginPath();
+        ctx.arc(x, y - 15, 16 + progress * 25, 0.2, Math.PI * 1.6);
+        ctx.stroke();
+      }
+      return true;
+    }
+
+    if (effect.element === 'adjudicator') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 9 * power;
+      ctx.globalAlpha = fade * 0.88;
+      if (!isImpact) {
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(x + facing * 12, y - 29);
+        ctx.lineTo(x + facing * (reach * 0.72), y + 22);
+        ctx.stroke();
+        ctx.strokeStyle = effect.color;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + facing * (reach * 0.5) - 12, y - 10, 24, 24);
+      } else {
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x - 31, y - 33);
+        ctx.lineTo(x + 31, y + 13);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y - 10, 16 + progress * 25, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      return true;
+    }
+
+    if (effect.element === 'exileblade') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 14 * power;
+      ctx.globalAlpha = fade * 0.9;
+      ctx.strokeStyle = effect.highlight;
+      ctx.lineWidth = 3;
+      if (!isImpact) {
+        for (let blade = 0; blade < 3; blade++) {
+          ctx.beginPath();
+          ctx.moveTo(x - facing * blade * 12, y + (blade - 1) * 12);
+          ctx.lineTo(x + facing * (reach + blade * 8), y - (blade - 1) * 15);
+          ctx.stroke();
+        }
+      } else {
+        for (let blade = 0; blade < 4; blade++) {
+          const radius = 13 + blade * 9 + progress * 18;
+          ctx.beginPath();
+          ctx.arc(x, y - 13, radius, -1.1 + blade * 0.45, 0.55 + blade * 0.45);
           ctx.stroke();
         }
       }
@@ -8745,16 +8845,16 @@
       [SKILL_CODES.BLOOD_DEVOUR]: 'bloodDevour',
       [SKILL_CODES.FLASH_CUT]: 'flashCut',
       [SKILL_CODES.IAI_FLASH]: 'iaiFlash',
-      [SKILL_CODES.ABYSS_TENTACLE]: 'shadowStrike',
-      [SKILL_CODES.BEAST_LIBERATION]: 'rockGuard',
-      [SKILL_CODES.BOULDER_TOSS]: 'earthQuake',
+      [SKILL_CODES.ABYSS_TENTACLE]: 'abyssTentacle',
+      [SKILL_CODES.BEAST_LIBERATION]: 'beastLiberation',
+      [SKILL_CODES.BOULDER_TOSS]: 'boulderToss',
       [SKILL_CODES.BEAST_REVERT]: 'idle',
       [SKILL_CODES.REBEL_MINION]: 'rebelMinion',
       [SKILL_CODES.CHAIN_OF_PAIN]: 'chainOfPain',
-      [SKILL_CODES.OBJECTION_PARRY]: 'gavelSmash',
-      [SKILL_CODES.FINAL_VERDICT]: 'gavelSmash',
-      [SKILL_CODES.EXILE_GALE_DASH]: 'windDash',
-      [SKILL_CODES.STORM_EXECUTION]: 'windSlash',
+      [SKILL_CODES.OBJECTION_PARRY]: 'objectionParry',
+      [SKILL_CODES.FINAL_VERDICT]: 'finalVerdict',
+      [SKILL_CODES.EXILE_GALE_DASH]: 'exileGaleDash',
+      [SKILL_CODES.STORM_EXECUTION]: 'stormExecution',
       [SKILL_CODES.PUPPET_DEPLOY]: 'shadowClone',
       [SKILL_CODES.PHANTOM_SWAP]: 'shadowStrike',
       [SKILL_CODES.DIVINE_SMITE]: 'thunderPunch',
@@ -10198,7 +10298,7 @@
           : 'attack'
     );
     this.spawnCombatFlourish('swing', player, opponent, player.id === 'forgefire' || player.id === 'adjudicator' ? 1.35 : 1);
-    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createElementalBasicAttackEffect(
         player.id,
         player.position.x,
@@ -13858,7 +13958,7 @@
     if (typeof particleSystem !== 'undefined' && particleSystem && particleSystem.createEnhancedHitEffect) {
       particleSystem.createEnhancedHitEffect(target.position.x, target.position.y, damage, isCritical);
     }
-    if (attacker && ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin'].includes(attacker.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+    if (attacker && ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade'].includes(attacker.id) && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createElementalImpactEffect(attacker.id, target.position.x, target.position.y);
     }
     
