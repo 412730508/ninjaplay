@@ -243,9 +243,6 @@
     // ?湔?瑕??UI
     this.updateCooldownUI();
     
-    // ?湔銵璇?
-    this.updateHealthBars();
-    
     // ? ?湔???
     if (this.players.player1 && this.players.player1.hitFlash > 0) {
       this.players.player1.hitFlash -= deltaTime;
@@ -2764,29 +2761,19 @@
       
       // ?????拙??恍?畾?
       if (!this.gameState.victoryAnimation) {
-        const isFujinVsExile = (winner.id === 'fujin' && loser.id === 'exileblade');
         this.gameState.victoryAnimation = {
           startTime: Date.now(),
           particles: [],
           phase: 'execution',
-          executionStartTime: Date.now(),
-          fujinSpecialVideo: isFujinVsExile
+          executionStartTime: Date.now()
         };
-        if (isFujinVsExile && typeof window !== 'undefined' && window.showFujinVictoryVideo) {
-          window.showFujinVictoryVideo();
-        }
       }
 
       const elapsed = Date.now() - this.gameState.victoryAnimation.startTime;
 
       // 階段1：執行動畫（0-15秒）
       if (elapsed < 15000) {
-        if (this.gameState.victoryAnimation.fujinSpecialVideo) {
-          this.ctx.fillStyle = '#000';
-          this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
-        } else {
-          this.renderExecutionScene(winner, loser, elapsed);
-        }
+        this.renderExecutionScene(winner, loser, elapsed);
       }
       // ?? ?挾2嚗??拍??(15蝘?)
       else {
@@ -8723,53 +8710,6 @@
     }
   }
 
-  updateHealthBars() {
-    const now = Date.now();
-    const lowHpPulse = Math.sin(now * 0.01) * 0.3 + 0.7; // 0.4-1.0??
-    
-    // ?湔?拙振1銵璇?
-    const player1Health = document.getElementById('player1Health');
-    if (player1Health && this.players.player1) {
-      const healthPercent = (this.players.player1.hp / this.players.player1.maxHp) * 100;
-      player1Health.style.width = `${healthPercent}%`;
-      
-      // ?寞?銵?霈???
-      if (healthPercent > 60) {
-        player1Health.style.background = 'linear-gradient(90deg, #4CAF50, #81C784)';
-        player1Health.style.opacity = '1';
-      } else if (healthPercent > 30) {
-        player1Health.style.background = 'linear-gradient(90deg, #FF9800, #FFB74D)';
-        player1Health.style.opacity = '1';
-      } else {
-        // ?? 雿??郎????蝝
-        player1Health.style.background = 'linear-gradient(90deg, #F44336, #EF5350)';
-        player1Health.style.opacity = lowHpPulse.toString();
-        player1Health.style.boxShadow = `0 0 ${20 * lowHpPulse}px rgba(244, 67, 54, 0.8)`;
-      }
-    }
-    
-    // ?湔?拙振2銵璇?
-    const player2Health = document.getElementById('player2Health');
-    if (player2Health && this.players.player2) {
-      const healthPercent = (this.players.player2.hp / this.players.player2.maxHp) * 100;
-      player2Health.style.width = `${healthPercent}%`;
-      
-      // ?寞?銵?霈???
-      if (healthPercent > 60) {
-        player2Health.style.background = 'linear-gradient(90deg, #4CAF50, #81C784)';
-        player2Health.style.opacity = '1';
-      } else if (healthPercent > 30) {
-        player2Health.style.background = 'linear-gradient(90deg, #FF9800, #FFB74D)';
-        player2Health.style.opacity = '1';
-      } else {
-        // ?? 雿??郎????蝝
-        player2Health.style.background = 'linear-gradient(90deg, #F44336, #EF5350)';
-        player2Health.style.opacity = lowHpPulse.toString();
-        player2Health.style.boxShadow = `0 0 ${20 * lowHpPulse}px rgba(244, 67, 54, 0.8)`;
-      }
-    }
-  }
-
   updateCooldownUI() {
     const now = Date.now();
     
@@ -10056,9 +9996,6 @@
     if (typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.particles = [];
     }
-    
-    // ?蔭銵璇I
-    this.updateHealthBars();
     
   }
 
@@ -12017,7 +11954,7 @@
         break;
 
       default:
-        console.warn(`?芸祕?曄???賭誨蝣? ${skill.code}`);
+        console.warn(`未處理的技能代碼：${skill.code}`);
     }
     
   }
@@ -13284,11 +13221,11 @@
           life: 200,
           size: 2
         };
-        // ? 靽格迤嚗Ⅱ靽迤蝣箏??createParticles
+        // 投射物拖尾只負責視覺演出；粒子失敗不得中斷戰鬥判定。
         try {
           particleSystem.createParticles(projectile.x, projectile.y, trailConfig, Math.PI);
         } catch (error) {
-          console.warn('?萄遣蝎??寞?憭望?:', error);
+          console.warn('投射物拖尾特效建立失敗：', error);
         }
       }
       
@@ -14489,7 +14426,6 @@
       this.addCombatLog(`靈天審判：距離太遠未命中`, playerSide, 'status');
     }
     
-    this.updateHealthBars();
   }
 
   // ?? ?菜葫?予撖拙?暸??

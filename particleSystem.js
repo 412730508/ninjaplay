@@ -144,8 +144,9 @@
         break;
       case 'SHM_002': // Deadly Canon
         this.createDeadlyCanonEffect(x, y);
-        break;      default:
-        console.warn('?芰??賭誨蝣?', skillCode);
+        break;
+      default:
+        console.warn('未處理的技能特效代碼：', skillCode);
     }
 
   }

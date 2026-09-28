@@ -14,9 +14,7 @@ The live game uses these files directly in the browser:
 - `aiController.js` and `audioSystem.js` — CPU and sound
 - `ninjaStyles.css` — styling
 
-`gameEngine.js` is the current source of truth. Do not edit `gameEngine.js.bak`; it is retained only as a historical recovery copy until the project has a proper version history.
-
-The files named `fix_*`, `replacements.json`, and `corrupted_lines.txt` are historical text-recovery tools. They are not loaded by the game and should not be used in normal development.
+`gameEngine.js` is the current source of truth. The repository history is the recovery mechanism; only the files listed above are needed for normal development.
 
 ## Run locally
 

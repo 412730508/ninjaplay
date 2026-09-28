@@ -364,59 +364,6 @@ body::after {
   pointer-events: none;
 }
 
-/* 遊戲介紹區 */
-.game-description {
-  max-width: 900px;
-  margin: 32px auto;
-  padding: 28px;
-  background: var(--panel-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  backdrop-filter: blur(14px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-}
-
-.game-description.hidden {
-  display: none;
-}
-
-.game-description h2 {
-  text-align: center;
-  font-size: 1.6em;
-  background: linear-gradient(135deg, #fff8e1, var(--ninja-gold));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 20px;
-}
-
-.description-content h3 {
-  color: rgba(255, 200, 120, 0.92);
-  font-size: 1.1em;
-  margin: 18px 0 10px;
-}
-
-.description-content ul {
-  list-style: none;
-  padding: 0;
-}
-
-.description-content li {
-  padding: 6px 0;
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 0.92em;
-  line-height: 1.6;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.description-content li:last-child {
-  border-bottom: none;
-}
-
-.description-content li strong {
-  color: rgba(255, 200, 120, 0.9);
-}
-
 /* 頁尾 */
 .game-footer {
   text-align: center;

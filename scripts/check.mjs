@@ -11,6 +11,12 @@ const localAssets = [...new Set([
   ...[...html.matchAll(/assets\/portraits\/[\w.-]+\.png/g)].map((match) => match[0])
 ])].filter((asset) => !/^(?:https?:|data:|#)/.test(asset));
 
+const retiredRecoveryFiles = [
+  'corrupted_lines.txt', 'gameEngine.js.bak', 'replacements.json',
+  'fix_from_json.ps1', 'fix_from_json_bom.ps1', 'fix_garbled.ps1',
+  'fix_garbled2.ps1', 'fix_garbled_final.ps1', 'styles.css', 'selectScreen.css'
+];
+
 let failed = false;
 for (const asset of localAssets) {
   const path = resolve(root, asset);
@@ -20,13 +26,44 @@ for (const asset of localAssets) {
   }
 }
 
-const css = readFileSync(resolve(root, 'ninjaStyles.css'), 'utf8')
-  .replace(/\/\*[\s\S]*?\*\//g, '')
-  .replace(/'[^']*'|"[^"]*"/g, '');
-const openBraces = [...css].filter((character) => character === '{').length;
-const closeBraces = [...css].filter((character) => character === '}').length;
-if (openBraces !== closeBraces) {
-  console.error(`CSS brace check failed: ${openBraces} opening and ${closeBraces} closing braces.`);
+const retiredFilesStillPresent = retiredRecoveryFiles.filter((file) => existsSync(resolve(root, file)));
+if (retiredFilesStillPresent.length) {
+  console.error(`Retired recovery or unused files remain: ${retiredFilesStillPresent.join(', ')}`);
+  failed = true;
+}
+
+for (const file of readdirSync(root).filter((file) => file.endsWith('.css'))) {
+  const css = readFileSync(resolve(root, file), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/'[^']*'|"[^"]*"/g, '');
+  const openBraces = [...css].filter((character) => character === '{').length;
+  const closeBraces = [...css].filter((character) => character === '}').length;
+  if (openBraces !== closeBraces) {
+    console.error(`CSS brace check failed in ${file}: ${openBraces} opening and ${closeBraces} closing braces.`);
+    failed = true;
+  }
+}
+
+// Literal DOM IDs are easy to mistype in a script-heavy static page. Dynamic
+// template IDs are intentionally ignored here; this verifies every fixed ID.
+const declaredIds = new Set([...html.matchAll(/\bid=["']([^"']+)["']/g)].map((match) => match[1]));
+const pageSources = [html, ...readdirSync(root)
+  .filter((file) => file.endsWith('.js'))
+  .map((file) => readFileSync(resolve(root, file), 'utf8'))];
+const requestedIds = pageSources.flatMap((source) =>
+  [...source.matchAll(/getElementById\(\s*['"]([^'"]+)['"]\s*\)/g)].map((match) => match[1])
+);
+const missingIds = [...new Set(requestedIds.filter((id) => !declaredIds.has(id)))];
+if (missingIds.length) {
+  console.error(`Missing fixed DOM IDs: ${missingIds.join(', ')}`);
+  failed = true;
+}
+
+const sourceDebugLogs = pageSources.slice(1).flatMap((source) =>
+  [...source.matchAll(/\bconsole\.log\s*\(/g)].map((match) => match.index)
+);
+if (sourceDebugLogs.length) {
+  console.error(`Debug console.log calls remain in page source: ${sourceDebugLogs.length}`);
   failed = true;
 }
 
