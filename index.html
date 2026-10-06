@@ -63,7 +63,7 @@
     }
     </script>
     
-    <link rel="stylesheet" href="ninjaStyles.css?v=final-audit-1">
+    <link rel="stylesheet" href="ninjaStyles.css?v=tournament-ui-polish-1">
     
     <!-- 🔍 Canonical URL -->
     <link rel="canonical" href="https://412730508.github.io/ninjaplay/">
@@ -235,6 +235,7 @@
                 <h3 id="tournamentPrompt">玩家 1：移到欲禁用的角色後，按 K 確認</h3>
                 <p id="tournamentHint">P1：WASD 移動／K 確認　・　P2：方向鍵移動／NUM 5 確認</p>
             </section>
+            <div id="tournamentProgress" class="tournament-progress" aria-label="選秀進度"></div>
 
             <div class="tournament-draft-layout">
                 <aside class="tournament-team tournament-team-p1">
@@ -243,7 +244,7 @@
                     <div id="tournamentP1Roster" class="tournament-team-roster"></div>
                 </aside>
 
-                <main id="tournamentRoster" class="tournament-roster" aria-label="錦標賽角色選擇"></main>
+                <main id="tournamentRoster" class="tournament-roster" role="grid" aria-label="錦標賽角色選擇"></main>
 
                 <aside class="tournament-team tournament-team-p2">
                     <span class="team-label">PLAYER 2</span>
@@ -273,6 +274,13 @@
                 <span id="talentPhase" class="tournament-phase">主選</span>
                 <h2 id="talentPrompt">選擇本戰主選</h2>
                 <p id="talentHint">P1：W／A 選卡、奧義確認　・　P2：←／→ 選卡、奧義確認</p>
+                <div class="talent-selection-steps" aria-hidden="true">
+                    <span id="talentPrimaryStep" class="is-current"><b>01</b> 主選</span>
+                    <i></i>
+                    <span id="talentSecondaryStep"><b>02</b> 次選</span>
+                    <i></i>
+                    <span><b>03</b> 開戰</span>
+                </div>
             </section>
             <div id="talentLoadoutBoard" class="talent-loadout-board"></div>
         </div>
@@ -393,8 +401,8 @@
     <script src="balance.js?v=balance-0.3.0"></script>
     <script src="talents.js?v=dojo-loadout-2"></script>
     <script src="particleSystem.js?v=final-audit-1"></script>
-    <script src="mapSystem.js?v=dojo-canvas-2"></script>
-    <script src="stickmanAnimator.js?v=signature-vfx-5"></script>
+    <script src="mapSystem.js?v=dojo-arena-art-1"></script>
+    <script src="stickmanAnimator.js?v=animation-reset-fix-1"></script>
     <script src="gameEngine.js?v=final-audit-1"></script>
     <script src="aiController.js"></script>
     <script>
@@ -436,6 +444,9 @@
                 phase: 'ban',
                 turn: 'player1',
                 bans: [],
+                banOwners: {},
+                recentAction: null,
+                recentActionTimer: null,
                 teams: { player1: [], player2: [] },
                 cursors: { player1: 0, player2: 1 },
                 draftSteps: [
@@ -491,6 +502,8 @@
             if (state.phase === 'ban') {
                 if (playerId !== state.turn || !tournamentChoiceAvailable(id)) return;
                 state.bans.push(id);
+                state.banOwners[id] = playerId;
+                markRecentDraftAction(state, id, 'ban');
                 if (state.bans.length === 1) {
                     state.turn = 'player2';
                 } else {
@@ -501,6 +514,7 @@
                 const step = state.draftSteps[state.stepIndex];
                 if (playerId !== step.player || !tournamentChoiceAvailable(id)) return;
                 state.teams[playerId].push(id);
+                markRecentDraftAction(state, id, 'pick');
                 state.stepPicks++;
                 if (state.stepPicks >= step.count) {
                     state.stepIndex++;
@@ -548,6 +562,33 @@
             return { phase: '比賽準備中', title: '選秀順序即為出場順序，道場開門！', hint: '三戰兩勝・固定道場・場內每 20 秒生成一個隨機補給' };
         }
 
+        function tournamentProgressMarkup() {
+            const state = tournamentState;
+            const drafted = state.teams.player1.length + state.teams.player2.length;
+            const steps = [
+                { label: '禁角', count: `${state.bans.length}/2`, active: state.phase === 'ban', done: state.bans.length === 2 },
+                { label: '蛇形選秀', count: `${drafted}/6`, active: state.phase === 'draft', done: drafted === 6 },
+                { label: '三戰兩勝', count: '先拿 2 勝', active: state.phase === 'ready' || state.phase === 'finished', done: state.phase === 'finished' }
+            ];
+            return steps.map((step, index) => `<div class="tournament-progress-step${step.active ? ' is-active' : ''}${step.done ? ' is-complete' : ''}">
+                <span class="tournament-progress-index">0${index + 1}</span>
+                <span class="tournament-progress-copy"><strong>${step.label}</strong><small>${step.count}</small></span>
+                ${index < steps.length - 1 ? '<span class="tournament-progress-connector" aria-hidden="true"></span>' : ''}
+            </div>`).join('');
+        }
+
+        function markRecentDraftAction(state, id, kind) {
+            if (state.recentActionTimer) clearTimeout(state.recentActionTimer);
+            const action = { id, kind };
+            state.recentAction = action;
+            state.recentActionTimer = setTimeout(() => {
+                if (tournamentState !== state || state.recentAction !== action) return;
+                state.recentAction = null;
+                state.recentActionTimer = null;
+                renderTournament();
+            }, 720);
+        }
+
         function renderTournament() {
             const state = tournamentState;
             if (!state) return;
@@ -556,6 +597,7 @@
             document.getElementById('tournamentPhase').textContent = prompt.phase;
             document.getElementById('tournamentPrompt').textContent = prompt.title;
             document.getElementById('tournamentHint').textContent = prompt.hint;
+            document.getElementById('tournamentProgress').innerHTML = tournamentProgressMarkup();
             document.getElementById('tournamentP1Roster').innerHTML = tournamentSlotMarkup('player1');
             document.getElementById('tournamentP2Roster').innerHTML = tournamentSlotMarkup('player2');
             document.getElementById('tournamentScore').innerHTML = `<span class="tournament-score-p1">玩家 1　${state.scores.player1}</span><b>FIRST TO 2</b><span class="tournament-score-p2">${state.scores.player2}　玩家 2</span>`;
@@ -567,8 +609,25 @@
                 const p1Cursor = state.cursors.player1 === index;
                 const p2Cursor = state.cursors.player2 === index;
                 const activeTurn = state.turn && state.cursors[state.turn] === index;
+                const cursorOwners = [p1Cursor && 'player1', p2Cursor && 'player2'].filter(Boolean);
+                const banOwner = state.banOwners[id];
+                const recentlyBanned = state.recentAction?.id === id && state.recentAction.kind === 'ban';
+                const recentlyPicked = state.recentAction?.id === id && state.recentAction.kind === 'pick';
+                const turnName = state.turn === 'player1' ? 'P1' : 'P2';
                 const portrait = characterPortraits[id];
-                return `<div class="tournament-card${isBanned ? ' is-banned' : ''}${taken && !isBanned ? ' is-picked' : ''}${p1Cursor ? ' cursor-p1' : ''}${p2Cursor ? ' cursor-p2' : ''}${activeTurn ? ' current-turn' : ''}" data-id="${id}">
+                const stateLabel = isBanned
+                    ? `<span class="tournament-card-state is-ban"><b>×</b>${banOwner === 'player1' ? 'P1' : 'P2'} 已禁用</span>`
+                    : taken
+                        ? '<span class="tournament-card-state is-picked">✓ 已鎖定</span>'
+                        : activeTurn
+                            ? `<span class="tournament-card-state is-turn">${turnName} ${state.phase === 'ban' ? '禁用中' : '選角中'}</span>`
+                            : cursorOwners.length
+                                ? `<span class="tournament-card-state is-cursor">${cursorOwners.map(owner => owner === 'player1' ? 'P1' : 'P2').join('・')} 游標</span>`
+                                : '';
+                const cardClass = `tournament-card${isBanned ? ' is-banned' : ''}${taken && !isBanned ? ' is-picked' : ''}${p1Cursor ? ' cursor-p1' : ''}${p2Cursor ? ' cursor-p2' : ''}${activeTurn ? ' current-turn' : ''}${activeTurn && state.phase === 'ban' ? ' is-ban-candidate' : ''}${activeTurn && state.phase === 'draft' ? ' is-pick-candidate' : ''}${recentlyBanned ? ' is-recent-ban' : ''}${recentlyPicked ? ' is-recent-pick' : ''}`;
+                const accessibleState = isBanned ? `，${banOwner === 'player1' ? '玩家一' : '玩家二'}已禁用` : taken ? '，已被選取' : activeTurn ? `，${state.phase === 'ban' ? '目前禁用目標' : '目前選角目標'}` : '';
+                return `<div class="${cardClass}" data-id="${id}" role="gridcell" aria-label="${char.name}${accessibleState}">
+                    <span class="tournament-card-head"><span class="tournament-card-index">${String(index + 1).padStart(2, '0')}</span>${stateLabel}</span>
                     <span class="tournament-card-name">${char.name}</span>
                     <span class="tournament-card-role">${characterRoles[id]?.primary || char.organization}</span>
                     ${portrait ? `<img class="tournament-card-portrait" data-portrait="${portrait}" alt="">` : ''}
@@ -615,6 +674,8 @@
             const p1Key = bindings.player1.ultimate === 'r' ? 'R' : 'K';
             const p2Key = bindings.player2.ultimate === '>' ? '>' : 'NUM 5';
             document.getElementById('talentPhase').textContent = `第 ${state.round + 1} 戰・${stageName}`;
+            document.getElementById('talentPrimaryStep').classList.toggle('is-current', isPrimary);
+            document.getElementById('talentSecondaryStep').classList.toggle('is-current', !isPrimary);
             document.getElementById('talentPrompt').textContent = `雙方選擇本戰${stageName}卡牌`;
             document.getElementById('talentHint').textContent = `P1：W／A 選擇・${p1Key} 確認　｜　P2：←／→ 選擇・${p2Key} 確認`;
             document.getElementById('talentRoundScore').innerHTML = `<span class="tournament-score-p1">玩家 1　${state.scores.player1}</span><b>FIRST TO 2</b><span class="tournament-score-p2">${state.scores.player2}　玩家 2</span>`;
@@ -625,11 +686,21 @@
                 const choices = talentDataFor(playerId)?.[slot] || [];
                 const selectedKey = state.roundTalents[playerId][slot];
                 const confirmed = state.talentConfirmed[playerId];
-                return `<section class="talent-player-panel ${playerId}">
-                    <div class="talent-character-head">${portrait ? `<img data-portrait="${portrait}" alt="">` : '<span>🥷</span>'}<div><span>${playerId === 'player1' ? 'PLAYER 1' : 'PLAYER 2'}・本戰出場</span><h3>${character.name}</h3></div></div>
-                    <div class="talent-card-row">${choices.map((choice, index) => `<article class="talent-card${state.talentCursors[playerId] === index && !confirmed ? ` is-cursor-${playerId === 'player1' ? 'p1' : 'p2'}` : ''}${confirmed ? ' is-confirmed' : ''}${selectedKey === choice[0] ? ' is-selected' : ''}">
-                        <span class="talent-card-label">${stageName} ${index === 0 ? 'A' : 'B'}</span><h4>${choice[1]}</h4><p>${choice[2]}</p>${selectedKey === choice[0] ? '<div class="talent-selected-state">✓ 已鎖定</div>' : ''}
-                    </article>`).join('')}</div>
+                const confirmKey = playerId === 'player1' ? p1Key : p2Key;
+                const chooseHint = playerId === 'player1' ? 'W／A 切換' : '←／→ 切換';
+                return `<section class="talent-player-panel ${playerId}${confirmed ? ' is-ready' : ' is-selecting'}" aria-label="${playerId === 'player1' ? '玩家一' : '玩家二'}卡牌選擇">
+                    <div class="talent-character-head">${portrait ? `<img data-portrait="${portrait}" alt="">` : '<span>🥷</span>'}<div><span>${playerId === 'player1' ? 'PLAYER 1' : 'PLAYER 2'}・本戰出場</span><h3>${character.name}</h3></div><span class="talent-player-status">${confirmed ? '✓ 已確認' : '● 選擇中'}</span></div>
+                    <div class="talent-card-row">${choices.map((choice, index) => {
+                        const isCursor = state.talentCursors[playerId] === index && !confirmed;
+                        const isSelected = selectedKey === choice[0];
+                        const keyLabel = index === 0 ? 'A' : 'B';
+                        return `<article class="talent-card${isCursor ? ` is-cursor-${playerId === 'player1' ? 'p1' : 'p2'}` : ''}${confirmed && !isSelected ? ' is-confirmed' : ''}${isSelected ? ' is-selected' : ''}" data-talent-key="${choice[0]}" aria-label="${stageName} ${keyLabel}：${choice[1]}">
+                            <span class="talent-card-topline"><span class="talent-card-label"><b>${keyLabel}</b>${stageName}</span>${isSelected ? '<span class="talent-card-lock">✓ 已鎖定</span>' : isCursor ? `<span class="talent-card-lock">${confirmKey} 確認</span>` : ''}</span>
+                            <h4>${choice[1]}</h4><p>${choice[2]}</p>
+                            ${isCursor && !confirmed ? `<span class="talent-card-current">${chooseHint}・目前指向</span>` : ''}
+                        </article>`;
+                    }).join('')}</div>
+                    <div class="talent-player-footer"><span>${confirmed ? '等待對手確認' : `${chooseHint}，按 ${confirmKey} 鎖定`}</span><span>${slot === 'primary' ? '主要能力' : '次要能力'}</span></div>
                 </section>`;
             }).join('');
             document.querySelectorAll('#tournamentTalentScreen [data-portrait]').forEach(image => {

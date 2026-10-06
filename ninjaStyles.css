@@ -703,6 +703,38 @@ body::after {
 .dojo-detail-block div { display: flex; flex-wrap: wrap; gap: 4px; }
 @media (max-width: 680px) { .dojo-encyclopedia-overlay { padding: 9px; } .dojo-encyclopedia-panel { padding: 18px; } .dojo-encyclopedia-grid { grid-template-columns: 1fr; } .dojo-skill-list li { grid-template-columns: 34px minmax(0, 1fr); } .dojo-skill-list li em { grid-column: 2; } .tournament-top-actions { width: 100%; justify-content: flex-end; } }
 
+/* Tournament actions are text buttons, not 36px combat HUD icon buttons. */
+.tournament-top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tournament-top-actions .ninja-btn-small {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 118px;
+  height: 40px;
+  padding: 0 14px;
+  white-space: nowrap;
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1;
+}
+
+.tournament-top-actions .tournament-exit {
+  border-color: rgba(255, 130, 130, 0.38);
+  background: rgba(83, 28, 38, 0.62);
+}
+
+@media (max-width: 680px) {
+  .tournament-top-actions { justify-content: center; }
+  .tournament-top-actions .ninja-btn-small { min-width: 132px; }
+}
+
 /* 1v1 role tags: the player's win condition, visible before reading any skill text. */
 .character-role-tags {
   display: flex;
@@ -760,7 +792,7 @@ body::after {
    道場鬥技盃：整頁鍵盤選秀。保留背景圖的角色群像，但以暗色玻璃版面維持可讀性。
    ═══════════════════════════════════════════════════════════════════════════ */
 #tournamentScreen {
-  min-height: calc(100vh - 78px);
+  min-height: calc(100vh - 88px);
   padding: clamp(14px, 2vw, 28px);
   box-sizing: border-box;
   position: relative;
@@ -844,7 +876,7 @@ body::after {
 @keyframes tournamentPulse { to { filter:brightness(1.2); } }
 .tournament-footer { margin-top:15px; text-align:center; color:#bdc5d5; font-size:.73rem; }
 
-@media (min-width:1081px) and (min-height:600px) { #tournamentScreen { height:calc(100vh - 78px); overflow:hidden; } .tournament-shell { height:100%; min-height:0; } .tournament-roster { grid-auto-rows:minmax(80px,1fr); } }
+@media (min-width:1081px) and (min-height:600px) { #tournamentScreen { height:calc(100vh - 88px); overflow:hidden; } .tournament-shell { height:100%; min-height:0; } .tournament-roster { grid-auto-rows:minmax(80px,1fr); } }
 @media (max-width: 900px) { .tournament-topline,.tournament-draft-layout { grid-template-columns:1fr; }.tournament-score { order:3; justify-content:center; }.tournament-exit { justify-self:start; }.tournament-team { display:none; }.tournament-roster { grid-template-columns:repeat(4,minmax(0,1fr)); } }
 @media (max-width: 560px) { .tournament-roster { grid-template-columns:repeat(3,minmax(0,1fr)); }.tournament-card { min-height:91px; }.tournament-score { gap:6px; font-size:.8rem; } }
 
@@ -1880,12 +1912,12 @@ body::after {
    deliberately provide the roomy, scrollable layout used on smaller screens. */
 @media (min-width: 1081px) and (min-height: 600px) {
   html, body { height: 100%; overflow: hidden; }
-  header { height: 78px; overflow: hidden; }
+  header { height: 88px; min-height: 88px; overflow: visible; }
   .ninja-title { margin: 8px 0 2px; font-size: clamp(1.7rem, 2.4vw, 2.45rem); }
   .game-subtitle { margin: 0; font-size: 0.78rem; }
 
   #characterSelect {
-    height: calc(100vh - 78px); min-height: 0; padding: 6px 14px 8px;
+    height: calc(100vh - 88px); min-height: 0; padding: 6px 14px 8px;
     display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 7px; overflow: hidden;
   }
   #characterSelect .screen-title { margin: 0; font-size: clamp(1.25rem, 1.7vw, 1.65rem); }
@@ -1922,7 +1954,7 @@ body::after {
   #characterSelect .screen-controls .ninja-btn { min-width: 0; padding: 9px 16px; border-radius: 10px; font-size: 0.83rem; }
 
   #mapSelect {
-    height: calc(100vh - 78px); padding: 6px 20px 8px;
+    height: calc(100vh - 88px); padding: 6px 20px 8px;
     display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 8px; overflow: hidden;
   }
   #mapSelect .screen-title, #mapSelect .selected-ninjas-summary, #mapSelect .screen-controls, #mapSelect .selection-status { margin: 0; }
@@ -1969,12 +2001,193 @@ body::after {
   #mapSelect .map-card[data-map-id="ship"] .map-name { color: #ffd09b; }
   #mapSelect .screen-controls .ninja-btn { min-width: 0; padding: 9px 20px; font-size: 0.86rem; }
 
-  #gameArea { height: calc(100vh - 78px); padding: 6px 14px 8px; display: flex; flex-direction: column; overflow: hidden; }
+  #gameArea { height: calc(100vh - 88px); padding: 6px 14px 8px; display: flex; flex-direction: column; overflow: hidden; }
   #gameArea .battle-interface { margin: 0 auto 6px; padding: 8px 12px; width: min(100%, 1400px); }
   #gameArea .battle-header-compact { margin-bottom: 6px; }
   #gameArea .combat-ui { padding: 7px 12px; }
   #gameArea #gameCanvas { width: auto; max-width: 100%; height: min(700px, calc(100vh - 230px)); margin: 0 auto; flex: 0 1 auto; }
   #gameArea .controls-compact { margin: 5px auto 0; }
+}
+
+/* Tournament draft: legible phase, strong BAN feedback, and distinct player focus. */
+.tournament-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: min(900px, 100%);
+  margin: -2px auto 16px;
+}
+
+.tournament-progress-step {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 13px;
+  background: rgba(7, 11, 24, .72);
+  color: #96a2bb;
+}
+
+.tournament-progress-step.is-active {
+  border-color: rgba(255, 210, 103, .72);
+  background: linear-gradient(115deg, rgba(113, 77, 25, .56), rgba(12, 17, 31, .88));
+  color: #fff4cf;
+  box-shadow: 0 0 18px rgba(255, 191, 69, .13), inset 0 0 0 1px rgba(255, 215, 117, .08);
+}
+
+.tournament-progress-step.is-complete .tournament-progress-index { background: rgba(114, 206, 163, .2); color: #91f0c5; }
+.tournament-progress-index { display: grid; width: 27px; height: 27px; flex: 0 0 27px; place-items: center; border-radius: 9px; background: rgba(255, 255, 255, .07); font: 800 .67rem/1 monospace; }
+.tournament-progress-copy { display: grid; min-width: 0; gap: 2px; }
+.tournament-progress-copy strong { overflow: hidden; font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.tournament-progress-copy small { color: #aeb8ce; font-size: .66rem; }
+
+.tournament-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 112px;
+  padding: 10px 11px;
+  isolation: isolate;
+  border-color: rgba(207, 218, 239, .17);
+  background: linear-gradient(145deg, rgba(26, 35, 56, .95), rgba(8, 13, 28, .96));
+  box-shadow: inset 0 1px rgba(255, 255, 255, .045), 0 7px 18px rgba(0, 0, 0, .17);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+
+.tournament-card::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(95deg, rgba(8, 12, 24, .96) 0%, rgba(8, 12, 24, .82) 48%, rgba(8, 12, 24, .22) 100%);
+  pointer-events: none;
+}
+
+.tournament-card-head { position: relative; z-index: 3; display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 5px; }
+.tournament-card-index { color: rgba(226, 235, 251, .48); font: 700 .62rem/1 monospace; letter-spacing: .08em; }
+.tournament-card-state { display: inline-flex; max-width: 82%; align-items: center; gap: 4px; overflow: hidden; padding: 4px 7px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 999px; background: rgba(9, 13, 24, .78); color: #e1e8f7; font-size: .62rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.tournament-card-state.is-turn { border-color: rgba(255, 221, 139, .58); background: rgba(101, 70, 26, .86); color: #fff0bd; }
+.tournament-card-state.is-cursor { color: #cdd8ef; }
+.tournament-card-state.is-ban { border-color: rgba(255, 102, 112, .72); background: rgba(113, 22, 34, .92); color: #ffe6e8; }
+.tournament-card-state.is-ban b { font-size: 1rem; line-height: .7; }
+.tournament-card-state.is-picked { border-color: rgba(255, 212, 98, .56); background: rgba(104, 77, 24, .88); color: #ffefbb; }
+.tournament-card .tournament-card-portrait { z-index: -2; right: -3px; bottom: -5px; width: 69%; height: 91%; object-fit: contain; opacity: .64; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .6)); }
+.tournament-card .tournament-card-name { position: relative; z-index: 2; display: block; max-width: 76%; padding: 2px 0; color: #fff8e9; font-size: clamp(.72rem, .94vw, .95rem); text-wrap: pretty; }
+.tournament-card .tournament-card-role { z-index: 2; bottom: 9px; left: 11px; max-width: 62%; padding: 3px 6px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 6px; background: rgba(8, 12, 23, .76); color: #d6def0; font-size: .6rem; }
+
+.tournament-card.cursor-p1 { border: 2px solid #ff5968; box-shadow: 0 0 0 2px rgba(255, 79, 99, .25), 0 0 25px rgba(255, 72, 83, .42), inset 0 0 25px rgba(255, 61, 72, .12); transform: translateY(-3px) scale(1.015); }
+.tournament-card.cursor-p2 { outline: 2px solid #58b6ff; outline-offset: -5px; box-shadow: 0 0 0 2px rgba(72, 165, 255, .24), 0 0 25px rgba(62, 150, 255, .42), inset 0 0 25px rgba(64, 157, 255, .12); transform: translateY(-3px) scale(1.015); }
+.tournament-card.cursor-p1.current-turn::after, .tournament-card.cursor-p2.current-turn::after { content: ''; position: absolute; z-index: 1; inset: 0; border-radius: inherit; background: linear-gradient(110deg, transparent, rgba(255, 255, 255, .13), transparent); pointer-events: none; animation: draftCardSweep 1.6s ease-in-out infinite; }
+.tournament-card.is-ban-candidate { border-color: #ff5c68; box-shadow: 0 0 0 3px rgba(255, 58, 71, .23), 0 0 32px rgba(255, 43, 60, .45), inset 0 0 28px rgba(255, 30, 44, .16); }
+.tournament-card.is-pick-candidate { border-color: #ffda75; }
+.tournament-card.is-banned { border-color: rgba(255, 78, 88, .86); background: linear-gradient(145deg, rgba(62, 19, 31, .94), rgba(18, 9, 19, .96)); opacity: .92; filter: grayscale(.76) saturate(.62); }
+.tournament-card.is-banned::before { z-index: 1; background: linear-gradient(135deg, rgba(68, 8, 21, .56), rgba(10, 7, 16, .55)), repeating-linear-gradient(135deg, transparent 0 15px, rgba(255, 59, 71, .16) 15px 18px); }
+.tournament-card.is-banned::after { content: '×'; position: absolute; z-index: 2; inset: 25% 7% auto auto; display: grid; width: 47px; height: 47px; place-items: center; border: 3px solid rgba(255, 103, 111, .95); border-radius: 50%; background: rgba(69, 8, 20, .84); color: #ff8088; font-size: 2.5rem; font-weight: 400; line-height: 1; text-shadow: 0 0 18px rgba(255, 35, 51, .6); transform: rotate(-8deg); }
+.tournament-card.is-banned .tournament-card-name { color: #f4c5c8; text-decoration: line-through; text-decoration-color: rgba(255, 100, 110, .85); }
+.tournament-card.is-picked { border-color: rgba(255, 208, 95, .5); opacity: .76; filter: saturate(.75); }
+.tournament-card.is-picked .tournament-card-portrait { opacity: .36; }
+.tournament-card.is-recent-ban { animation: banCardImpact .65s cubic-bezier(.15, .8, .25, 1) both; }
+.tournament-card.is-recent-pick { animation: pickCardLock .42s cubic-bezier(.15, .8, .25, 1) both; }
+.tournament-card.current-turn { animation: none; }
+
+@keyframes draftCardSweep { 0%, 100% { opacity: 0; transform: translateX(-70%); } 45% { opacity: .85; } 75% { opacity: 0; transform: translateX(70%); } }
+@keyframes banCardImpact { 0% { transform: scale(1.07); filter: brightness(2.5) saturate(1.5); } 100% { transform: scale(1); } }
+@keyframes pickCardLock { 0% { transform: scale(1.055); filter: brightness(1.8); } 100% { transform: scale(1); } }
+
+@media (max-width: 900px) {
+  .tournament-progress { margin-top: -3px; }
+  .tournament-progress-step { padding: 8px; gap: 7px; }
+  .tournament-card { min-height: 100px; }
+}
+
+@media (max-width: 560px) {
+  .tournament-progress { gap: 5px; }
+  .tournament-progress-step { flex-direction: column; align-items: flex-start; padding: 8px 7px; }
+  .tournament-progress-index { width: 23px; height: 23px; flex-basis: 23px; }
+  .tournament-progress-copy strong { font-size: .68rem; }
+  .tournament-progress-copy small { font-size: .6rem; }
+  .tournament-card-head { align-items: flex-start; }
+  .tournament-card-state { max-width: 90%; padding: 4px 5px; font-size: .56rem; }
+  .tournament-card.is-banned::after { width: 36px; height: 36px; font-size: 2rem; }
+}
+
+/* A clear two-player loadout room: role colors, large choice surfaces, and visible lock state. */
+#tournamentTalentScreen {
+  min-height: calc(100vh - 88px);
+  padding: clamp(18px, 3vh, 38px) clamp(14px, 3.4vw, 58px);
+  background:
+    linear-gradient(180deg, rgba(4, 8, 20, .52), rgba(5, 8, 18, .82)),
+    url('assets/tournament-dojo-background.png') center / cover fixed;
+}
+
+.talent-shell { width: min(1380px, 100%); margin: 0 auto; }
+.talent-topline { min-height: 62px; padding: 10px 16px; border: 1px solid rgba(255, 226, 157, .17); border-radius: 15px; background: rgba(8, 12, 25, .76); box-shadow: 0 12px 34px rgba(0, 0, 0, .23); backdrop-filter: blur(12px); }
+.talent-topline .tournament-score { margin-left: auto; }
+.talent-status-card { position: relative; max-width: 940px; margin: 20px auto 18px; padding: 20px 24px 16px; border-color: rgba(255, 226, 157, .25); background: linear-gradient(130deg, rgba(11, 17, 34, .94), rgba(13, 16, 31, .9)); box-shadow: 0 18px 44px rgba(0, 0, 0, .3), inset 0 1px rgba(255, 255, 255, .06); }
+.talent-status-card h2 { margin: 8px 0 5px; letter-spacing: .035em; }
+.talent-status-card p { font-size: .83rem; }
+.talent-selection-steps { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 15px auto 0; color: #8e9ab2; }
+.talent-selection-steps span { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border: 1px solid transparent; border-radius: 999px; font-size: .75rem; font-weight: 800; }
+.talent-selection-steps span b { color: #9ba8c2; font: 700 .65rem/1 monospace; }
+.talent-selection-steps span.is-current { border-color: rgba(255, 219, 131, .38); background: rgba(255, 212, 107, .12); color: #fff0bd; }
+.talent-selection-steps span.is-current b { color: #ffd56f; }
+.talent-selection-steps i { width: clamp(24px, 5vw, 66px); height: 1px; background: linear-gradient(90deg, rgba(255, 218, 126, .48), rgba(255, 255, 255, .12)); }
+.talent-loadout-board { align-items: stretch; gap: clamp(12px, 1.7vw, 24px); }
+.talent-player-panel { position: relative; min-width: 0; overflow: hidden; padding: clamp(14px, 1.7vw, 22px); border-width: 1px; border-radius: 21px; background: linear-gradient(148deg, rgba(20, 27, 47, .96), rgba(8, 12, 25, .96)); box-shadow: 0 18px 48px rgba(0, 0, 0, .34), inset 0 1px rgba(255, 255, 255, .06); }
+.talent-player-panel::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .8), transparent); opacity: .62; }
+.talent-player-panel::after { content: ''; position: absolute; top: -105px; right: -90px; width: 250px; height: 250px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, .09), transparent 68%); pointer-events: none; }
+.talent-player-panel.player1 { border-color: rgba(255, 83, 96, .52); --talent-accent: #ff6472; --talent-glow: rgba(255, 70, 86, .17); }
+.talent-player-panel.player2 { border-color: rgba(75, 162, 255, .54); --talent-accent: #63b6ff; --talent-glow: rgba(67, 148, 255, .17); }
+.talent-player-panel.is-ready { filter: saturate(.84); }
+.talent-character-head { position: relative; z-index: 1; min-height: 67px; gap: 13px; margin-bottom: 15px; padding: 0 0 12px; border-bottom: 1px solid rgba(255, 255, 255, .1); }
+.talent-character-head img { width: 60px; height: 60px; flex: 0 0 60px; border: 1px solid rgba(255, 255, 255, .19); box-shadow: 0 5px 16px rgba(0, 0, 0, .32); }
+.talent-player-panel.player1 .talent-character-head img { box-shadow: 0 0 0 2px rgba(255, 73, 86, .23), 0 5px 16px rgba(0, 0, 0, .3); }
+.talent-player-panel.player2 .talent-character-head img { box-shadow: 0 0 0 2px rgba(79, 164, 255, .23), 0 5px 16px rgba(0, 0, 0, .3); }
+.talent-character-head h3 { font-size: clamp(1.02rem, 1.45vw, 1.32rem); }
+.talent-character-head > div { min-width: 0; }
+.talent-player-status { margin-left: auto; padding: 6px 9px; border: 1px solid color-mix(in srgb, var(--talent-accent) 45%, transparent); border-radius: 999px; background: var(--talent-glow); color: #f6f8ff; font-size: .7rem; font-weight: 800; white-space: nowrap; }
+.talent-card-row { gap: 12px; }
+.talent-card { display: flex; min-height: 218px; flex-direction: column; padding: clamp(13px, 1.4vw, 19px); border-color: rgba(255, 255, 255, .13); border-radius: 17px; background: linear-gradient(147deg, rgba(45, 54, 80, .72), rgba(12, 17, 33, .98) 74%); box-shadow: inset 0 1px rgba(255, 255, 255, .045), 0 8px 22px rgba(0, 0, 0, .19); }
+.talent-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(130deg, var(--talent-glow), transparent 50%); opacity: .52; pointer-events: none; }
+.talent-card::after { inset: auto -30px -55px auto; width: 150px; height: 150px; border: 1px solid rgba(255, 255, 255, .05); background: radial-gradient(circle, var(--talent-glow), transparent 70%); }
+.talent-card-topline { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+.talent-card-label { gap: 7px; padding: 5px 8px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .07); color: #dce5f7; }
+.talent-card-label b { display: grid; width: 21px; height: 21px; place-items: center; border-radius: 6px; background: var(--talent-glow); color: var(--talent-accent); font-size: .75rem; }
+.talent-card-lock { color: #c2cde3; font-size: .65rem; font-weight: 800; white-space: nowrap; }
+.talent-card h4 { position: relative; z-index: 1; margin: 18px 0 9px; color: #fff0c4; font-size: clamp(1rem, 1.35vw, 1.2rem); line-height: 1.35; }
+.talent-card p { position: relative; z-index: 1; color: #d0d8e9; font-size: clamp(.78rem, .91vw, .9rem); line-height: 1.62; }
+.talent-card-current { position: relative; z-index: 1; display: inline-flex; align-self: flex-start; margin-top: auto; padding: 6px 8px 0 0; color: var(--talent-accent); font-size: .68rem; font-weight: 800; }
+.talent-card.is-cursor-p1 { border-color: rgba(255, 99, 111, .9); background: linear-gradient(147deg, rgba(112, 35, 51, .73), rgba(21, 14, 30, .98) 76%); box-shadow: 0 0 0 2px rgba(255, 72, 88, .19), 0 0 27px rgba(255, 73, 89, .2), inset 0 0 26px rgba(255, 72, 89, .1); transform: translateY(-3px); }
+.talent-card.is-cursor-p2 { border-color: rgba(94, 180, 255, .95); background: linear-gradient(147deg, rgba(27, 69, 112, .78), rgba(12, 16, 33, .98) 76%); box-shadow: 0 0 0 2px rgba(77, 164, 255, .2), 0 0 27px rgba(77, 164, 255, .2), inset 0 0 26px rgba(77, 164, 255, .1); transform: translateY(-3px); }
+.talent-card.is-selected { border-color: rgba(255, 218, 119, .9); background: linear-gradient(145deg, rgba(101, 77, 35, .67), rgba(20, 20, 28, .98) 74%); box-shadow: 0 0 25px rgba(255, 211, 102, .17), inset 0 0 24px rgba(255, 211, 102, .08); }
+.talent-card.is-selected .talent-card-lock { color: #ffe49a; }
+.talent-card.is-confirmed { filter: saturate(.45) brightness(.66); }
+.talent-player-footer { position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-top: 12px; color: #aab6cc; font-size: .69rem; }
+.talent-player-footer span:first-child { color: var(--talent-accent); font-weight: 800; }
+
+@media (max-width: 760px) {
+  #tournamentTalentScreen { padding: 12px; }
+  .talent-topline { gap: 9px; }
+  .talent-topline .tournament-score { order: 0; margin-left: 0; }
+  .talent-status-card { margin: 12px auto; padding: 16px 13px 13px; }
+  .talent-selection-steps { gap: 4px; }
+  .talent-selection-steps span { gap: 4px; padding: 5px 6px; font-size: .67rem; }
+  .talent-loadout-board { grid-template-columns: 1fr; }
+  .talent-card { min-height: 190px; }
+}
+
+@media (max-width: 480px) {
+  .talent-card-row { grid-template-columns: 1fr; }
+  .talent-card { min-height: 160px; }
+}
+
+@media (min-width: 1081px) and (min-height: 600px) {
+  .tournament-shell { display: flex; flex-direction: column; }
+  .tournament-draft-layout { flex: 1 1 auto; min-height: 0; }
+  .tournament-roster { min-height: 0; grid-auto-rows: minmax(64px, 1fr); }
 }
 
 /* Battle-only control scheme switcher. */
@@ -2886,12 +3099,12 @@ body::after {
 /* Final desktop layout override: must remain after the responsive selection rules. */
 @media (min-width: 1081px) and (min-height: 600px) {
   html, body { height: 100%; overflow: hidden; }
-  header { height: 78px; overflow: hidden; }
+  header { height: 88px; min-height: 88px; overflow: visible; }
   .ninja-title { margin: 8px 0 2px; font-size: clamp(1.7rem, 2.4vw, 2.45rem); }
   .game-subtitle { margin: 0; font-size: 0.78rem; }
 
   #characterSelect {
-    height: calc(100vh - 78px); min-height: 0; padding: 6px 14px 8px;
+    height: calc(100vh - 88px); min-height: 0; padding: 6px 14px 8px;
     display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 7px; overflow: hidden;
   }
   #characterSelect .screen-title { margin: 0; font-size: clamp(1.25rem, 1.7vw, 1.65rem); }
@@ -2926,7 +3139,7 @@ body::after {
   #characterSelect .screen-controls .ninja-btn { min-width: 0; padding: 9px 16px; border-radius: 10px; font-size: 0.83rem; }
 
   #mapSelect {
-    height: calc(100vh - 78px); padding: 6px 20px 8px;
+    height: calc(100vh - 88px); padding: 6px 20px 8px;
     display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 8px; overflow: hidden;
   }
   #mapSelect .screen-title, #mapSelect .selected-ninjas-summary, #mapSelect .screen-controls, #mapSelect .selection-status { margin: 0; }
@@ -2940,7 +3153,7 @@ body::after {
   #mapSelect .map-preview { height: calc(100% - 42px); min-height: 120px; }
   #mapSelect .screen-controls .ninja-btn { min-width: 0; padding: 9px 20px; font-size: 0.86rem; }
 
-  #gameArea { height: calc(100vh - 78px); padding: 6px 14px 8px; display: flex; flex-direction: column; overflow: hidden; }
+  #gameArea { height: calc(100vh - 88px); padding: 6px 14px 8px; display: flex; flex-direction: column; overflow: hidden; }
   #gameArea .battle-interface { margin: 0 auto 6px; padding: 8px 12px; width: min(100%, 1400px); }
   #gameArea .battle-header-compact { margin-bottom: 6px; }
   #gameArea .combat-ui { padding: 7px 12px; }

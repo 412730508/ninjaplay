@@ -58,6 +58,7 @@ class MapSystem {
     };
     
     this.currentMap = 'grassland';
+    this.tournamentDojoImage = null;
   }
 
   stableNoise(index, seed = 0) {
@@ -5145,97 +5146,59 @@ class MapSystem {
     drawWindNinjaDojo(ctx, { width, height }, Date.now() * 0.001);
   }
 
-  // 錦標賽專屬道場：獨立 Canvas 手繪背景；選秀頁才使用使用者提供的角色群像圖。
+  // 錦標賽專屬道場：載入專用場景插畫，再疊上輕量 Canvas 氛圍與可讀性遮罩。
   renderTournamentDojo(ctx, width, height) {
     const time = Date.now() * 0.001;
-    const horizon = height * 0.65;
+    const image = this.tournamentDojoImage;
+    ctx.fillStyle = '#10131c';
+    ctx.fillRect(0, 0, width, height);
 
-    // 夜色、木造天花與遠方山脈。
-    const night = ctx.createLinearGradient(0, 0, 0, height);
-    night.addColorStop(0, '#060917'); night.addColorStop(0.45, '#1a1a33'); night.addColorStop(0.68, '#412535'); night.addColorStop(1, '#160d12');
-    ctx.fillStyle = night; ctx.fillRect(0, 0, width, height);
-    const moonX = width * 0.77, moonY = height * 0.18;
-    const moonGlow = ctx.createRadialGradient(moonX, moonY, 8, moonX, moonY, height * 0.24);
-    moonGlow.addColorStop(0, 'rgba(224,235,255,.25)'); moonGlow.addColorStop(1, 'rgba(142,166,240,0)');
-    ctx.fillStyle = moonGlow; ctx.beginPath(); ctx.arc(moonX, moonY, height * .24, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#f0f2ff'; ctx.beginPath(); ctx.arc(moonX, moonY, 42, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(180,190,225,.34)'; ctx.beginPath(); ctx.arc(moonX + 13, moonY - 7, 9, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(moonX - 14, moonY + 13, 6, 0, Math.PI * 2); ctx.fill();
-    for (let layer = 0; layer < 3; layer++) {
-      const y = height * (.42 + layer * .07);
-      ctx.fillStyle = ['#17162b', '#21192d', '#2c1c29'][layer];
-      ctx.beginPath(); ctx.moveTo(0, horizon);
-      for (let x = -80; x <= width + 80; x += 70) {
-        const peak = y - (22 + this.stableNoise(x + layer * 17, layer + 9) * 58) * (layer + 1) / 2;
-        ctx.lineTo(x, peak);
+    if (image?.complete && image.naturalWidth > 0) {
+      const sourceAspect = image.naturalWidth / image.naturalHeight;
+      const targetAspect = width / height;
+      let sx = 0, sy = 0, sw = image.naturalWidth, sh = image.naturalHeight;
+      if (sourceAspect < targetAspect) {
+        sh = image.naturalWidth / targetAspect;
+        sy = (image.naturalHeight - sh) * 0.36;
+      } else {
+        sw = image.naturalHeight * targetAspect;
+        sx = (image.naturalWidth - sw) * 0.5;
       }
-      ctx.lineTo(width, horizon); ctx.closePath(); ctx.fill();
+      ctx.drawImage(image, sx, sy, sw, sh, 0, 0, width, height);
+    } else {
+      const fallback = ctx.createLinearGradient(0, 0, 0, height);
+      fallback.addColorStop(0, '#10172a');
+      fallback.addColorStop(0.58, '#202536');
+      fallback.addColorStop(0.59, '#805b3c');
+      fallback.addColorStop(1, '#241911');
+      ctx.fillStyle = fallback;
+      ctx.fillRect(0, 0, width, height);
     }
 
-    // 開放式紙門窗與梁柱，保留中央擂台的視線。
-    ctx.fillStyle = 'rgba(11, 8, 15, .78)'; ctx.fillRect(0, 0, width, height * .105);
-    ctx.fillStyle = '#301713'; ctx.fillRect(0, height * .085, width, 19);
-    ctx.fillStyle = '#7f4326'; ctx.fillRect(0, height * .105, width, 5);
-    const windowTop = height * .12, windowBottom = horizon - 16;
-    [[width * .045, width * .29], [width * .71, width * .955]].forEach(([left, right]) => {
-      ctx.fillStyle = 'rgba(198, 185, 163, .10)'; ctx.fillRect(left, windowTop, right - left, windowBottom - windowTop);
-      ctx.strokeStyle = 'rgba(157, 88, 48, .82)'; ctx.lineWidth = 7; ctx.strokeRect(left, windowTop, right - left, windowBottom - windowTop);
-      ctx.lineWidth = 2;
-      for (let x = left + (right - left) / 3; x < right; x += (right - left) / 3) { ctx.beginPath(); ctx.moveTo(x, windowTop); ctx.lineTo(x, windowBottom); ctx.stroke(); }
-      for (let y = windowTop + (windowBottom - windowTop) / 3; y < windowBottom; y += (windowBottom - windowTop) / 3) { ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke(); }
-    });
-    [width * .035, width * .30, width * .70, width * .965].forEach(x => {
-      const beam = ctx.createLinearGradient(x - 18, 0, x + 18, 0);
-      beam.addColorStop(0, '#1a0c0b'); beam.addColorStop(.5, '#754125'); beam.addColorStop(1, '#180a0a');
-      ctx.fillStyle = beam; ctx.fillRect(x - 18, 0, 36, horizon + 65);
-      ctx.fillStyle = 'rgba(245,167,85,.22)'; ctx.fillRect(x - 4, 0, 5, horizon + 65);
-    });
+    // A restrained overlay keeps character silhouettes and combat telegraphs legible.
+    const shade = ctx.createLinearGradient(0, 0, 0, height);
+    shade.addColorStop(0, 'rgba(5, 9, 20, .16)');
+    shade.addColorStop(0.56, 'rgba(5, 8, 17, .08)');
+    shade.addColorStop(0.7, 'rgba(7, 8, 12, .20)');
+    shade.addColorStop(1, 'rgba(7, 6, 8, .30)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, width, height);
 
-    // 中央掛軸、神龕與兩盞搖曳的燈籠。
-    const bannerW = Math.min(190, width * .16), bannerH = height * .38;
-    const bannerX = width / 2 - bannerW / 2, bannerY = height * .14;
-    ctx.fillStyle = '#180d10'; ctx.fillRect(bannerX - 10, bannerY - 9, bannerW + 20, bannerH + 18);
-    ctx.fillStyle = '#d3bf94'; ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
-    ctx.fillStyle = '#b03831'; ctx.fillRect(bannerX, bannerY, bannerW, 13); ctx.fillRect(bannerX, bannerY + bannerH - 13, bannerW, 13);
-    ctx.save(); ctx.translate(width / 2, bannerY + bannerH * .62); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `900 ${Math.min(115, bannerW * .72)}px serif`; ctx.fillStyle = '#1b1115'; ctx.fillText('武', 0, 0); ctx.restore();
-    ctx.fillStyle = '#b52d27'; ctx.beginPath(); ctx.arc(width / 2, bannerY + bannerH - 35, 12, 0, Math.PI * 2); ctx.fill();
+    const vignette = ctx.createRadialGradient(width / 2, height * 0.48, height * 0.2, width / 2, height * 0.48, width * 0.7);
+    vignette.addColorStop(0, 'rgba(5, 8, 18, 0)');
+    vignette.addColorStop(1, 'rgba(5, 8, 18, .24)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, width, height);
 
-    [width * .18, width * .82].forEach((x, index) => {
-      const y = height * .23 + Math.sin(time * 1.6 + index * 2) * 5;
-      const glow = ctx.createRadialGradient(x, y, 4, x, y, 125);
-      glow.addColorStop(0, 'rgba(255,218,122,.45)'); glow.addColorStop(1, 'rgba(255,104,40,0)');
-      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, 125, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#2b1112'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, y - 33); ctx.stroke();
-      ctx.fillStyle = '#9d3225'; ctx.beginPath(); ctx.roundRect(x - 25, y - 32, 50, 69, 9); ctx.fill();
-      ctx.strokeStyle = '#f5bd61'; ctx.lineWidth = 3; ctx.stroke();
-      ctx.fillStyle = '#ffe5a0'; ctx.fillRect(x - 17, y - 16, 34, 34);
-      ctx.fillStyle = '#7c251f'; ctx.fillRect(x - 4, y + 37, 8, 19);
-    });
-
-    // 近景榻榻米擂台：金色邊界、透視格線、中央家紋。
-    const floor = ctx.createLinearGradient(0, horizon, 0, height);
-    floor.addColorStop(0, '#674224'); floor.addColorStop(1, '#1b1010'); ctx.fillStyle = floor; ctx.fillRect(0, horizon, width, height - horizon);
-    ctx.fillStyle = '#b37a37'; ctx.fillRect(0, horizon, width, 10);
-    const vanishingX = width / 2, vanishingY = horizon + 2;
-    for (let x = -width; x <= width * 2; x += width / 8) {
-      ctx.strokeStyle = 'rgba(246,196,104,.26)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(vanishingX, vanishingY); ctx.lineTo(x, height); ctx.stroke();
-    }
-    [0.13, .28, .46, .67, .88].forEach(ratio => {
-      const y = horizon + (height - horizon) * ratio;
-      ctx.strokeStyle = 'rgba(246,196,104,.24)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
-    });
-    ctx.save(); ctx.translate(width / 2, horizon + 63); ctx.strokeStyle = 'rgba(255,220,133,.72)'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(0, 0, 39, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.stroke();
-    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 20, Math.sin(a) * 20); ctx.lineTo(Math.cos(a) * 39, Math.sin(a) * 39); ctx.stroke(); } ctx.restore();
-
-    // 少量飄散的火星，讓靜態道場仍有呼吸感。
-    for (let i = 0; i < 22; i++) {
+    // A few slow, subtle dust motes add depth without cluttering the stage.
+    for (let i = 0; i < 8; i++) {
       const x = this.stableNoise(i, 31) * width;
-      const y = height * .12 + ((time * 18 + i * 53) % (height * .58));
-      const size = 1 + this.stableNoise(i, 51) * 2.4;
-      ctx.fillStyle = `rgba(255, ${150 + Math.floor(this.stableNoise(i, 76) * 80)}, 79, .55)`;
-      ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill();
+      const y = height * 0.12 + ((time * 7 + i * 83) % (height * 0.64));
+      const size = 0.8 + this.stableNoise(i, 51) * 1.2;
+      ctx.fillStyle = `rgba(255, 218, 160, ${0.18 + this.stableNoise(i, 76) * 0.18})`;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
   
@@ -5243,6 +5206,11 @@ class MapSystem {
   setCurrentMap(mapId) {
     if (this.maps[mapId]) {
       this.currentMap = mapId;
+      if (mapId === 'tournamentDojo' && !this.tournamentDojoImage) {
+        this.tournamentDojoImage = new Image();
+        this.tournamentDojoImage.decoding = 'async';
+        this.tournamentDojoImage.src = 'assets/tournament-dojo-arena.png';
+      }
       return true;
     }
     return false;

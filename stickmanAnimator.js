@@ -2797,7 +2797,12 @@
       'forgefireSlash', 'forgefireSpin', 'flameGodBlade',
       'elfTalisman', 'stealthDash',
       'bloodShackles', 'bloodDevour',
-      'flashCut', 'iaiFlash'
+      'flashCut', 'iaiFlash',
+      'venomDart', 'thornTrap', 'savageSuplex', 'royalExecution',
+      'abyssTentacle', 'beastLiberation', 'boulderToss', 'rebelMinion',
+      'chainOfPain', 'objectionParry', 'finalVerdict', 'exileGaleDash',
+      'stormExecution', 'puppetDeploy', 'phantomSwap', 'divineSmite',
+      'grandThunderSlash', 'staccatoStrike', 'deadlyCanon'
     ];
     
     if (skillAnimations.includes(animationName)) {
