@@ -12,6 +12,7 @@
     this.gameState = {
       paused: false,
       winner: null,
+      countdown: null,
       effects: [], 
       projectiles: [],
       damageNumbers: [],
@@ -170,6 +171,14 @@
   update(deltaTime) {
     this.lastDeltaTime = deltaTime;
     if (this.gameState.paused || this.gameState.winner) return;
+
+    if (this.gameState.countdown) {
+      const elapsed = Date.now() - this.gameState.countdown.startedAt;
+      if (elapsed < this.gameState.countdown.duration) return;
+      if (elapsed >= this.gameState.countdown.duration + this.gameState.countdown.goDuration) {
+        this.gameState.countdown = null;
+      }
+    }
 
     // 鋆捱??Hit-Stop嚗?撟??頝喲??摩?湔
     if (this.hitStopFrames > 0) {
@@ -450,6 +459,10 @@
     if (typeof particleSystem !== 'undefined' && particleSystem && particleSystem.render) {
       particleSystem.render(this.ctx);
     }
+
+    // Draw the sustained ultimate above particles and fighters so its waves
+    // remain visible even in visually busy matches.
+    this.renderShamisenCanon(this.ctx);
     
     // ? 皜脫???賜???蝷箏
     this.renderSkillIndicators();
@@ -473,9 +486,60 @@
     
     // ??皜脫??Ｗ????嚗?敺葡??閬??冽??摰嫣?銝?
     this.renderScreenFlash();
+    this.renderCountdownOverlay();
     
 
 
+  }
+
+  startCountdown(duration = 3000) {
+    Object.keys(this.keys).forEach(key => { this.keys[key] = false; });
+    Object.values(this.skillPressed).forEach(state => {
+      state.normal = false;
+      state.ultimate = false;
+      state.attack = false;
+      state.defend = false;
+    });
+    this.gameState.countdown = { startedAt: Date.now(), duration, goDuration: 700 };
+  }
+
+  isCountdownBeforeGo(now = Date.now()) {
+    const countdown = this.gameState.countdown;
+    return !!countdown && now - countdown.startedAt < countdown.duration;
+  }
+
+  renderCountdownOverlay() {
+    const countdown = this.gameState.countdown;
+    if (!countdown || !this.ctx) return;
+    const elapsed = Date.now() - countdown.startedAt;
+    if (elapsed >= countdown.duration + countdown.goDuration) return;
+
+    const isGo = elapsed >= countdown.duration;
+    const label = isGo ? 'GO!' : String(Math.max(1, Math.ceil((countdown.duration - elapsed) / 1000)));
+    const ctx = this.ctx;
+    const centerX = this.canvasWidth / 2;
+    const centerY = this.canvasHeight / 2;
+    const pulse = 1 + Math.sin(Date.now() * 0.012) * 0.035;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(5, 9, 20, 0.42)';
+    ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `900 ${Math.round((isGo ? 112 : 144) * pulse)}px Arial, sans-serif`;
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = isGo ? 8 : 10;
+    ctx.strokeStyle = 'rgba(12, 18, 32, 0.9)';
+    ctx.shadowColor = isGo ? '#65F7C2' : '#FFD166';
+    ctx.shadowBlur = isGo ? 36 : 24;
+    ctx.strokeText(label, centerX, centerY);
+    ctx.fillStyle = isGo ? '#8CFFD4' : '#FFF2B2';
+    ctx.fillText(label, centerX, centerY);
+    ctx.shadowBlur = 0;
+    ctx.font = 'bold 20px Arial, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.fillText(isGo ? '開戰！' : '準備', centerX, centerY + 100);
+    ctx.restore();
   }
 
   getCombatPalette(characterId) {
@@ -1445,8 +1509,6 @@
     // ??? ??皜脫??潮銋??寞?嚗??+ ?餃? + 憭扳???嚗????
     this.renderAzureExtras();
 
-    // *** Render Shamisen Deadly Canon expanding circles ***
-    this.renderShamisenCanon(this.ctx);
   }
 
   renderPuppeteerExtras() {
@@ -9423,7 +9485,7 @@
     if (has('hundredfold_focus')) { ultimate.finalKnockback = 190; ultimate.executionTicks += 1; }
     if (has('headwind')) player.talentHeadwind = true;
     if (has('wind_blade_echo')) ultimate.windBladeEcho = { range: 60, duration: 800, slowMultiplier: 0.8 };
-    if (has('guardian_puppet')) { normal.puppetAdvanceLimit = 35; player.passive.puppetAttackDamage = 4; }
+    if (has('guardian_puppet')) { player.passive.puppetAttackDamage = 4; }
     if (has('hunter_puppet')) normal.hunterSpawn = true;
     if (has('tight_line')) normal.cooldown = 3000;
     if (has('frayed_thread')) normal.frayedThread = { range: 70, duration: 800, slowMultiplier: 0.88 };
@@ -10009,6 +10071,10 @@
       // < 與 > 在多數鍵盤上是 ,／. 鍵；以實體按鍵辨識，不強迫按 Shift。
       if (e.code === 'Comma') key = '<';
       if (e.code === 'Period') key = '>';
+      if (this.isCountdownBeforeGo()) {
+        e.preventDefault();
+        return;
+      }
       const bindings = this.getControlBindings();
       const player2Keys = ['arrowleft', 'arrowright', 'arrowup', 'arrowdown', bindings.player2.normal, bindings.player2.ultimate];
       
@@ -10095,6 +10161,8 @@
   }
 
   handleInput() {
+    if (this.isCountdownBeforeGo()) return;
+
     const player2CpuControlled = this.isCpuControlled('player2');
     const bindings = this.getControlBindings();
 
@@ -14791,10 +14859,10 @@
       const enemyDirection = opponent && opponent.position.x < player.position.x ? -1 : 1;
       const spawnX = skill.hunterSpawn && opponent
         ? opponent.position.x
-        : player.position.x - enemyDirection * spawnDistance;
+        : this.getPuppetSpawnX(player.position.x, enemyDirection, spawnDistance);
       this.gameState.puppet[playerId] = {
         active: true,
-        x: Math.max(80, Math.min(this.canvasWidth - 80, spawnX)),
+        x: spawnX,
         y: player.position.y,
         facing: enemyDirection,
         hp: skill.puppetHp || 30,
@@ -14820,6 +14888,18 @@
         }
       }
     }
+  }
+
+  getPuppetSpawnX(playerX, enemyDirection, spawnDistance = 150) {
+    const minX = 80;
+    const maxX = this.canvasWidth - 80;
+    const awayX = playerX - enemyDirection * spawnDistance;
+    if (awayX >= minX && awayX <= maxX) return awayX;
+
+    // At a stage edge, spawn on the other side instead of clamping the
+    // puppet directly onto its owner.
+    const towardEnemyX = playerX + enemyDirection * spawnDistance;
+    return Math.max(minX, Math.min(maxX, towardEnemyX));
   }
 
   // ??? ? Puppeteer: Phantom Swap Ultimate ???
@@ -16366,6 +16446,7 @@
       const skill = canon.skill;
       const cx = canon.centerX;
       const cy = canon.centerY;
+      if (!Number.isFinite(cx) || !Number.isFinite(cy)) return;
 
       // Calculate current wave radius
       let currentRadius = 0;
@@ -16398,7 +16479,7 @@
 
       // Filled radial gradient area (subtle)
       const areaGrad = ctx.createRadialGradient(cx, cy, currentRadius * 0.3, cx, cy, currentRadius);
-      const fillAlpha = 0.06 + Math.sin(now * 0.005) * 0.02;
+      const fillAlpha = 0.1 + Math.sin(now * 0.005) * 0.025;
       areaGrad.addColorStop(0, `rgba(${wc.r}, ${wc.g}, ${wc.b}, ${fillAlpha * 1.5})`);
       areaGrad.addColorStop(0.7, `rgba(${wc.r}, ${wc.g}, ${wc.b}, ${fillAlpha})`);
       areaGrad.addColorStop(1, `rgba(${wc.r}, ${wc.g}, ${wc.b}, 0)`);
@@ -16412,10 +16493,10 @@
         const ringRadius = currentRadius - ring * 12;
         if (ringRadius <= 0) continue;
 
-        const alphaBase = 0.55 - ring * 0.1;
+        const alphaBase = 0.78 - ring * 0.12;
         const pulse = 0.85 + Math.sin(now * 0.008 + ring * 0.8) * 0.15;
         ctx.strokeStyle = `rgba(${wc.r}, ${wc.g}, ${wc.b}, ${alphaBase * pulse})`;
-        ctx.lineWidth = (4 - ring * 0.6) * pulse;
+        ctx.lineWidth = (6 - ring * 0.75) * pulse;
         ctx.beginPath();
         ctx.arc(cx, cy, ringRadius, 0, Math.PI * 2);
         ctx.stroke();

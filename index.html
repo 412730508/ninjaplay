@@ -1750,8 +1750,13 @@
             game.init('gameCanvas');
             attachCpuController();
 
-            if (options.tournament) {
+            const beginBattle = () => {
+                game.startCountdown();
                 showScreen('gameArea');
+            };
+
+            if (options.tournament) {
+                beginBattle();
                 return;
             }
 
@@ -1761,17 +1766,17 @@
             const isPair = (a, b) => (p1 === a && p2 === b) || (p1 === b && p2 === a);
             const hasOne = (a) => p1 === a || p2 === a;
             if (isPair('exileblade', 'fujin')) {
-                playEasterEggDoors('風門對立.png', () => showScreen('gameArea'));
+                playEasterEggDoors('風門對立.png', beginBattle);
             } else if (isPair('katon', 'scorpion')) {
-                playEasterEggDoors('彩蛋1.png', () => showScreen('gameArea'));
+                playEasterEggDoors('彩蛋1.png', beginBattle);
             } else if (isPair('warlock', 'kage')) {
-                playEasterEggDoors('彩蛋2.png', () => showScreen('gameArea'));
+                playEasterEggDoors('彩蛋2.png', beginBattle);
             } else if (hasOne('dokusei') && (hasOne('beastmaster') || hasOne('ranger'))) {
-                playEasterEggDoors('彩蛋3.png', () => showScreen('gameArea'));
+                playEasterEggDoors('彩蛋3.png', beginBattle);
             } else if (isPair('fujin', 'suijin')) {
-                playEasterEggDoors('彩蛋4.png', () => showScreen('gameArea'));
+                playEasterEggDoors('彩蛋4.png', beginBattle);
             } else {
-                showScreen('gameArea');
+                beginBattle();
             }
         }
 
