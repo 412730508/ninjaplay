@@ -63,7 +63,7 @@
     }
     </script>
     
-    <link rel="stylesheet" href="ninjaStyles.css?v=tournament-layout-repair-1">
+    <link rel="stylesheet" href="ninjaStyles.css?v=tournament-draft-grid-2">
     
     <!-- 🔍 Canonical URL -->
     <link rel="canonical" href="https://412730508.github.io/ninjaplay/">
@@ -441,7 +441,10 @@
         function tournamentCursorMove(playerId, direction) {
             if (!tournamentState?.active || tournamentState.phase === 'finished') return;
             const ids = tournamentCharacterIds();
-            const columns = 5;
+            const roster = document.getElementById('tournamentRoster');
+            const columns = roster
+                ? getComputedStyle(roster).gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length
+                : 5;
             let next = tournamentState.cursors[playerId];
             if (direction === 'left') next -= 1;
             if (direction === 'right') next += 1;

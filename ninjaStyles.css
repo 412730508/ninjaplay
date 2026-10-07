@@ -2040,15 +2040,14 @@ body::after {
   }
 
   #tournamentScreen .tournament-roster {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    grid-auto-rows: auto;
-    align-content: start;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-auto-rows: minmax(100px, 1fr);
     gap: clamp(5px, .7vw, 9px);
   }
 
   #tournamentScreen .tournament-card {
-    min-height: 0;
-    aspect-ratio: .76;
+    min-height: 100px;
+    aspect-ratio: auto;
     padding: clamp(5px, .65vw, 9px);
   }
 
@@ -2060,11 +2059,14 @@ body::after {
   #tournamentTalentScreen .talent-card { aspect-ratio: .78; }
   #tournamentScreen { overflow: auto; }
   #tournamentScreen .tournament-roster {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-auto-rows: auto;
-    align-content: start;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: minmax(100px, auto);
   }
-  #tournamentScreen .tournament-card { min-height: 0; aspect-ratio: .78; }
+  #tournamentScreen .tournament-card { min-height: 100px; aspect-ratio: auto; }
+}
+
+@media (max-width: 560px) {
+  #tournamentScreen .tournament-roster { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* Center the arena between side-mounted cooldowns instead of pinning it below a HUD. */
