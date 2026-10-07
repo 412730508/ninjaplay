@@ -63,7 +63,7 @@
     }
     </script>
     
-    <link rel="stylesheet" href="ninjaStyles.css?v=tournament-ui-polish-1">
+    <link rel="stylesheet" href="ninjaStyles.css?v=tournament-layout-repair-1">
     
     <!-- 🔍 Canonical URL -->
     <link rel="canonical" href="https://412730508.github.io/ninjaplay/">
@@ -308,9 +308,6 @@
                 <div class="battle-info">
                     <span id="currentMapDisplay">戰場：青翠草原</span>
                 </div>
-                <div class="battle-timer" id="battleTimer">
-                    <span>⏰ 00:00</span>
-                </div>
                 <div class="battle-controls">
                     <button class="ninja-btn-small" onclick="pauseGame()">⏸️</button>
                     <button class="ninja-btn-small" onclick="backToMapSelect()">🗺️</button>
@@ -318,63 +315,33 @@
                 </div>
             </div>
 
-            <!-- 🔧 技能冷卻UI - 緊貼畫布上方 -->
-            <div class="combat-ui">
-                <!-- 玩家1技能欄 -->
-                <div class="player-skills-left">
-                    <div class="player-label">玩家1</div>
-                    <div class="skills-row">
-                        <div class="skill-circle attack ready" id="p1Attack">
-                            <div class="attack-icon">⚔️</div>
-                            <div class="skill-hotkey attack-hotkey">W</div>
-                        </div>
-                        <div class="skill-circle ready" id="p1Normal">
-                            <div class="skill-icon">🌪️</div>
-                            <div class="skill-hotkey" id="p1NormalHotkey">J</div>
-                        </div>
-                        <div class="skill-circle ultimate ready" id="p1Ultimate">
-                            <div class="skill-icon">⚔️</div>
-                            <div class="skill-hotkey" id="p1UltimateHotkey">K</div>
-                        </div>
-                        <div class="skill-circle defend ready" id="p1Defend">
-                            <div class="defend-icon">🛡️</div>
-                            <div class="skill-hotkey defend-hotkey">S</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 中央戰鬥信息 -->
-                <div class="battle-center">
-                    <div class="vs-indicator">⚔️ VS ⚔️</div>
-                </div>
-
-                <!-- 玩家2技能欄 -->
-                <div class="player-skills-right">
-                    <div class="player-label" id="player2BattleLabel">玩家2</div>
-                    <div class="skills-row">
-                        <div class="skill-circle attack ready" id="p2Attack">
-                            <div class="attack-icon">⚔️</div>
-                            <div class="skill-hotkey attack-hotkey">↑</div>
-                        </div>
-                        <div class="skill-circle ready" id="p2Normal">
-                            <div class="skill-icon">🌪️</div>
-                            <div class="skill-hotkey" id="p2NormalHotkey">NUM 4</div>
-                        </div>
-                        <div class="skill-circle ultimate ready" id="p2Ultimate">
-                            <div class="skill-icon">⚔️</div>
-                            <div class="skill-hotkey" id="p2UltimateHotkey">NUM 5</div>
-                        </div>
-                        <div class="skill-circle defend ready" id="p2Defend">
-                            <div class="defend-icon">🛡️</div>
-                            <div class="skill-hotkey defend-hotkey">↓</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <!-- 🔧 遊戲畫布 - 緊貼UI下方 -->
-        <canvas id="gameCanvas" width="1400" height="700"></canvas>
+        <!-- 技能欄置於畫布兩側，讓戰場在剩餘空間中自然置中。 -->
+        <div class="battle-stage-layout">
+            <aside class="player-skills-left" aria-label="玩家1技能冷卻">
+                <div class="player-label">玩家1</div>
+                <div class="skills-row">
+                    <div class="skill-circle attack ready" id="p1Attack"><div class="attack-icon">⚔️</div><div class="skill-hotkey attack-hotkey">W</div></div>
+                    <div class="skill-circle ready" id="p1Normal"><div class="skill-icon">🌪️</div><div class="skill-hotkey" id="p1NormalHotkey">J</div></div>
+                    <div class="skill-circle ultimate ready" id="p1Ultimate"><div class="skill-icon">⚔️</div><div class="skill-hotkey" id="p1UltimateHotkey">K</div></div>
+                    <div class="skill-circle defend ready" id="p1Defend"><div class="defend-icon">🛡️</div><div class="skill-hotkey defend-hotkey">S</div></div>
+                </div>
+            </aside>
+            <div class="battle-stage-center">
+                <div class="battle-center"><div class="vs-indicator">⚔️ VS ⚔️</div></div>
+                <canvas id="gameCanvas" width="1400" height="700"></canvas>
+            </div>
+            <aside class="player-skills-right" aria-label="玩家2技能冷卻">
+                <div class="player-label" id="player2BattleLabel">玩家2</div>
+                <div class="skills-row">
+                    <div class="skill-circle attack ready" id="p2Attack"><div class="attack-icon">⚔️</div><div class="skill-hotkey attack-hotkey">↑</div></div>
+                    <div class="skill-circle ready" id="p2Normal"><div class="skill-icon">🌪️</div><div class="skill-hotkey" id="p2NormalHotkey">NUM 4</div></div>
+                    <div class="skill-circle ultimate ready" id="p2Ultimate"><div class="skill-icon">⚔️</div><div class="skill-hotkey" id="p2UltimateHotkey">NUM 5</div></div>
+                    <div class="skill-circle defend ready" id="p2Defend"><div class="defend-icon">🛡️</div><div class="skill-hotkey defend-hotkey">↓</div></div>
+                </div>
+            </aside>
+        </div>
         
         <!-- 🔧 控制說明 - 收合版本 -->
         <div class="controls-compact">
@@ -401,7 +368,7 @@
     <script src="balance.js?v=balance-0.3.0"></script>
     <script src="talents.js?v=dojo-loadout-2"></script>
     <script src="particleSystem.js?v=final-audit-1"></script>
-    <script src="mapSystem.js?v=dojo-arena-art-1"></script>
+    <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
     <script src="stickmanAnimator.js?v=animation-reset-fix-1"></script>
     <script src="gameEngine.js?v=final-audit-1"></script>
     <script src="aiController.js"></script>
@@ -416,7 +383,6 @@
             selectedCharacters: { player1: null, player2: null },
             activeSelectionPlayer: 'player1',
             selectedMap: null,
-            battleStartTime: null,
             versusCpu: false
         };
 
@@ -1631,7 +1597,6 @@
                         generateMapCards();
                         break;
                     case 'gameArea':
-                        startBattleTimer();
                         break;
                 }
             } else {
@@ -1695,11 +1660,6 @@
             }
         }
         
-        function startBattleTimer() {
-            gameState.battleStartTime = Date.now();
-            updateBattleTimer();
-        }
-
         function refreshCpuModeUI() {
             const cpuModeBtn = document.getElementById('cpuModeBtn');
             const player2BattleLabel = document.getElementById('player2BattleLabel');
@@ -1748,21 +1708,6 @@
 
             detachCpuOpponent(game);
             cpuController = null;
-        }
-        
-        function updateBattleTimer() {
-            if (gameState.currentScreen !== 'gameArea' || !gameState.battleStartTime) return;
-            
-            const elapsed = Date.now() - gameState.battleStartTime;
-            const minutes = Math.floor(elapsed / 60000);
-            const seconds = Math.floor((elapsed % 60000) / 1000);
-            
-            const timerDisplay = document.getElementById('battleTimer');
-            if (timerDisplay) {
-                timerDisplay.innerHTML = `<span>⏰ ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}</span>`;
-            }
-            
-            setTimeout(updateBattleTimer, 1000);
         }
         
         function goToMapSelect() {
@@ -2046,7 +1991,6 @@
             detachCpuController();
             game.gameState.winner = null;
             game.gameState.paused = false;
-            gameState.battleStartTime = null;
             showScreen('mapSelect');
         }
         

@@ -5200,6 +5200,38 @@ class MapSystem {
       ctx.arc(x, y, size, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    // Soft cross-breezes and lantern glints make the still illustration feel alive.
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const phase = time * (0.16 + i * 0.025) + i * 2.1;
+      const x = ((phase * 42 + i * width * 0.38) % (width + 180)) - 90;
+      const y = height * (0.24 + i * 0.19) + Math.sin(phase) * height * 0.025;
+      const breeze = ctx.createLinearGradient(x, y, x + 150, y + 5);
+      breeze.addColorStop(0, 'rgba(161, 220, 255, 0)');
+      breeze.addColorStop(.48, 'rgba(186, 222, 255, .12)');
+      breeze.addColorStop(1, 'rgba(255, 218, 165, 0)');
+      ctx.strokeStyle = breeze;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.bezierCurveTo(x + 42, y - 6, x + 92, y + 7, x + 150, y + 1);
+      ctx.stroke();
+    }
+
+    for (let i = 0; i < 2; i++) {
+      const lanternX = width * (i === 0 ? .19 : .81);
+      const lanternY = height * .2;
+      const pulse = .045 + (Math.sin(time * 1.15 + i * 1.7) + 1) * .018;
+      const glow = ctx.createRadialGradient(lanternX, lanternY, 0, lanternX, lanternY, height * .16);
+      glow.addColorStop(0, `rgba(255, 210, 130, ${pulse})`);
+      glow.addColorStop(1, 'rgba(255, 190, 110, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(lanternX - height * .16, lanternY - height * .16, height * .32, height * .32);
+    }
+    ctx.restore();
   }
   
   // 設置當前地圖
