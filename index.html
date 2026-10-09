@@ -364,13 +364,13 @@
         <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
     </footer>
 
-    <script src="characters.js?v=skill-audit-1"></script>
+    <script src="characters.js?v=stephen-1"></script>
     <script src="balance.js?v=balance-0.3.0"></script>
     <script src="talents.js?v=dojo-loadout-2"></script>
-    <script src="particleSystem.js?v=final-audit-1"></script>
+    <script src="particleSystem.js?v=stephen-1"></script>
     <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
-    <script src="stickmanAnimator.js?v=animation-reset-fix-1"></script>
-    <script src="gameEngine.js?v=final-audit-1"></script>
+    <script src="stickmanAnimator.js?v=stephen-1"></script>
+    <script src="gameEngine.js?v=stephen-1"></script>
     <script src="aiController.js"></script>
     <script>
         // 全局遊戲引擎實例
@@ -767,8 +767,8 @@
                 return `<article class="dojo-encyclopedia-card">
                     <header>${portrait ? `<img data-portrait="${portrait}" alt="">` : '<span class="dojo-fallback-icon">🥷</span>'}<div><span>${role}</span><h3>${character.name}</h3></div></header>
                     ${dojoEncyclopediaDetailed ? `<div class="dojo-character-stats"><span>HP ${character.maxHp}</span><span>攻擊 ${character.attackDamage}</span><span>速度 ${Math.round(character.moveSpeed / 10)}</span><span>攻速 ${character.attackSpeed}ms</span></div>` : ''}
-                    <ul class="dojo-skill-list">${dojoSkillLine(character, 'passive')}${dojoSkillLine(character, 'normal')}${dojoSkillLine(character, 'ultimate')}</ul>
-                    ${dojoEncyclopediaDetailed ? `<div class="dojo-detail-block"><b>小招數據</b><div>${dojoDetailTags(character, character.skills.normal)}</div><b>奧義數據</b><div>${dojoDetailTags(character, character.skills.ultimate)}</div></div>` : ''}
+                    <ul class="dojo-skill-list">${dojoSkillLine(character, 'passive')}${dojoSkillLine(character, 'normal')}${dojoSkillLine(character, 'ultimate')}${id === 'stephen' ? `${dojoSkillLine({ ...character, skills: character.forms.smoke }, 'normal')}${dojoSkillLine({ ...character, skills: character.forms.smoke }, 'ultimate')}` : ''}</ul>
+                    ${dojoEncyclopediaDetailed ? `<div class="dojo-detail-block"><b>小招數據</b><div>${dojoDetailTags(character, character.skills.normal)}</div><b>奧義數據</b><div>${dojoDetailTags(character, character.skills.ultimate)}</div>${id === 'stephen' ? `<b>菸鬼小招數據</b><div>${dojoDetailTags(character, character.forms.smoke.normal)}</div><b>菸鬼奧義數據</b><div>${dojoDetailTags(character, character.forms.smoke.ultimate)}</div>` : ''}</div>` : ''}
                 </article>`;
             }).join('');
             grid.querySelectorAll('[data-portrait]').forEach(image => { image.src = image.dataset.portrait; });
@@ -886,7 +886,8 @@
             exileblade: 'wind',
             puppeteer: 'puppet',
             azure_disciple: 'lightning',
-            shamisen: 'sound'
+            shamisen: 'sound',
+            stephen: 'fire'
         };
         
         const skillIcons = {
@@ -909,7 +910,8 @@
             exileblade: { normal: '🌬️', ultimate: '💀' },
             puppeteer: { normal: '🎭', ultimate: '💨' },
             azure_disciple: { normal: '⚡', ultimate: '🌩️' },
-            shamisen: { normal: '🎼', ultimate: '🎵' }
+            shamisen: { normal: '🎼', ultimate: '🎵' },
+            stephen: { normal: '🥩', ultimate: '🔥' }
         };
 
         const characterIcons = {
@@ -932,7 +934,8 @@
             exileblade: '🗡️',
             puppeteer: '🎭',
             azure_disciple: '⚡',
-            shamisen: '🎸'
+            shamisen: '🎸',
+            stephen: '🥩'
         };
 
         // Player-supplied pixel portraits for the first ten roster slots.
@@ -955,7 +958,8 @@
             exileblade: 'assets/portraits/exileblade.png',
             puppeteer: 'assets/portraits/puppeteer.png',
             azure_disciple: 'assets/portraits/azure_disciple.png',
-            shamisen: 'assets/portraits/shamisen.png'
+            shamisen: 'assets/portraits/shamisen.png',
+            stephen: 'assets/portraits/stephen.png'
         };
 
         // 1v1 遊戲的職位不是坦補輸出，而是「這隻角色如何贏下單挑」。
@@ -979,7 +983,8 @@
             exileblade: { primary: '高機動刺殺', secondary: '爆發收頭' },
             puppeteer: { primary: '傀儡設局', secondary: '遠近切換' },
             azure_disciple: { primary: '蓄能爆發', secondary: '高機動刺殺' },
-            shamisen: { primary: '遠距控場', secondary: '節奏消耗' }
+            shamisen: { primary: '遠距控場', secondary: '節奏消耗' },
+            stephen: { primary: '坦克控場', secondary: '雙型態續戰' }
         };
 
         function formatCooldown(ms) {
@@ -2124,6 +2129,22 @@
                     description: '蓄力0.7秒後揮下巨型火焰刀，貫穿前方400px，並留下一道會灼燒敵人的火焰路徑。',
                     effects: ['蓄力0.7秒', '距離400px', '傷害22', '擊退150px', '燃燒路徑3秒', '每秒傷害2', '冷卻18秒']
                 },
+                [SKILL_CODES.STEPHEN_STEAK]: {
+                    description: '短按吃牛排，1秒後恢復生命；長按0.3至4秒改為蓄力投擲，蓄力越久傷害和緩速越強。',
+                    effects: ['短按回復7 HP', '投擲7～15傷害', '緩速50%～99%／2秒', '最遠250px', '冷卻8秒']
+                },
+                [SKILL_CODES.STEPHEN_GRILL]: {
+                    description: '以自己為中心展開炙烤鐵板，範圍會跟著小周移動。效果結束後切換為菸鬼周。',
+                    effects: ['半徑140px', '持續5秒', '每秒5傷害', '範圍內緩速30%', '冷卻22秒']
+                },
+                [SKILL_CODES.STEPHEN_SMOKE]: {
+                    description: '化為可移動的煙霧，免疫傷害，但仍會被控制；受控制後立即解除煙霧。',
+                    effects: ['持續4秒', '接觸每秒3傷害', '冷卻12秒']
+                },
+                [SKILL_CODES.STEPHEN_BREATH]: {
+                    description: '固定面向噴出煙幕，期間不能移動；煙內敵人緩速，面向小周時額外受到持續傷害。效果結束後切換為牛排周。',
+                    effects: ['距離300px', '持續3秒', '緩速60%／3秒', '面向小周時每秒10傷害', '冷卻22秒']
+                },
                 [SKILL_CODES.WATER_SHIELD]: {
                     description: '水之護盾環繞身體，3秒內減少50%受到的傷害，並獲得移速加成。護盾結束後回復5 HP，再加上80%儲存傷害值。',
                     effects: ['減傷50%', '持續3秒', '移速+25', '結束回復5 HP + 80%儲存傷害', '冷卻8秒']
@@ -2488,6 +2509,10 @@
                                 ).join('')}
                             </div>
                         </div>
+                        ${id === 'stephen' ? `
+                        <div class="skill-item"><div class="skill-header"><div class="skill-icon-mini">💨</div><div class="skill-name-type"><h4>菸鬼周｜化煙</h4><p class="skill-type">無敵／持續傷害</p></div><div class="skill-cooldown">12秒</div></div><div class="skill-description">${skillDescriptions[SKILL_CODES.STEPHEN_SMOKE].description}</div><div class="skill-effects">${skillDescriptions[SKILL_CODES.STEPHEN_SMOKE].effects.map(effect => `<span class="skill-effect-tag">${effect}</span>`).join('')}</div></div>
+                        <div class="skill-item ultimate"><div class="skill-header"><div class="skill-icon-mini">🚬</div><div class="skill-name-type"><h4>菸鬼周｜迎面煙幕</h4><p class="skill-type">定向／引導</p></div><div class="skill-cooldown">22秒</div></div><div class="skill-description">${skillDescriptions[SKILL_CODES.STEPHEN_BREATH].description}</div><div class="skill-effects">${skillDescriptions[SKILL_CODES.STEPHEN_BREATH].effects.map(effect => `<span class="skill-effect-tag">${effect}</span>`).join('')}</div></div>
+                        ` : ''}
                     </div>
                 `;
                 

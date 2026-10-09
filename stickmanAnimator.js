@@ -2,6 +2,8 @@
   constructor() {
     this.frameRate = 60; // 60 FPS
     this.animationSpeed = 5; // 瘥?撟??銝甈∪??怠?
+    this.stephenHeadImage = typeof Image === 'undefined' ? null : new Image();
+    if (this.stephenHeadImage) this.stephenHeadImage.src = 'assets/portraits/stephen.png';
     
     // ?急鈭粹爸撉潛?瑽?(?箇???
     this.skeleton = {
@@ -144,6 +146,11 @@
         primary: '#8B4513',
         secondary: '#FFD700',
         accent: '#F5DEB3'
+      },
+      stephen: {
+        primary: '#34282C',
+        secondary: '#B36B43',
+        accent: '#F2C28B'
       }
     };
     
@@ -310,6 +317,10 @@
         eyeColor: '#FFD700',
         bodyPattern: 'light_armor',
         specialEffect: 'note_trail'
+      },
+      stephen: {
+        weapon: { type: 'steak', color: '#B45A31' },
+        eyeColor: '#F4D2A7'
       }
     };
     
@@ -1468,7 +1479,7 @@
   }
   
   // 蝜芾ˊ?急鈭?
-  drawStickman(ctx, x, y, frame, schoolId, facing = 1, scale = 1) {
+  drawStickman(ctx, x, y, frame, schoolId, facing = 1, scale = 1, form = 'steak') {
     // 鍛炎忍者不是火忍宗換色版：使用完整獨立的鍛甲、頭盔與重刃剪影。
     if (schoolId === 'forgefire') {
       this.drawForgefireNinja(ctx, x, y, frame, facing, scale);
@@ -1476,7 +1487,9 @@
     }
 
     const colors = this.schoolColors[schoolId] || this.schoolColors.katon;
-    const equipment = this.ninjaEquipment[schoolId] || this.ninjaEquipment.katon;
+    const equipment = schoolId === 'stephen'
+      ? { ...this.ninjaEquipment.stephen, weapon: form === 'smoke' ? { type: 'cigarette' } : { type: 'steak' } }
+      : (this.ninjaEquipment[schoolId] || this.ninjaEquipment.katon);
     
     ctx.save();
     ctx.translate(x, y);
@@ -1509,14 +1522,28 @@
     this.drawWeapon(ctx, frame, equipment.weapon, colors, facing);
     
     // ?? 蝜芾ˊ?剝
-    this.drawHead(ctx, frame, colors, equipment);
+    if (schoolId === 'stephen') this.drawStephenHead(ctx, frame, colors, equipment);
+    else this.drawHead(ctx, frame, colors, equipment);
     
     // ?? 蝜芾ˊ?剖葆
-    this.drawHeadband(ctx, frame, equipment.headband);
+    if (schoolId !== 'stephen') this.drawHeadband(ctx, frame, equipment.headband);
     
     // ??蝜芾ˊ?寞???蝎?
     this.drawSpecialEffects(ctx, frame, equipment, x, y);
     
+    ctx.restore();
+  }
+
+  drawStephenHead(ctx, frame, colors, equipment) {
+    if (!this.stephenHeadImage?.complete || !this.stephenHeadImage.naturalWidth) {
+      this.drawHead(ctx, frame, colors, equipment);
+      return;
+    }
+    ctx.save();
+    ctx.translate(frame.head.x, frame.head.y - 65);
+    ctx.rotate((frame.head.rotation || 0) * Math.PI / 180);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this.stephenHeadImage, -20, -22, 40, 40);
     ctx.restore();
   }
 
@@ -2211,6 +2238,28 @@
     ctx.translate(weaponX, weaponY);
     
     switch(weapon.type) {
+      case 'steak':
+        ctx.save();
+        ctx.rotate(-0.35);
+        ctx.fillStyle = '#713321';
+        ctx.strokeStyle = '#EAA36B';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(1, -8, 16, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#EBD0A7';
+        ctx.beginPath(); ctx.ellipse(0, -8, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        break;
+      case 'cigarette':
+        ctx.save();
+        ctx.rotate(-0.45);
+        ctx.fillStyle = '#E7E1D9';
+        ctx.fillRect(-2, -24, 5, 25);
+        ctx.fillStyle = '#C57C48';
+        ctx.fillRect(-2, -5, 5, 6);
+        ctx.fillStyle = '#FF7549';
+        ctx.fillRect(-2, -26, 5, 3);
+        ctx.restore();
+        break;
       case 'dual_blades': // 憸典蔣敹?- ??
         this.drawDualBlades(ctx, weapon.color, colors);
         break;

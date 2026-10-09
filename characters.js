@@ -80,7 +80,20 @@ const SKILL_CODES = {
 
   // 雅音忍・弦鳴技能代碼
   STACCATO_STRIKE: 'SHM_001',   // 撥弦・破音 🎼
-  DEADLY_CANON: 'SHM_002'       // 秘曲・輪唱殺陣 🎵
+  DEADLY_CANON: 'SHM_002',      // 秘曲・輪唱殺陣 🎵
+  STEPHEN_STEAK: 'STP_001',
+  STEPHEN_GRILL: 'STP_002',
+  STEPHEN_SMOKE: 'STP_003',
+  STEPHEN_BREATH: 'STP_004'
+};
+
+const STEPHEN_STEAK_SKILLS = {
+  normal: { code: SKILL_CODES.STEPHEN_STEAK, name: '大口牛排', type: '回復／蓄力投擲', cooldown: 8000, heal: 7, eatDuration: 1000, chargeThreshold: 300, maxCharge: 4000, minDamage: 7, maxDamage: 15, minSlow: 0.5, maxSlow: 0.99, slowDuration: 2000, range: 250 },
+  ultimate: { code: SKILL_CODES.STEPHEN_GRILL, name: '炙烤鐵板', type: '跟隨／範圍', cooldown: 22000, radius: 140, damagePerTick: 5, tickRate: 1000, slowMultiplier: 0.7, duration: 5000 }
+};
+const STEPHEN_SMOKE_SKILLS = {
+  normal: { code: SKILL_CODES.STEPHEN_SMOKE, name: '化煙', type: '無敵／持續傷害', cooldown: 12000, duration: 4000, damagePerTick: 3, tickRate: 1000, radius: 55 },
+  ultimate: { code: SKILL_CODES.STEPHEN_BREATH, name: '迎面煙幕', type: '定向／引導', cooldown: 22000, duration: 3000, range: 300, width: 120, damagePerTick: 10, tickRate: 1000, slowMultiplier: 0.4, slowDuration: 3000 }
 };
 
 const characters = {
@@ -977,6 +990,24 @@ const characters = {
         wave3: { maxRadius: 800, damage: 15, knockupVy: -15 }
       }
     }
+  },
+
+  stephen: {
+    id: 'stephen',
+    name: '牛排館老闆・史蒂芬・周',
+    organization: '雙重人格',
+    maxHp: 120,
+    hp: 120,
+    attackDamage: 6,
+    attackSpeed: 900,
+    attackRange: 55,
+    moveSpeed: 240,
+    position: { x: 100, y: 300 },
+    facing: 1,
+    passive: { name: '雙重人格', description: '奧義結束後切換牛排周與菸鬼周，重置小技能冷卻；兩型態共用生命與奧義冷卻。' },
+    stephenForm: 'steak',
+    forms: { steak: STEPHEN_STEAK_SKILLS, smoke: STEPHEN_SMOKE_SKILLS },
+    skills: STEPHEN_STEAK_SKILLS
   }
 };
 

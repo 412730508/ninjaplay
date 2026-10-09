@@ -225,6 +225,7 @@
     
     // *** Update Shamisen Deadly Canon system ***
     this.updateShamisenSystems(deltaTime);
+    this.updateStephenSystems();
 
     // 道場鬥技盃：每二十秒產生一次補給，並提前五秒標出落點。
     this.updateTournamentPickups();
@@ -414,6 +415,7 @@
     
     // 皜脫??嚗??
     this.renderBackground();
+    this.renderStephenZones();
     
     // 皜脫??拙振
     this.renderPlayers();
@@ -1311,7 +1313,7 @@
         const animation = player.animation || { current: 'idle', frame: 0 };
         
         // ? ?梯澈????
-        if (player.effects.stealthActive > Date.now() || player.effects.invisible > Date.now()) {
+        if (player.effects.stealthActive > Date.now() || player.effects.invisible > Date.now() || player.stephenSmokeUntil > Date.now()) {
           this.ctx.globalAlpha = 0.15;
         }
         
@@ -1406,7 +1408,9 @@
             player.position.y + knockupOffsetY, 
             currentFrame, 
             player.id, 
-            player.facing
+            player.facing,
+            1,
+            player.stephenForm
           );
         }
         
@@ -8899,7 +8903,11 @@
       [SKILL_CODES.DIVINE_SMITE]: 'divineSmite',
       [SKILL_CODES.GRAND_THUNDER_SLASH]: 'grandThunderSlash',
       [SKILL_CODES.STACCATO_STRIKE]: 'staccatoStrike',
-      [SKILL_CODES.DEADLY_CANON]: 'deadlyCanon'
+      [SKILL_CODES.DEADLY_CANON]: 'deadlyCanon',
+      [SKILL_CODES.STEPHEN_STEAK]: 'attack',
+      [SKILL_CODES.STEPHEN_GRILL]: 'attack',
+      [SKILL_CODES.STEPHEN_SMOKE]: 'idle',
+      [SKILL_CODES.STEPHEN_BREATH]: 'attack'
     };
     
     const animation = animationMap[skillCode] || 'idle';
@@ -9498,6 +9506,10 @@
     if (has('lingering_rhythm')) player.passive.fourthHitSlowDuration = 1200;
     if (has('burning_up')) player.moveSpeed = 280;
     if (has('third_slash')) player.passive.thirdStrikeRangeBonus = 120;
+    if (has('wide_grill')) ultimate.radius = 160;
+    if (has('long_breath')) player.forms.smoke.ultimate.range = 340;
+    if (has('extra_bite')) normal.heal = 9;
+    if (has('thick_smoke')) player.stephenSmokeAttackSlow = 0.85;
   }
 
   triggerTournamentSkillEnd(player, skill) {
@@ -9656,6 +9668,155 @@
 
     this.initializeBeastmasterState(this.players.player1);
     this.initializeBeastmasterState(this.players.player2);
+    this.initializeStephenState(this.players.player1);
+    this.initializeStephenState(this.players.player2);
+  }
+
+  initializeStephenState(player) {
+    if (!player || player.id !== 'stephen') return;
+    if (player.stephenForm === 'steak') player.forms.steak = player.skills;
+    player.stephenForm = 'steak';
+    player.skills = player.forms.steak;
+    player.moveSpeed = 240;
+    player.stephenChargeStart = 0;
+    player.stephenEatingUntil = 0;
+    player.stephenSmokeUntil = 0;
+    player.stephenUltimate = null;
+  }
+
+  releaseStephenCharge(playerId) {
+    const player = this.players[playerId];
+    if (!player || player.id !== 'stephen' || !player.stephenChargeStart) return;
+    const now = Date.now();
+    const skill = player.skills.normal;
+    const duration = Math.min(now - player.stephenChargeStart, skill.maxCharge);
+    player.stephenChargeStart = 0;
+    this.cooldowns[playerId].normal = now;
+    this.clearSkillReady(playerId, 'normal');
+    if (player.hp <= 0 || player.effects.stunned > now || player.effects.rooted > now || player.effects.silenced > now) return;
+    player.stephenChargeDuration = duration;
+    this.executeSkill(playerId, skill);
+    player.stephenChargeDuration = 0;
+  }
+
+  applyStephenSlow(target, multiplier, duration, now = Date.now()) {
+    if (!target?.effects) return;
+    const current = target.effects.slowed > now ? (target.effects.slowMultiplier || 1) : 1;
+    target.effects.slowMultiplier = Math.min(current, multiplier);
+    target.effects.slowed = Math.max(target.effects.slowed || 0, now + duration);
+  }
+
+  updateStephenSystems() {
+    const now = Date.now();
+    for (const playerId of ['player1', 'player2']) {
+      const player = this.players[playerId];
+      if (!player || player.id !== 'stephen') continue;
+      const opponent = this.players[playerId === 'player1' ? 'player2' : 'player1'];
+
+      if (player.stephenChargeStart && now - player.stephenChargeStart >= player.skills.normal.maxCharge) {
+        this.releaseStephenCharge(playerId);
+      }
+      if (player.stephenEatingUntil && (player.effects.stunned > now || player.effects.rooted > now || player.effects.silenced > now)) {
+        player.stephenEatingUntil = 0;
+      }
+      if (player.stephenEatingUntil && now >= player.stephenEatingUntil) {
+        player.stephenEatingUntil = 0;
+        const heal = Math.min(player.skills.normal.heal, player.maxHp - player.hp);
+        if (heal > 0) {
+          player.hp += heal;
+          this.addDamageNumber(player.position.x, player.position.y - 45, `+${heal}`, 'heal');
+        }
+      }
+
+      if (player.stephenSmokeUntil) {
+        const controlled = player.effects.stunned > now || player.effects.rooted > now || player.effects.feared > now || player.effects.chainDisabled > now;
+        if (controlled || now >= player.stephenSmokeUntil || player.hp <= 0) {
+          player.stephenSmokeUntil = 0;
+          player.effects.invulnerable = 0;
+        } else if (opponent?.hp > 0 && now >= player.stephenSmokeNextTick) {
+          player.stephenSmokeNextTick = now + player.skills.normal.tickRate;
+          if (Math.abs(opponent.position.x - player.position.x) <= player.skills.normal.radius && Math.abs(opponent.position.y - player.position.y) <= 70) {
+            this.dealDamage(opponent, player.skills.normal.damagePerTick, playerId);
+          }
+        }
+      }
+
+      const ultimate = player.stephenUltimate;
+      if (!ultimate) continue;
+      if (now >= ultimate.endsAt || player.hp <= 0) {
+        player.stephenUltimate = null;
+        if (ultimate.form === 'smoke') player.effects.casting = 0;
+        if (player.hp > 0) {
+          player.stephenForm = ultimate.form === 'steak' ? 'smoke' : 'steak';
+          player.skills = player.forms[player.stephenForm];
+          player.moveSpeed = player.stephenForm === 'steak' ? 240 : 280;
+          this.cooldowns[playerId].normal = 0;
+          this.clearSkillReady(playerId, 'normal');
+          this.addVisualEffect(player.position.x, player.position.y - 32, 'stephen_switch', player.stephenForm === 'steak' ? '🥩' : '💨');
+          this.addCombatLog(`${player.name} 切換為${player.stephenForm === 'steak' ? '牛排周' : '菸鬼周'}！`, playerId, 'status');
+        }
+        continue;
+      }
+      if (!opponent || opponent.hp <= 0) continue;
+
+      if (ultimate.form === 'steak') {
+        const inside = Math.abs(opponent.position.x - player.position.x) <= ultimate.skill.radius && Math.abs(opponent.position.y - player.position.y) <= 85;
+        if (inside) this.applyStephenSlow(opponent, ultimate.skill.slowMultiplier, 180, now);
+        if (now >= ultimate.nextTick) {
+          ultimate.nextTick = now + ultimate.skill.tickRate;
+          if (inside) this.dealDamage(opponent, ultimate.skill.damagePerTick, playerId);
+        }
+      } else {
+        const dx = opponent.position.x - player.position.x;
+        const inside = dx * ultimate.facing >= 0 && dx * ultimate.facing <= ultimate.skill.range && Math.abs(opponent.position.y - player.position.y) <= ultimate.skill.width / 2;
+        if (inside) this.applyStephenSlow(opponent, ultimate.skill.slowMultiplier, ultimate.skill.slowDuration, now);
+        if (now >= ultimate.nextTick) {
+          ultimate.nextTick = now + ultimate.skill.tickRate;
+          if (inside && opponent.facing === -ultimate.facing) this.dealDamage(opponent, ultimate.skill.damagePerTick, playerId);
+        }
+      }
+    }
+  }
+
+  renderStephenZones() {
+    const ctx = this.ctx;
+    const now = Date.now();
+    for (const player of Object.values(this.players)) {
+      if (!player || player.id !== 'stephen') continue;
+      const ultimate = player.stephenUltimate;
+      if (ultimate && now < ultimate.endsAt) {
+        ctx.save();
+        if (ultimate.form === 'steak') {
+          const x = player.position.x;
+          const y = player.position.y - 16;
+          const r = ultimate.skill.radius;
+          ctx.fillStyle = 'rgba(241, 82, 28, 0.16)';
+          ctx.strokeStyle = '#FFB45D';
+          ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.ellipse(x, y, r, 65, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.strokeStyle = 'rgba(255, 220, 150, 0.7)';
+          ctx.lineWidth = 2;
+          for (let offset = -90; offset <= 90; offset += 30) {
+            ctx.beginPath(); ctx.moveTo(x + offset, y - 45); ctx.lineTo(x + offset, y + 45); ctx.stroke();
+          }
+        } else {
+          const x = player.position.x;
+          const y = player.position.y - 30;
+          const dir = ultimate.facing;
+          ctx.fillStyle = 'rgba(174, 190, 199, 0.23)';
+          ctx.strokeStyle = 'rgba(222, 232, 235, 0.65)';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(x + dir * 20, y - 18); ctx.lineTo(x + dir * ultimate.skill.range, y - ultimate.skill.width / 2); ctx.lineTo(x + dir * ultimate.skill.range, y + ultimate.skill.width / 2); ctx.lineTo(x + dir * 20, y + 18); ctx.closePath(); ctx.fill(); ctx.stroke();
+        }
+        ctx.restore();
+      }
+      if (player.stephenSmokeUntil > now) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(180, 195, 205, 0.27)';
+        ctx.beginPath(); ctx.ellipse(player.position.x, player.position.y - 30, 55, 48, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    }
   }
 
   initializeBeastmasterState(player) {
@@ -9833,7 +9994,9 @@
   }
 
   getMeleeRange(player) {
+    const now = Date.now();
     let range = 75;
+    if (player?.id === 'stephen') range = player.attackRange || 55;
     if (player?.effects?.talentAttackRangeUntil > Date.now()) {
       range += player.effects.talentAttackRangeBonus || 0;
     }
@@ -10016,6 +10179,7 @@
       if (this.players.player1.id === 'ranger') { this.players.player1.rangerAmmo = this.players.player1.ammoMax || 7; this.players.player1.rangerReloadUntil = 0; this.players.player1.rangerLastShotTime = 0; }
 
       this.initializeBeastmasterState(this.players.player1);
+      this.initializeStephenState(this.players.player1);
     }
     
     if (this.players.player2) {
@@ -10036,6 +10200,7 @@
       if (this.players.player2.id === 'ranger') { this.players.player2.rangerAmmo = this.players.player2.ammoMax || 7; this.players.player2.rangerReloadUntil = 0; this.players.player2.rangerLastShotTime = 0; }
 
       this.initializeBeastmasterState(this.players.player2);
+      this.initializeStephenState(this.players.player2);
     }
     
     // ?蔭?瑕??
@@ -10124,11 +10289,11 @@
         
         // ?蔭??賣??萇????迂?活閫貊
         if (key === 'w') this.skillPressed.player1.attack = false;
-        if (key === bindings.player1.normal) this.skillPressed.player1.normal = false;
+        if (key === bindings.player1.normal) { this.releaseStephenCharge('player1'); this.skillPressed.player1.normal = false; }
         if (key === bindings.player1.ultimate) { this.skillPressed.player1.ultimate = false; this._tryReleaseJudgment('player1'); }
         if (key === 's') this.skillPressed.player1.defend = false;
         if (key === 'arrowup') this.skillPressed.player2.attack = false;
-        if (key === bindings.player2.normal) this.skillPressed.player2.normal = false;
+        if (key === bindings.player2.normal) { this.releaseStephenCharge('player2'); this.skillPressed.player2.normal = false; }
         if (key === bindings.player2.ultimate) { this.skillPressed.player2.ultimate = false; this._tryReleaseJudgment('player2'); }
         if (key === 'arrowdown') this.skillPressed.player2.defend = false;
         
@@ -10233,7 +10398,7 @@
 
   movePlayer(playerId, direction) {
     const player = this.players[playerId];
-    if (!player || player.effects.stunned > Date.now() || player.effects.casting > Date.now() || player.effects.rooted > Date.now() || this.isPlayerDefending(playerId)) return;
+    if (!player || player.effects.stunned > Date.now() || player.effects.casting > Date.now() || player.effects.rooted > Date.now() || player.stephenChargeStart || player.stephenEatingUntil > Date.now() || this.isPlayerDefending(playerId)) return;
     
     // ?儭?Exile Blade: block movement during execution
     if (player.isExecuting) return;
@@ -10316,7 +10481,7 @@
     const player = this.players[playerId];
     const opponent = this.players[playerId === 'player1' ? 'player2' : 'player1'];
     
-    if (!player || player.effects.stunned > now || player.effects.casting > now || player.effects.chainDisabled > now || player.effects.chainCasting > now || this.isPlayerDefending(playerId)) return;
+    if (!player || player.effects.stunned > now || player.effects.casting > now || player.effects.chainDisabled > now || player.effects.chainCasting > now || player.stephenChargeStart || player.stephenEatingUntil > now || player.stephenSmokeUntil > now || this.isPlayerDefending(playerId)) return;
     
     // ?儭?Exile Blade: block attacks during execution
     if (player.isExecuting) return;
@@ -10340,7 +10505,7 @@
           : 'attack'
     );
     this.spawnCombatFlourish('swing', player, opponent, player.id === 'forgefire' || player.id === 'adjudicator' ? 1.35 : 1);
-    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen', 'stephen'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createElementalBasicAttackEffect(
         player.id,
         player.position.x,
@@ -10721,6 +10886,10 @@
         player.passive?.maxVoltage || 100
       );
     }
+
+    if (damageResult.hit && player.id === 'stephen' && player.stephenForm === 'smoke') {
+      this.applyStephenSlow(opponent, player.stephenSmokeAttackSlow || 0.9, 1000, now);
+    }
     
     // ?? 鋆捱????格???萎犖
     if (damageResult.hit && player.id === 'adjudicator') {
@@ -10942,6 +11111,7 @@
     
     // 瑼Ｘ??賣?暺???
     if (!player || player.effects.stunned > now || player.effects.silenced > now || player.effects.chainDisabled > now || this.isPlayerDefending(playerId)) return;
+    if (player.id === 'stephen' && (player.stephenChargeStart || player.stephenEatingUntil > now || player.stephenSmokeUntil > now || player.stephenUltimate?.form === 'smoke')) return;
 
     // ?儭?Exile Blade: block skill usage during execution
     if (player.isExecuting) return;
@@ -10953,6 +11123,13 @@
 
     const selectedSkill = player.skills?.[skillType];
     if (!selectedSkill) return;
+
+    if (selectedSkill.code === SKILL_CODES.STEPHEN_STEAK) {
+      if (now - this.cooldowns[playerId].normal < selectedSkill.cooldown) return;
+      player.stephenChargeStart = now;
+      this.addVisualEffect(player.position.x, player.position.y - 25, 'steak_charge', '🥩');
+      return;
+    }
 
     // ?? 鋆捱????撠??菜雿宏/?祉宏???
     const domain = this.gameState.adjudicatorDomain;
@@ -11111,6 +11288,39 @@
     }
     
     switch (skill.code) {
+      case SKILL_CODES.STEPHEN_STEAK: {
+        const charge = player.stephenChargeDuration || 0;
+        if (charge < skill.chargeThreshold) {
+          player.stephenEatingUntil = now + skill.eatDuration;
+          this.addCombatLog(`${player.name} 吃下牛排，1秒後恢復${skill.heal}生命！`, playerId, 'skill');
+        } else {
+          const progress = Math.min(1, (charge - skill.chargeThreshold) / (skill.maxCharge - skill.chargeThreshold));
+          const damage = Math.round(skill.minDamage + (skill.maxDamage - skill.minDamage) * progress);
+          const slow = skill.minSlow + (skill.maxSlow - skill.minSlow) * progress;
+          const dx = opponent.position.x - player.position.x;
+          this.addVisualEffect(player.position.x + player.facing * 55, player.position.y - 30, 'steak_throw', '🥩');
+          if (opponent.hp > 0 && dx * player.facing >= 0 && dx * player.facing <= skill.range && Math.abs(opponent.position.y - player.position.y) <= 70) {
+            const hit = this.dealDamage(opponent, damage, playerId);
+            if (hit.hit) this.applyStephenSlow(opponent, 1 - slow, skill.slowDuration, now);
+          }
+        }
+        break;
+      }
+      case SKILL_CODES.STEPHEN_GRILL:
+      case SKILL_CODES.STEPHEN_BREATH: {
+        const form = skill.code === SKILL_CODES.STEPHEN_GRILL ? 'steak' : 'smoke';
+        player.stephenUltimate = { form, skill, facing: player.facing, endsAt: now + skill.duration, nextTick: now };
+        if (form === 'smoke') player.effects.casting = now + skill.duration;
+        this.addCombatLog(`${player.name} 使用${skill.name}！`, playerId, 'skill');
+        break;
+      }
+      case SKILL_CODES.STEPHEN_SMOKE:
+        player.stephenSmokeUntil = now + skill.duration;
+        player.stephenSmokeNextTick = now;
+        player.effects.invulnerable = player.stephenSmokeUntil;
+        this.addCombatLog(`${player.name} 化為煙霧！`, playerId, 'skill');
+        break;
+
       case SKILL_CODES.ABYSS_TENTACLE: {
         this.addCombatLog(`${player.name} 使用 深淵觸手！`, playerSide, 'skill');
 
@@ -13749,6 +13959,8 @@
     if (target.effects.invulnerable > now) {
       this.addVisualEffect(target.position.x, target.position.y, 'immune', '🛡️');
       result.immune = true;
+      // 化煙只免疫傷害；命中判定仍成立，讓眩暈、定身等控制能解除煙霧。
+      if (target.id === 'stephen' && target.stephenSmokeUntil > now) result.hit = true;
       return result;
     }
     

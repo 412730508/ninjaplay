@@ -6,6 +6,11 @@ import vm from 'node:vm';
 const root = resolve(import.meta.dirname, '..');
 const htmlPath = resolve(root, 'index.html');
 const html = readFileSync(htmlPath, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+for (const match of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)) {
+  const type = match[1].match(/\btype=["']([^"']+)/)?.[1];
+  if (type && type !== 'text/javascript') continue;
+  if (match[2].trim()) new vm.Script(match[2], { filename: 'index.html inline script' });
+}
 const localAssets = [...new Set([
   ...[...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)].map((match) => match[1].split(/[?#]/, 1)[0]),
   ...[...html.matchAll(/assets\/portraits\/[\w.-]+\.png/g)].map((match) => match[0])
@@ -233,6 +238,59 @@ try {
       if (!rendered) throw new Error(`elemental flourish did not render: ${elementalId} ${kind}`);
     }
   }
+
+  // Exercise both Stephen forms, including the moving grill and key-release charge.
+  let simulatedNow = 100000;
+  engineContext.Date = class extends Date { static now() { return simulatedNow; } };
+  const duel = new NinjaGame();
+  duel.selectCharacters('stephen', 'katon');
+  duel.spawnCombatFlourish = () => {};
+  duel.addVisualEffect = () => {};
+  duel.addDamageNumber = () => {};
+  const stephen = duel.players.player1;
+  const foe = duel.players.player2;
+  stephen.position.x = 400;
+  foe.position.x = 700;
+  duel.useSkill('player1', 'ultimate');
+  stephen.position.x = 650;
+  duel.updateStephenSystems();
+  if (foe.hp !== 90) throw new Error('Stephen grill did not follow its owner or deal its first tick');
+  simulatedNow += 5000;
+  duel.updateStephenSystems();
+  if (stephen.stephenForm !== 'smoke' || duel.cooldowns.player1.normal !== 0) throw new Error('Stephen did not switch to smoke with a ready skill');
+  duel.useSkill('player1', 'normal');
+  if (stephen.stephenSmokeUntil <= simulatedNow || duel.dealDamage(stephen, 5, 'player2').immune !== true) throw new Error('Stephen smoke did not prevent damage');
+  stephen.effects.stunned = simulatedNow + 500;
+  duel.updateStephenSystems();
+  if (stephen.stephenSmokeUntil !== 0) throw new Error('Control did not cancel Stephen smoke');
+  stephen.effects.stunned = 0;
+  simulatedNow += 18000;
+  foe.position.x = 750;
+  foe.facing = -1;
+  duel.useSkill('player1', 'ultimate');
+  duel.updateStephenSystems();
+  const facingDamage = foe.hp;
+  if (facingDamage !== 80) throw new Error('Stephen breath did not damage a facing enemy');
+  foe.facing = 1;
+  simulatedNow += 1000;
+  duel.updateStephenSystems();
+  if (foe.hp !== facingDamage) throw new Error('Stephen breath damaged an enemy facing away');
+  simulatedNow += 2000;
+  duel.updateStephenSystems();
+  if (stephen.stephenForm !== 'steak') throw new Error('Stephen did not return to steak form');
+  stephen.hp = 100;
+  duel.useSkill('player1', 'normal');
+  simulatedNow += 100;
+  duel.releaseStephenCharge('player1');
+  simulatedNow += 1000;
+  duel.updateStephenSystems();
+  if (stephen.hp !== 107) throw new Error('Stephen quick-tap steak did not heal');
+  simulatedNow += 8000;
+  foe.position.x = stephen.position.x + 100;
+  duel.useSkill('player1', 'normal');
+  simulatedNow += 4000;
+  duel.releaseStephenCharge('player1');
+  if (foe.hp !== facingDamage - 15 || foe.effects.slowMultiplier > 0.02) throw new Error('Stephen charged steak did not apply full damage and slow');
 } catch (error) {
   console.error(`Skill integration check failed: ${error.message}`);
   failed = true;

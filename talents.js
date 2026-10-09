@@ -21,5 +21,6 @@ const TOURNAMENT_TALENTS = {
   puppeteer: { primary: [['guardian_puppet', '近衛傀儡', '傀儡維持 150px 活動範圍，傀儡傷害改為 4。'], ['hunter_puppet', '獵殺傀儡', '傀儡從敵方位置召喚；超距離時自動跑回可牽繩範圍。']], secondary: [['tight_line', '緊線警示', '傀儡・召喚/收回冷卻改為 3 秒。'], ['frayed_thread', '殘絲陷足', '收回傀儡時留下 70px 絲線圈 0.8 秒，緩速 12%。']] },
   azure_disciple: { primary: [['high_voltage_charge', '高壓蓄電', '移動累積電壓速度 +25%。'], ['combat_charging', '戰鬥充電', '普攻命中累積電壓由 20 提高至 40。']], secondary: [['arc_path', '電弧路徑', '滿電前最後 20 電壓出現純視覺電流軌跡。'], ['conductor_mark', '導體印記', '滿電雷擊命中者獲得 1 秒帶電標記，僅供辨識。']] },
   shamisen: { primary: [['staccato_solo', '破音獨奏', '撥弦・破音距離提高至 250px，傷害 15、暈眩 1 秒。'], ['canon_amplifier', '輪唱擴音', '輪唱殺陣第二波半徑提高至 400px；結束後敵人緩速 50% 3 秒。']], secondary: [['lingering_rhythm', '餘韻減速', '第四下普攻緩速持續提高至 1.2 秒。'], ['beat_echo', '節拍回響', '普攻成功造成傷害每 2 次 +1 跑速，最多 +7。']] },
-  forgefire: { primary: [['flame_god_start', '炎神啟動', '炎神巨刃命中後，烈火旋斬冷卻歸零。'], ['king_of_flames', '烈火之王', '烈火旋斬可儲存 2 次；兩次施放間隔 1 秒。']], secondary: [['third_slash', '三斬', '火焰刀第三擊劍氣額外延伸改為 120px。'], ['burning_up', '燒起來', '跑速變為 28。']] }
+  forgefire: { primary: [['flame_god_start', '炎神啟動', '炎神巨刃命中後，烈火旋斬冷卻歸零。'], ['king_of_flames', '烈火之王', '烈火旋斬可儲存 2 次；兩次施放間隔 1 秒。']], secondary: [['third_slash', '三斬', '火焰刀第三擊劍氣額外延伸改為 120px。'], ['burning_up', '燒起來', '跑速變為 28。']] },
+  stephen: { primary: [['wide_grill', '大盤炙烤', '炙烤鐵板半徑由 140px 提高至 160px。'], ['long_breath', '長吐煙幕', '迎面煙幕距離由 300px 提高至 340px。']], secondary: [['extra_bite', '加料牛排', '短按吃牛排的回復由 7 提高至 9。'], ['thick_smoke', '濃煙菸味', '菸鬼周普攻緩速由 10% 提高至 15%。']] }
 };
