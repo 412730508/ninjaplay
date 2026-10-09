@@ -332,6 +332,8 @@
       idle: this.createIdleAnimation(),
       walk: this.createWalkAnimation(),
       attack: this.createAttackAnimation(),
+      stephenCharge: this.createStephenChargeAnimation(),
+      stephenThrow: this.createStephenThrowAnimation(),
       defend: this.createDefendAnimation(),
       
       // 憸函頂??賢???
@@ -486,6 +488,28 @@
       { head: {x:0,y:0,rotation:0}, body: {rotation:5}, leftArm: {upperRotation:-15,lowerRotation:0}, rightArm: {upperRotation:15,lowerRotation:5}, leftLeg: {upperRotation:0,lowerRotation:5}, rightLeg: {upperRotation:5,lowerRotation:5} },
       { head: {x:0,y:0,rotation:0}, body: {rotation:0}, leftArm: {upperRotation:-10,lowerRotation:0}, rightArm: {upperRotation:10,lowerRotation:0}, leftLeg: {upperRotation:0,lowerRotation:5}, rightLeg: {upperRotation:0,lowerRotation:5} }
     ];
+  }
+
+  createStephenChargeAnimation() {
+    return Array.from({ length: 12 }, (_, index) => ({
+      head: { x: 0, y: -2, rotation: -5 },
+      body: { rotation: -10 },
+      leftArm: { upperRotation: -45, lowerRotation: -20 },
+      rightArm: { upperRotation: -115 - Math.sin(index * 0.55) * 4, lowerRotation: -45 },
+      leftLeg: { upperRotation: -12, lowerRotation: 8 },
+      rightLeg: { upperRotation: 18, lowerRotation: 8 },
+      weaponRotation: -0.9 + Math.sin(index * 0.55) * 0.05
+    }));
+  }
+
+  createStephenThrowAnimation() {
+    return this.createAttackAnimation().map((pose, index) => ({
+      ...pose,
+      body: { rotation: index < 4 ? -14 : index < 8 ? 22 : 0 },
+      rightArm: { upperRotation: index < 4 ? -125 : index < 8 ? 75 : 12, lowerRotation: index < 4 ? -50 : 30 },
+      weaponRotation: index < 4 ? -1 : 0.65,
+      hideSteakWeapon: index >= 4 && index < 9
+    }));
   }
   
   // 鍛炎忍者：雙手將重刃拉至背後，再以全身重量向前劈下。
@@ -2240,7 +2264,8 @@
     switch(weapon.type) {
       case 'steak':
         ctx.save();
-        ctx.rotate(-0.35);
+        if (frame.hideSteakWeapon) { ctx.restore(); break; }
+        ctx.rotate(frame.weaponRotation ?? -0.35);
         ctx.fillStyle = '#713321';
         ctx.strokeStyle = '#EAA36B';
         ctx.lineWidth = 2;

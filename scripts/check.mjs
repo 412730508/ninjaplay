@@ -290,7 +290,11 @@ try {
   duel.useSkill('player1', 'normal');
   simulatedNow += 4000;
   duel.releaseStephenCharge('player1');
-  if (foe.hp !== facingDamage - 15 || foe.effects.slowMultiplier > 0.02) throw new Error('Stephen charged steak did not apply full damage and slow');
+  if (foe.hp !== facingDamage || duel.gameState.projectiles.filter(projectile => projectile.type === 'stephenSteak').length !== 1) {
+    throw new Error('Stephen charged steak did not launch a projectile before dealing damage');
+  }
+  for (let frame = 0; frame < 30 && duel.gameState.projectiles.length; frame++) duel.updateProjectiles();
+  if (foe.hp !== facingDamage - 15 || foe.effects.slowMultiplier > 0.02) throw new Error('Stephen flying steak did not apply full damage and slow on impact');
 } catch (error) {
   console.error(`Skill integration check failed: ${error.message}`);
   failed = true;

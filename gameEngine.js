@@ -1472,7 +1472,9 @@
         }
         
         // ? 靽桀儔嚗炎?交??賢??急?血???摰?敺??啣?璈?
-        if (stickmanAnimator.isAnimationComplete(player, animation.current)) {
+        if (player.id === 'stephen' && player.stephenChargeStart) {
+          player.animation.frame = (player.animation.frame + 0.12) % animationFrames.length;
+        } else if (stickmanAnimator.isAnimationComplete(player, animation.current)) {
           stickmanAnimator.resetToIdle(player);
         } else {
           // ?湔?撟
@@ -1901,6 +1903,27 @@
   renderPlayerEffects(player, x, y) {
     const now = Date.now();
     let effectY = y - 100;
+
+    if (player.id === 'stephen' && player.stephenChargeStart) {
+      const skill = player.skills.normal;
+      const progress = Math.min(1, (now - player.stephenChargeStart) / skill.maxCharge);
+      const width = 92;
+      this.ctx.save();
+      this.ctx.fillStyle = 'rgba(18, 11, 10, 0.88)';
+      this.ctx.fillRect(x - width / 2 - 3, y - 154, width + 6, 18);
+      this.ctx.fillStyle = '#6e3b2e';
+      this.ctx.fillRect(x - width / 2, y - 149, width, 8);
+      this.ctx.fillStyle = progress < skill.chargeThreshold / skill.maxCharge ? '#e9ab66' : '#ff694e';
+      this.ctx.fillRect(x - width / 2, y - 149, width * progress, 8);
+      this.ctx.strokeStyle = '#ffe0ae';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(x - width / 2, y - 149, width, 8);
+      this.ctx.font = 'bold 11px Arial';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillStyle = '#fff0d5';
+      this.ctx.fillText(progress >= skill.chargeThreshold / skill.maxCharge ? `蓄力 ${Math.round(progress * 100)}%` : '按住蓄力', x, y - 158);
+      this.ctx.restore();
+    }
     
     this.ctx.font = '12px Arial';
     this.ctx.textAlign = 'center';
@@ -2546,7 +2569,30 @@
 
   renderProjectiles() {
     this.gameState.projectiles.forEach(projectile => {
-      if (projectile.type === 'venomdart') {
+      if (projectile.type === 'stephenSteak') {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.translate(projectile.x, projectile.y);
+        ctx.rotate((Date.now() - projectile.createdAt) * 0.013 * projectile.direction);
+        ctx.shadowColor = '#ff8b4f';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#7b3027';
+        ctx.strokeStyle = '#f5bb86';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 18, 12, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#e3a17b';
+        ctx.beginPath();
+        ctx.ellipse(-2, -1, 9, 5, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff0d5';
+        ctx.beginPath();
+        ctx.ellipse(-4, -1, 3, 2, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      } else if (projectile.type === 'venomdart') {
         // 瘥?寞?皜脫? - 撠憌敶Ｙ?
         this.ctx.save();
         this.ctx.translate(projectile.x, projectile.y);
@@ -8904,7 +8950,7 @@
       [SKILL_CODES.GRAND_THUNDER_SLASH]: 'grandThunderSlash',
       [SKILL_CODES.STACCATO_STRIKE]: 'staccatoStrike',
       [SKILL_CODES.DEADLY_CANON]: 'deadlyCanon',
-      [SKILL_CODES.STEPHEN_STEAK]: 'attack',
+      [SKILL_CODES.STEPHEN_STEAK]: 'stephenThrow',
       [SKILL_CODES.STEPHEN_GRILL]: 'attack',
       [SKILL_CODES.STEPHEN_SMOKE]: 'idle',
       [SKILL_CODES.STEPHEN_BREATH]: 'attack'
@@ -11127,6 +11173,7 @@
     if (selectedSkill.code === SKILL_CODES.STEPHEN_STEAK) {
       if (now - this.cooldowns[playerId].normal < selectedSkill.cooldown) return;
       player.stephenChargeStart = now;
+      this.playAnimation(player, 'stephenCharge');
       this.addVisualEffect(player.position.x, player.position.y - 25, 'steak_charge', '🥩');
       return;
     }
@@ -11291,18 +11338,21 @@
       case SKILL_CODES.STEPHEN_STEAK: {
         const charge = player.stephenChargeDuration || 0;
         if (charge < skill.chargeThreshold) {
+          this.playAnimation(player, 'idle');
           player.stephenEatingUntil = now + skill.eatDuration;
           this.addCombatLog(`${player.name} 吃下牛排，1秒後恢復${skill.heal}生命！`, playerId, 'skill');
         } else {
           const progress = Math.min(1, (charge - skill.chargeThreshold) / (skill.maxCharge - skill.chargeThreshold));
           const damage = Math.round(skill.minDamage + (skill.maxDamage - skill.minDamage) * progress);
           const slow = skill.minSlow + (skill.maxSlow - skill.minSlow) * progress;
-          const dx = opponent.position.x - player.position.x;
           this.addVisualEffect(player.position.x + player.facing * 55, player.position.y - 30, 'steak_throw', '🥩');
-          if (opponent.hp > 0 && dx * player.facing >= 0 && dx * player.facing <= skill.range && Math.abs(opponent.position.y - player.position.y) <= 70) {
-            const hit = this.dealDamage(opponent, damage, playerId);
-            if (hit.hit) this.applyStephenSlow(opponent, 1 - slow, skill.slowDuration, now);
-          }
+          const startX = player.position.x;
+          this.gameState.projectiles.push({
+            type: 'stephenSteak', owner: player, x: startX + player.facing * 35, y: player.position.y - 25,
+            startX, direction: player.facing, speed: 520, maxRange: skill.range,
+            damage, slowMultiplier: 1 - slow, slowDuration: skill.slowDuration,
+            createdAt: now
+          });
         }
         break;
       }
@@ -13532,6 +13582,13 @@
       if (distance < collisionRadius && Math.abs(projectile.y - target.position.y) < collisionRadius) {
         // 嚙?蝣箏????拇?撅祉摰?
         const ownerSide = projectile.owner === this.players.player1 ? 'player1' : 'player2';
+
+        if (projectile.type === 'stephenSteak') {
+          const hit = this.dealDamage(target, projectile.damage, ownerSide);
+          if (hit.hit) this.applyStephenSlow(target, projectile.slowMultiplier, projectile.slowDuration, now);
+          this.addVisualEffect(projectile.x, projectile.y, 'steak_hit', '🥩');
+          return false;
+        }
         
         // 嚙踢???怎???寞?
         if (projectile.type === 'fireball' && typeof particleSystem !== 'undefined' && particleSystem) {
