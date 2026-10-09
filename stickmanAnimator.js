@@ -334,6 +334,9 @@
       attack: this.createAttackAnimation(),
       stephenCharge: this.createStephenChargeAnimation(),
       stephenThrow: this.createStephenThrowAnimation(),
+      stephenEat: this.createStephenEatAnimation(),
+      stephenGrill: this.createStephenGrillAnimation(),
+      stephenBreath: this.createStephenBreathAnimation(),
       defend: this.createDefendAnimation(),
       
       // 憸函頂??賢???
@@ -509,6 +512,40 @@
       rightArm: { upperRotation: index < 4 ? -125 : index < 8 ? 75 : 12, lowerRotation: index < 4 ? -50 : 30 },
       weaponRotation: index < 4 ? -1 : 0.65,
       hideSteakWeapon: index >= 4 && index < 9
+    }));
+  }
+
+  createStephenEatAnimation() {
+    return Array.from({ length: 12 }, (_, index) => ({
+      head: { x: 0, y: Math.sin(index * 1.5) * 2, rotation: 8 },
+      body: { rotation: 5 },
+      leftArm: { upperRotation: -20, lowerRotation: -35 },
+      rightArm: { upperRotation: -95, lowerRotation: -80 },
+      leftLeg: { upperRotation: 0, lowerRotation: 5 },
+      rightLeg: { upperRotation: 5, lowerRotation: 5 },
+      weaponRotation: -1.7
+    }));
+  }
+
+  createStephenGrillAnimation() {
+    return this.createAttackAnimation().map((pose, index) => ({
+      ...pose,
+      head: { x: 0, y: index < 5 ? -4 : 3, rotation: index < 5 ? -8 : 9 },
+      body: { rotation: index < 5 ? -13 : 21 },
+      leftArm: { upperRotation: index < 5 ? -115 : 75, lowerRotation: index < 5 ? -45 : 30 },
+      rightArm: { upperRotation: index < 5 ? -110 : 85, lowerRotation: index < 5 ? -45 : 35 },
+      weaponRotation: index < 5 ? -1.6 : 1.1
+    }));
+  }
+
+  createStephenBreathAnimation() {
+    return Array.from({ length: 12 }, (_, index) => ({
+      head: { x: 3, y: -2, rotation: 12 + Math.sin(index * 0.5) * 2 },
+      body: { rotation: 18 },
+      leftArm: { upperRotation: -52, lowerRotation: -28 },
+      rightArm: { upperRotation: -75, lowerRotation: -32 },
+      leftLeg: { upperRotation: -18, lowerRotation: 15 },
+      rightLeg: { upperRotation: 20, lowerRotation: 8 }
     }));
   }
   

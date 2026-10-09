@@ -149,18 +149,8 @@
       case 'STP_002':
       case 'STP_003':
       case 'STP_004': {
-        const hot = skillCode === 'STP_001' || skillCode === 'STP_002';
-        const color = hot ? '#FF9F52' : '#CBD7DE';
-        const count = skillCode === 'STP_002' || skillCode === 'STP_004' ? 16 : 9;
-        for (let index = 0; index < count; index++) {
-          const angle = Math.PI * 2 * index / count;
-          this.particles.push({
-            x, y: y - 28, vx: Math.cos(angle) * (hot ? 75 : 45),
-            vy: Math.sin(angle) * 32 - (hot ? 55 : 30),
-            size: hot ? 3 : 5, color, life: 420, maxLife: 420,
-            alpha: 0.8, type: hot ? 'fire_spark' : 'generic'
-          });
-        }
+        // These four skills have authored, continuous canvas visuals in gameEngine.
+        // Avoid a generic burst that hides the griddle and smoke silhouettes.
         break;
       }
       default:
@@ -174,11 +164,6 @@
     const handX = x + facing * 24;
     const handY = y - 28;
     const tipX = x + facing * reach;
-
-    if (element === 'stephen') {
-      this.particles.push({ x: handX, y: handY, endX: tipX, endY: handY - 10, color: '#F4B37C', width: 4, life: 210, maxLife: 210, alpha: 0.8, type: 'blade_slash' });
-      return;
-    }
 
     if (element === 'fujin') {
       for (let trail = 0; trail < 3; trail++) {

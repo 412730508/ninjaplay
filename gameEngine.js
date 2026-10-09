@@ -419,6 +419,7 @@
     
     // 皜脫??拙振
     this.renderPlayers();
+    this.renderStephenCombatCues();
 
     // 道場補給位於角色前景，讓落點箭頭與可搶取的道具不會被場景吃掉。
     this.renderTournamentPickups();
@@ -1472,7 +1473,7 @@
         }
         
         // ? 靽桀儔嚗炎?交??賢??急?血???摰?敺??啣?璈?
-        if (player.id === 'stephen' && player.stephenChargeStart) {
+        if (player.id === 'stephen' && (player.stephenChargeStart || player.stephenUltimate?.form === 'smoke')) {
           player.animation.frame = (player.animation.frame + 0.12) % animationFrames.length;
         } else if (stickmanAnimator.isAnimationComplete(player, animation.current)) {
           stickmanAnimator.resetToIdle(player);
@@ -2573,6 +2574,15 @@
         const ctx = this.ctx;
         ctx.save();
         ctx.translate(projectile.x, projectile.y);
+        ctx.strokeStyle = 'rgba(245, 194, 145, 0.52)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-projectile.direction * 13, -5);
+        ctx.lineTo(-projectile.direction * 31, -9);
+        ctx.moveTo(-projectile.direction * 15, 5);
+        ctx.lineTo(-projectile.direction * 25, 8);
+        ctx.stroke();
         ctx.rotate((Date.now() - projectile.createdAt) * 0.013 * projectile.direction);
         ctx.shadowColor = '#ff8b4f';
         ctx.shadowBlur = 12;
@@ -8951,9 +8961,9 @@
       [SKILL_CODES.STACCATO_STRIKE]: 'staccatoStrike',
       [SKILL_CODES.DEADLY_CANON]: 'deadlyCanon',
       [SKILL_CODES.STEPHEN_STEAK]: 'stephenThrow',
-      [SKILL_CODES.STEPHEN_GRILL]: 'attack',
-      [SKILL_CODES.STEPHEN_SMOKE]: 'idle',
-      [SKILL_CODES.STEPHEN_BREATH]: 'attack'
+      [SKILL_CODES.STEPHEN_GRILL]: 'stephenGrill',
+      [SKILL_CODES.STEPHEN_SMOKE]: 'stephenBreath',
+      [SKILL_CODES.STEPHEN_BREATH]: 'stephenBreath'
     };
     
     const animation = animationMap[skillCode] || 'idle';
@@ -9728,6 +9738,9 @@
     player.stephenEatingUntil = 0;
     player.stephenSmokeUntil = 0;
     player.stephenUltimate = null;
+    player.stephenSwitchAt = 0;
+    player.stephenAttackAt = 0;
+    player.stephenImpact = null;
   }
 
   releaseStephenCharge(playerId) {
@@ -9796,9 +9809,9 @@
           player.stephenForm = ultimate.form === 'steak' ? 'smoke' : 'steak';
           player.skills = player.forms[player.stephenForm];
           player.moveSpeed = player.stephenForm === 'steak' ? 240 : 280;
+          player.stephenSwitchAt = now;
           this.cooldowns[playerId].normal = 0;
           this.clearSkillReady(playerId, 'normal');
-          this.addVisualEffect(player.position.x, player.position.y - 32, 'stephen_switch', player.stephenForm === 'steak' ? '🥩' : '💨');
           this.addCombatLog(`${player.name} 切換為${player.stephenForm === 'steak' ? '牛排周' : '菸鬼周'}！`, playerId, 'status');
         }
         continue;
@@ -9833,35 +9846,186 @@
       if (ultimate && now < ultimate.endsAt) {
         ctx.save();
         if (ultimate.form === 'steak') {
+          // A cast-iron griddle travels with Stephen. Its rim is the actual 140px area.
           const x = player.position.x;
-          const y = player.position.y - 16;
+          const y = player.position.y - 10;
           const r = ultimate.skill.radius;
-          ctx.fillStyle = 'rgba(241, 82, 28, 0.16)';
-          ctx.strokeStyle = '#FFB45D';
+          const age = ultimate.skill.duration - (ultimate.endsAt - now);
+          const glow = 0.72 + Math.sin(age * 0.011) * 0.12;
+          const plate = ctx.createRadialGradient(x, y, 8, x, y, r);
+          plate.addColorStop(0, '#241b1a');
+          plate.addColorStop(0.7, '#44221c');
+          plate.addColorStop(1, '#b4512c');
+          ctx.shadowColor = '#ee6c30';
+          ctx.shadowBlur = 18 * glow;
+          ctx.fillStyle = plate;
+          ctx.beginPath(); ctx.ellipse(x, y, r, 42, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.save();
+          ctx.beginPath(); ctx.ellipse(x, y, r - 6, 37, 0, 0, Math.PI * 2); ctx.clip();
+          ctx.strokeStyle = `rgba(255, 151, 76, ${0.43 * glow})`;
           ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.ellipse(x, y, r, 65, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-          ctx.strokeStyle = 'rgba(255, 220, 150, 0.7)';
+          for (let offset = -r; offset <= r; offset += 24) {
+            ctx.beginPath(); ctx.moveTo(x + offset - 36, y - 45); ctx.lineTo(x + offset + 36, y + 45); ctx.stroke();
+          }
+          ctx.strokeStyle = 'rgba(255, 202, 127, 0.28)';
+          ctx.lineWidth = 1;
+          for (let offset = -r; offset <= r; offset += 24) {
+            ctx.beginPath(); ctx.moveTo(x + offset + 36, y - 45); ctx.lineTo(x + offset - 36, y + 45); ctx.stroke();
+          }
+          ctx.restore();
+          ctx.strokeStyle = '#e4a26b';
+          ctx.lineWidth = 5;
+          ctx.beginPath(); ctx.ellipse(x, y, r, 42, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.strokeStyle = '#2a1a17';
           ctx.lineWidth = 2;
-          for (let offset = -90; offset <= 90; offset += 30) {
-            ctx.beginPath(); ctx.moveTo(x + offset, y - 45); ctx.lineTo(x + offset, y + 45); ctx.stroke();
+          ctx.beginPath(); ctx.ellipse(x, y, r - 5, 37, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.strokeStyle = 'rgba(255, 158, 85, 0.34)';
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.ellipse(x, player.position.y, r, 85, 0, 0, Math.PI * 2); ctx.stroke();
+          // A small heat shimmer communicates damage ticks without filling the arena with sparks.
+          for (let i = -2; i <= 2; i++) {
+            const sx = x + i * 43;
+            const rise = (age * 0.035 + i * 13 + 80) % 44;
+            ctx.strokeStyle = `rgba(255, 203, 146, ${0.34 * (1 - rise / 44)})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(sx, y - 20 - rise);
+            ctx.bezierCurveTo(sx - 8, y - 32 - rise, sx + 9, y - 39 - rise, sx + 2, y - 50 - rise);
+            ctx.stroke();
           }
         } else {
-          const x = player.position.x;
-          const y = player.position.y - 30;
-          const dir = ultimate.facing;
-          ctx.fillStyle = 'rgba(174, 190, 199, 0.23)';
-          ctx.strokeStyle = 'rgba(222, 232, 235, 0.65)';
+          // Breath begins at his mouth, rolls forward, and has a readable fixed facing/range.
+          const range = ultimate.skill.range;
+          const halfWidth = ultimate.skill.width / 2;
+          const age = ultimate.skill.duration - (ultimate.endsAt - now);
+          ctx.translate(player.position.x + ultimate.facing * 22, player.position.y - 55);
+          ctx.scale(ultimate.facing, 1);
+          const plume = ctx.createLinearGradient(0, 0, range, 0);
+          plume.addColorStop(0, 'rgba(210, 218, 216, 0.48)');
+          plume.addColorStop(0.5, 'rgba(137, 158, 161, 0.34)');
+          plume.addColorStop(1, 'rgba(82, 113, 121, 0.12)');
+          ctx.fillStyle = plume;
+          ctx.beginPath();
+          ctx.moveTo(0, -9);
+          ctx.bezierCurveTo(range * 0.28, -28, range * 0.62, 4 - halfWidth, range, 55 - halfWidth);
+          ctx.lineTo(range, 55 + halfWidth);
+          ctx.bezierCurveTo(range * 0.62, 66 + halfWidth, range * 0.28, 28, 0, 9);
+          ctx.closePath(); ctx.fill();
+          ctx.save(); ctx.clip();
+          for (let band = 0; band < 5; band++) {
+            const step = ((age * 0.21 + band * 67) % range);
+            const wobble = step / range * 55 + Math.sin(age * 0.006 + band * 1.6) * 11;
+            ctx.strokeStyle = `rgba(231, 237, 231, ${0.28 * (1 - step / range)})`;
+            ctx.lineWidth = 14 + step * 0.06;
+            ctx.beginPath();
+            ctx.moveTo(step - 20, wobble - 28);
+            ctx.bezierCurveTo(step + 24, wobble - 21, step - 20, wobble + 20, step + 30, wobble + 28);
+            ctx.stroke();
+          }
+          ctx.restore();
+          ctx.strokeStyle = 'rgba(230, 237, 231, 0.48)';
           ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.moveTo(x + dir * 20, y - 18); ctx.lineTo(x + dir * ultimate.skill.range, y - ultimate.skill.width / 2); ctx.lineTo(x + dir * ultimate.skill.range, y + ultimate.skill.width / 2); ctx.lineTo(x + dir * 20, y + 18); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, -9); ctx.bezierCurveTo(range * 0.28, -28, range * 0.62, 4 - halfWidth, range, 55 - halfWidth); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, 9); ctx.bezierCurveTo(range * 0.28, 28, range * 0.62, 66 + halfWidth, range, 55 + halfWidth); ctx.stroke();
         }
         ctx.restore();
       }
       if (player.stephenSmokeUntil > now) {
         ctx.save();
-        ctx.fillStyle = 'rgba(180, 195, 205, 0.27)';
-        ctx.beginPath(); ctx.ellipse(player.position.x, player.position.y - 30, 55, 48, 0, 0, Math.PI * 2); ctx.fill();
+        const x = player.position.x;
+        const y = player.position.y - 38;
+        const radius = player.skills.normal.radius;
+        const time = now * 0.003;
+        const haze = ctx.createRadialGradient(x, y, 3, x, y, radius);
+        haze.addColorStop(0, 'rgba(36, 46, 54, 0.78)');
+        haze.addColorStop(0.7, 'rgba(107, 126, 136, 0.48)');
+        haze.addColorStop(1, 'rgba(199, 214, 215, 0.05)');
+        ctx.fillStyle = haze;
+        ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+        for (let cloud = 0; cloud < 7; cloud++) {
+          const angle = cloud * Math.PI * 2 / 7 + time * 0.42;
+          const drift = radius * (0.45 + 0.07 * Math.sin(time + cloud));
+          const cx = x + Math.cos(angle) * drift;
+          const cy = y + Math.sin(angle) * drift * 0.75;
+          ctx.fillStyle = cloud % 2 ? 'rgba(167, 183, 188, 0.22)' : 'rgba(62, 77, 84, 0.36)';
+          ctx.beginPath(); ctx.arc(cx, cy, 15 + 3 * Math.sin(time + cloud), 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(207, 222, 222, 0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(x, y, radius, Math.PI * 0.1, Math.PI * 0.8); ctx.stroke();
         ctx.restore();
       }
+    }
+  }
+
+  renderStephenCombatCues() {
+    const ctx = this.ctx;
+    const now = Date.now();
+    for (const player of Object.values(this.players)) {
+      if (!player || player.id !== 'stephen') continue;
+      const x = player.position.x;
+      const y = player.position.y;
+      ctx.save();
+      if (player.stephenChargeStart) {
+        const strength = Math.min(1, (now - player.stephenChargeStart) / player.skills.normal.maxCharge);
+        const meatX = x + player.facing * 18;
+        ctx.strokeStyle = `rgba(247, 196, 144, ${0.24 + strength * 0.5})`;
+        ctx.lineWidth = 2;
+        for (let wisp = 0; wisp < 2; wisp++) {
+          const drift = (now * 0.03 + wisp * 19) % 23;
+          ctx.beginPath();
+          ctx.moveTo(meatX + wisp * 9 - 4, y - 39 - drift);
+          ctx.bezierCurveTo(meatX - 8 + wisp * 9, y - 48 - drift, meatX + 9 + wisp * 9, y - 51 - drift, meatX + wisp * 9, y - 61 - drift);
+          ctx.stroke();
+        }
+      }
+      if (player.stephenAttackAt && now - player.stephenAttackAt < 270) {
+        const phase = (now - player.stephenAttackAt) / 270;
+        const facing = player.stephenAttackFacing || 1;
+        ctx.globalAlpha = 1 - phase;
+        ctx.lineCap = 'round';
+        if (player.stephenAttackForm === 'steak') {
+          // A short, heavy steak swipe rather than a generic energy slash.
+          ctx.strokeStyle = '#f3c18b'; ctx.lineWidth = 8 - phase * 5;
+          ctx.beginPath();
+          ctx.arc(x + facing * 20, y - 31, 23 + phase * 15, facing > 0 ? -1.3 : 0.2, facing > 0 ? 1.1 : 2.6);
+          ctx.stroke();
+          ctx.strokeStyle = '#713521'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(x + facing * 20, y - 31, 19 + phase * 15, facing > 0 ? -1.3 : 0.2, facing > 0 ? 1.1 : 2.6); ctx.stroke();
+        } else {
+          ctx.strokeStyle = '#d6dfdc'; ctx.lineWidth = 7 - phase * 4;
+          ctx.beginPath();
+          ctx.moveTo(x + facing * 18, y - 57);
+          ctx.bezierCurveTo(x + facing * 38, y - 65, x + facing * 42, y - 30, x + facing * (55 + phase * 17), y - 37);
+          ctx.stroke();
+        }
+      }
+      if (player.stephenEatingUntil > now) {
+        ctx.globalAlpha = 1;
+        const remaining = Math.min(1, (player.stephenEatingUntil - now) / player.skills.normal.eatDuration);
+        ctx.strokeStyle = '#e8c296'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(x, y - 72, 15, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - remaining)); ctx.stroke();
+        ctx.fillStyle = '#8a3f2c';
+        ctx.beginPath(); ctx.ellipse(x + player.facing * 20, y - 63, 9 * remaining + 3, 5 * remaining + 2, -0.3, 0, Math.PI * 2); ctx.fill();
+      }
+      if (player.stephenSwitchAt && now - player.stephenSwitchAt < 650) {
+        const phase = (now - player.stephenSwitchAt) / 650;
+        ctx.globalAlpha = 1 - phase;
+        ctx.strokeStyle = player.stephenForm === 'steak' ? '#f9a35c' : '#c6d8d8';
+        ctx.lineWidth = 4 * (1 - phase) + 1;
+        ctx.beginPath(); ctx.ellipse(x, y - 43, 22 + phase * 37, 44 + phase * 14, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+      const impact = player.stephenImpact;
+      if (impact && now - impact.startedAt < 320) {
+        const phase = (now - impact.startedAt) / 320;
+        ctx.globalAlpha = 1 - phase;
+        ctx.strokeStyle = '#9e472c'; ctx.lineWidth = 5 - 3 * phase;
+        ctx.beginPath(); ctx.ellipse(impact.x, impact.y, 8 + phase * 24, 6 + phase * 18, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = '#efb981'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(impact.x, impact.y, 6 + phase * 31, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
     }
   }
 
@@ -10550,8 +10714,13 @@
           ? 'forgefireSlash'
           : 'attack'
     );
-    this.spawnCombatFlourish('swing', player, opponent, player.id === 'forgefire' || player.id === 'adjudicator' ? 1.35 : 1);
-    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen', 'stephen'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+    if (player.id !== 'stephen') this.spawnCombatFlourish('swing', player, opponent, player.id === 'forgefire' || player.id === 'adjudicator' ? 1.35 : 1);
+    if (player.id === 'stephen') {
+      player.stephenAttackAt = now;
+      player.stephenAttackForm = player.stephenForm;
+      player.stephenAttackFacing = player.facing;
+    }
+    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createElementalBasicAttackEffect(
         player.id,
         player.position.x,
@@ -11174,7 +11343,6 @@
       if (now - this.cooldowns[playerId].normal < selectedSkill.cooldown) return;
       player.stephenChargeStart = now;
       this.playAnimation(player, 'stephenCharge');
-      this.addVisualEffect(player.position.x, player.position.y - 25, 'steak_charge', '🥩');
       return;
     }
 
@@ -11318,12 +11486,12 @@
     this.playSkillAnimation(player, skill.code);
     
     // ?萄遣??賜??
-    if (typeof particleSystem !== 'undefined' && particleSystem) {
+    if (player.id !== 'stephen' && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createSkillEffect(skill.code, player.position.x, player.position.y, player.facing);
     }
 
     const isUltimateSkill = skill === player.skills?.ultimate;
-    this.spawnCombatFlourish(isUltimateSkill ? 'ultimate' : 'skill', player, opponent, isUltimateSkill ? 1.45 : 1);
+    if (player.id !== 'stephen') this.spawnCombatFlourish(isUltimateSkill ? 'ultimate' : 'skill', player, opponent, isUltimateSkill ? 1.45 : 1);
 
     const playerSide = playerId === 'player1' ? 'player1' : 'player2';  // ?? 蝣箏??拙振雿蔭
     
@@ -11338,14 +11506,13 @@
       case SKILL_CODES.STEPHEN_STEAK: {
         const charge = player.stephenChargeDuration || 0;
         if (charge < skill.chargeThreshold) {
-          this.playAnimation(player, 'idle');
+          this.playAnimation(player, 'stephenEat');
           player.stephenEatingUntil = now + skill.eatDuration;
           this.addCombatLog(`${player.name} 吃下牛排，1秒後恢復${skill.heal}生命！`, playerId, 'skill');
         } else {
           const progress = Math.min(1, (charge - skill.chargeThreshold) / (skill.maxCharge - skill.chargeThreshold));
           const damage = Math.round(skill.minDamage + (skill.maxDamage - skill.minDamage) * progress);
           const slow = skill.minSlow + (skill.maxSlow - skill.minSlow) * progress;
-          this.addVisualEffect(player.position.x + player.facing * 55, player.position.y - 30, 'steak_throw', '🥩');
           const startX = player.position.x;
           this.gameState.projectiles.push({
             type: 'stephenSteak', owner: player, x: startX + player.facing * 35, y: player.position.y - 25,
@@ -13538,8 +13705,8 @@
       }
       
       // ?? ?嗡????拚?銵??- ? 靽格迤?
-      if (typeof particleSystem !== 'undefined' && particleSystem && 
-          typeof particleSystem.createParticles === 'function' && 
+      if (projectile.type !== 'stephenSteak' && typeof particleSystem !== 'undefined' && particleSystem &&
+          typeof particleSystem.createParticles === 'function' &&
           Math.random() < 0.3) {
         const trailConfig = {
           count: 3,
@@ -13586,7 +13753,7 @@
         if (projectile.type === 'stephenSteak') {
           const hit = this.dealDamage(target, projectile.damage, ownerSide);
           if (hit.hit) this.applyStephenSlow(target, projectile.slowMultiplier, projectile.slowDuration, now);
-          this.addVisualEffect(projectile.x, projectile.y, 'steak_hit', '🥩');
+          projectile.owner.stephenImpact = { x: projectile.x, y: projectile.y, startedAt: now };
           return false;
         }
         

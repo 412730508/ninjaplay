@@ -229,6 +229,12 @@ try {
   vm.runInContext(readFileSync(resolve(root, 'characters.js'), 'utf8'), engineContext);
   vm.runInContext(engineSource, engineContext);
   const NinjaGame = vm.runInContext('NinjaGame', engineContext);
+  const animatorContext = vm.createContext({ document: { addEventListener() {} }, console });
+  vm.runInContext(readFileSync(resolve(root, 'stickmanAnimator.js'), 'utf8'), animatorContext);
+  const stephenAnimator = vm.runInContext('new StickmanAnimator()', animatorContext);
+  for (const name of ['stephenCharge', 'stephenThrow', 'stephenEat', 'stephenGrill', 'stephenBreath']) {
+    if (stephenAnimator.animations[name]?.length !== 12) throw new Error(`Stephen animation is missing: ${name}`);
+  }
   for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen']) {
     for (const kind of ['swing', 'impact']) {
       const rendered = NinjaGame.prototype.renderElementalCombatFlourish.call({}, renderContext, {
@@ -247,11 +253,13 @@ try {
   duel.spawnCombatFlourish = () => {};
   duel.addVisualEffect = () => {};
   duel.addDamageNumber = () => {};
+  duel.ctx = renderContext;
   const stephen = duel.players.player1;
   const foe = duel.players.player2;
   stephen.position.x = 400;
   foe.position.x = 700;
   duel.useSkill('player1', 'ultimate');
+  duel.renderStephenZones();
   stephen.position.x = 650;
   duel.updateStephenSystems();
   if (foe.hp !== 90) throw new Error('Stephen grill did not follow its owner or deal its first tick');
@@ -259,6 +267,7 @@ try {
   duel.updateStephenSystems();
   if (stephen.stephenForm !== 'smoke' || duel.cooldowns.player1.normal !== 0) throw new Error('Stephen did not switch to smoke with a ready skill');
   duel.useSkill('player1', 'normal');
+  duel.renderStephenZones();
   if (stephen.stephenSmokeUntil <= simulatedNow || duel.dealDamage(stephen, 5, 'player2').immune !== true) throw new Error('Stephen smoke did not prevent damage');
   stephen.effects.stunned = simulatedNow + 500;
   duel.updateStephenSystems();
@@ -268,6 +277,7 @@ try {
   foe.position.x = 750;
   foe.facing = -1;
   duel.useSkill('player1', 'ultimate');
+  duel.renderStephenZones();
   duel.updateStephenSystems();
   const facingDamage = foe.hp;
   if (facingDamage !== 80) throw new Error('Stephen breath did not damage a facing enemy');
@@ -280,6 +290,7 @@ try {
   if (stephen.stephenForm !== 'steak') throw new Error('Stephen did not return to steak form');
   stephen.hp = 100;
   duel.useSkill('player1', 'normal');
+  duel.renderStephenCombatCues();
   simulatedNow += 100;
   duel.releaseStephenCharge('player1');
   simulatedNow += 1000;
@@ -288,8 +299,10 @@ try {
   simulatedNow += 8000;
   foe.position.x = stephen.position.x + 100;
   duel.useSkill('player1', 'normal');
+  duel.renderStephenCombatCues();
   simulatedNow += 4000;
   duel.releaseStephenCharge('player1');
+  duel.renderStephenCombatCues();
   if (foe.hp !== facingDamage || duel.gameState.projectiles.filter(projectile => projectile.type === 'stephenSteak').length !== 1) {
     throw new Error('Stephen charged steak did not launch a projectile before dealing damage');
   }
