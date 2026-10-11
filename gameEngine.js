@@ -14,6 +14,7 @@
       winner: null,
       countdown: null,
       effects: [], 
+      spiritJudgmentVfx: [],
       projectiles: [],
       damageNumbers: [],
       screenFlash: null,  // ???啣?嚗撟??賣???
@@ -466,6 +467,8 @@
     // Draw the sustained ultimate above particles and fighters so its waves
     // remain visible even in visually busy matches.
     this.renderShamisenCanon(this.ctx);
+
+    this.renderSpiritJudgmentVfx();
     
     // ? 皜脫???賜???蝷箏
     this.renderSkillIndicators();
@@ -9418,55 +9421,164 @@
     return source;
   }
 
-  createJudgmentEffect(x, y, range) {
-    if (typeof particleSystem !== 'undefined' && particleSystem) {
-      // 憭拚?????
-      for (let i = 0; i < 20; i++) {
-        const angle = (Math.PI * 2 / 20) * i;
-        const lightX = x + Math.cos(angle) * (range * 0.3);
-        const lightY = y + Math.sin(angle) * (range * 0.3);
-        
-        particleSystem.particles.push({
-          x: lightX,
-          y: lightY - 200,
-          endX: lightX,
-          endY: lightY,
-          currentY: lightY - 200,
-          color: '#FFD700',
-          life: 1000,
-          maxLife: 1000,
-          width: 3,
-          type: 'judgment_beam'
-        });
+  createJudgmentEffect(x, y, range, targetX = x, targetY = y) {
+    const now = Date.now();
+    this.gameState.spiritJudgmentVfx = (this.gameState.spiritJudgmentVfx || [])
+      .filter(effect => now - effect.startedAt < 1500);
+    this.gameState.spiritJudgmentVfx.push({ x, y, range, targetX, targetY, startedAt: now });
+    if (typeof particleSystem !== 'undefined' && particleSystem?.createScreenShake) {
+      particleSystem.createScreenShake(7, 300);
+    }
+  }
+
+  drawSpiritSeal(ctx, x, y, radius, time, alpha = 1) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha *= alpha;
+    ctx.rotate(time * 0.00018);
+    ctx.strokeStyle = '#fff1b8';
+    ctx.shadowColor = '#ffe27a';
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([3, 7]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, radius * 0.88, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.rotate(-time * 0.00036);
+    ctx.strokeStyle = '#fff9dc';
+    ctx.lineWidth = 2;
+    for (let mark = 0; mark < 12; mark++) {
+      const angle = mark * Math.PI * 2 / 12;
+      ctx.save();
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, -radius * 0.72);
+      ctx.lineTo(0, -radius * 0.84);
+      ctx.lineTo(mark % 3 === 0 ? 5 : 3, -radius * 0.9);
+      ctx.moveTo(0, -radius * 0.78);
+      ctx.lineTo(-4, -radius * 0.82);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  renderSpiritJudgmentVfx() {
+    const ctx = this.ctx;
+    const now = Date.now();
+    for (const player of Object.values(this.players)) {
+      if (!player?.spiritChargeStart) continue;
+      const skill = player.skills.ultimate;
+      const maxCharge = Math.round((skill.maxChargeTime || 2000) / (skill.chargeSpeedMultiplier || 1));
+      const charge = Math.min(1, (now - player.spiritChargeStart) / maxCharge);
+      const ready = now - player.spiritChargeStart >= (skill.minChargeTime || 800);
+      const x = player.position.x;
+      const y = player.position.y;
+      ctx.save();
+      // Quiet pillar of daylight draws the eye upward while the seal grows at the feet.
+      const light = ctx.createLinearGradient(x, 0, x, y - 30);
+      light.addColorStop(0, 'rgba(255, 247, 208, 0)');
+      light.addColorStop(0.72, `rgba(255, 241, 177, ${0.045 + charge * 0.09})`);
+      light.addColorStop(1, `rgba(255, 255, 232, ${0.12 + charge * 0.18})`);
+      ctx.fillStyle = light;
+      ctx.beginPath();
+      ctx.moveTo(x - 8 - charge * 15, 0);
+      ctx.lineTo(x + 8 + charge * 15, 0);
+      ctx.lineTo(x + 46 + charge * 16, y - 10);
+      ctx.lineTo(x - 46 - charge * 16, y - 10);
+      ctx.closePath(); ctx.fill();
+
+      const sealRadius = Math.max(8, skill.range * charge);
+      this.drawSpiritSeal(ctx, x, y - 7, sealRadius, now, ready ? 0.95 : 0.65);
+      ctx.strokeStyle = ready ? 'rgba(255, 255, 225, 0.68)' : 'rgba(255, 230, 163, 0.42)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(x, y - 7, sealRadius * 0.53, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * charge); ctx.stroke();
+
+      // Four narrow rays frame the caster like a shrine's shafts of light.
+      const rayAlpha = 0.18 + charge * 0.32;
+      ctx.strokeStyle = `rgba(255, 239, 186, ${rayAlpha})`;
+      ctx.lineWidth = 2;
+      for (let ray = 0; ray < 4; ray++) {
+        const angle = ray * Math.PI / 2 + now * 0.00025;
+        const inner = 25 + charge * 22;
+        const outer = 50 + charge * 55;
+        ctx.beginPath();
+        ctx.moveTo(x + Math.cos(angle) * inner, y - 42 + Math.sin(angle) * inner * 0.45);
+        ctx.lineTo(x + Math.cos(angle) * outer, y - 42 + Math.sin(angle) * outer * 0.45);
+        ctx.stroke();
       }
-      
-      particleSystem.createExplosionEffect(x, y, {
-        color: '#FFD700',
-        maxRadius: range,
-        duration: 800
-      });
-      
-      for (let i = 0; i < 50; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * range;
-        const particleX = x + Math.cos(angle) * distance;
-        const particleY = y + Math.sin(angle) * distance;
-        
-        particleSystem.particles.push({
-          x: particleX,
-          y: particleY,
-          vx: (Math.random() - 0.5) * 100,
-          vy: -50 - Math.random() * 100,
-          size: 2 + Math.random() * 3,
-          color: '#FFFF88',
-          life: 1500,
-          maxLife: 1500,
-          alpha: 1,
-          type: 'holy_particle'
-        });
+      ctx.restore();
+    }
+
+    const effects = this.gameState.spiritJudgmentVfx || [];
+    this.gameState.spiritJudgmentVfx = effects.filter(effect => now - effect.startedAt < 1500);
+    for (const effect of this.gameState.spiritJudgmentVfx) {
+      const elapsed = now - effect.startedAt;
+      const fade = Math.max(0, 1 - elapsed / 1500);
+      const strike = Math.max(0, 1 - elapsed / 260);
+      const ringProgress = Math.min(1, elapsed / 520);
+      const radius = effect.range * (0.28 + ringProgress * 0.72);
+      ctx.save();
+      // A clean white-gold column falls through the seal at the moment the judgment lands.
+      if (strike > 0) {
+        const beam = ctx.createLinearGradient(effect.targetX, 0, effect.targetX, effect.targetY);
+        beam.addColorStop(0, 'rgba(255, 255, 240, 0)');
+        beam.addColorStop(0.78, `rgba(255, 247, 205, ${0.38 * strike})`);
+        beam.addColorStop(1, `rgba(255, 255, 244, ${0.9 * strike})`);
+        ctx.fillStyle = beam;
+        ctx.shadowColor = '#fff1ae'; ctx.shadowBlur = 25 * strike;
+        ctx.beginPath();
+        ctx.moveTo(effect.targetX - 5, 0);
+        ctx.lineTo(effect.targetX + 5, 0);
+        ctx.lineTo(effect.targetX + 32, effect.targetY - 8);
+        ctx.lineTo(effect.targetX - 32, effect.targetY - 8);
+        ctx.closePath(); ctx.fill();
       }
-      
-      particleSystem.createScreenShake(10, 500);
+
+      const targetBloom = ctx.createRadialGradient(effect.targetX, effect.targetY - 22, 1, effect.targetX, effect.targetY - 22, 62);
+      targetBloom.addColorStop(0, `rgba(255, 255, 242, ${0.75 * strike + 0.12 * fade})`);
+      targetBloom.addColorStop(0.3, `rgba(255, 234, 163, ${0.38 * strike + 0.08 * fade})`);
+      targetBloom.addColorStop(1, 'rgba(255, 225, 122, 0)');
+      ctx.fillStyle = targetBloom;
+      ctx.beginPath(); ctx.arc(effect.targetX, effect.targetY - 22, 62, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(255, 255, 235, ${0.8 * strike + 0.15 * fade})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(effect.targetX, effect.targetY - 5, 16 + ringProgress * 40, 8 + ringProgress * 14, 0, 0, Math.PI * 2); ctx.stroke();
+
+      const bloom = ctx.createRadialGradient(effect.x, effect.y - 8, 2, effect.x, effect.y - 8, effect.range * 0.72);
+      bloom.addColorStop(0, `rgba(255, 255, 231, ${0.48 * fade})`);
+      bloom.addColorStop(0.25, `rgba(255, 230, 148, ${0.19 * fade})`);
+      bloom.addColorStop(1, 'rgba(255, 226, 120, 0)');
+      ctx.fillStyle = bloom;
+      ctx.beginPath(); ctx.ellipse(effect.x, effect.y - 6, effect.range * 0.72, 60, 0, 0, Math.PI * 2); ctx.fill();
+
+      this.drawSpiritSeal(ctx, effect.x, effect.y - 7, radius, elapsed, 0.88 * fade);
+      ctx.strokeStyle = `rgba(255, 255, 231, ${0.85 * fade})`;
+      ctx.lineWidth = 3 * fade;
+      ctx.beginPath(); ctx.ellipse(effect.x, effect.y - 7, radius, 50 + ringProgress * 15, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = `rgba(255, 223, 130, ${0.48 * fade})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(effect.x, effect.y - 7, radius * 0.66, 30 + ringProgress * 9, 0, 0, Math.PI * 2); ctx.stroke();
+
+      // Sparse descending rays make it read as sacred light, not an explosion.
+      ctx.lineWidth = 2;
+      for (let ray = 0; ray < 9; ray++) {
+        const offset = (ray - 4) * effect.range * 0.16;
+        const beamAlpha = fade * (ray === 4 ? 0.65 : 0.24);
+        ctx.strokeStyle = `rgba(255, 247, 211, ${beamAlpha})`;
+        ctx.beginPath();
+        ctx.moveTo(effect.x + offset, effect.y - 125 - ((elapsed * 0.18 + ray * 29) % 62));
+        ctx.lineTo(effect.x + offset, effect.y - 30);
+        ctx.stroke();
+      }
+
+      // A second, smaller halo signals the healing returning to the caster.
+      const healRing = 18 + Math.min(1, elapsed / 260) * 30;
+      ctx.strokeStyle = `rgba(255, 255, 225, ${0.68 * fade})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(effect.x, effect.y - 42, healRing, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -14900,17 +15012,13 @@
       }
       player.hp = Math.min(player.maxHp, player.hp + healAmount);
       
-      this.addVisualEffect(opponent.position.x, opponent.position.y, 'judgment_hit', '👁️');
-      this.addVisualEffect(player.position.x, player.position.y, 'heal_judgment', '💚');
       this.addDamageNumber(player.position.x, player.position.y - 30, healAmount, 'heal');
       this.addCombatLog(
         `靈天審判！蓄力${(chargeTime / 1000).toFixed(1)}s，造成 ${judgmentDamage} 點傷害！`,
         playerSide, 'skill'
       );
       
-      if (typeof particleSystem !== 'undefined' && particleSystem) {
-        this.createJudgmentEffect(player.position.x, player.position.y, skill.range);
-      }
+        this.createJudgmentEffect(player.position.x, player.position.y, skill.range, opponent.position.x, opponent.position.y);
 
       if (skill.afterglow) {
         if (!this.gameState.talentZones) this.gameState.talentZones = [];
@@ -15564,16 +15672,16 @@
         const elapsed = now - caster.spiritChargeStart;
         const chargeProgress = Math.min(elapsed / maxCharge, 1);
         const isReady = elapsed >= minCharge;
-        const ringColor = isReady ? '#FFD700' : '#FF4444';
+        const ringColor = isReady ? '#FFFBEA' : '#F0D58E';
         const currentRadius = effect.maxRadius * chargeProgress;
 
         ctx.save();
         // ?游撐銝剔???嚗???撖西????撘蛛?
-        ctx.globalAlpha = 0.3 + Math.sin(elapsed * 0.01) * 0.1;
+        ctx.globalAlpha = 0.42 + Math.sin(elapsed * 0.008) * 0.08;
         ctx.strokeStyle = ringColor;
         ctx.lineWidth = isReady ? 2.5 : 1.5;
         ctx.shadowColor = ringColor;
-        ctx.shadowBlur = isReady ? 18 : 8;
+        ctx.shadowBlur = isReady ? 24 : 12;
         ctx.setLineDash(isReady ? [8, 6] : [4, 8]);
         ctx.beginPath();
         ctx.arc(cx, cy, currentRadius, 0, Math.PI * 2);
@@ -15589,13 +15697,35 @@
           ctx.stroke();
         }
 
-        // 憛怠????
+        // The seal stays pale gold through the charge and blooms to white at release.
         ctx.globalAlpha = isReady ? 0.08 : 0.04;
         ctx.setLineDash([]);
         ctx.fillStyle = ringColor;
         ctx.beginPath();
         ctx.arc(cx, cy, currentRadius, 0, Math.PI * 2);
         ctx.fill();
+
+        // Small cardinal marks and a central sun-cross make the charging ring read as a sacred seal.
+        ctx.globalAlpha = isReady ? 0.9 : 0.58;
+        ctx.strokeStyle = ringColor;
+        ctx.lineWidth = 2;
+        for (let mark = 0; mark < 8; mark++) {
+          const angle = mark * Math.PI / 4 - Math.PI / 2 + elapsed * 0.00012;
+          const inner = Math.max(4, currentRadius - 8);
+          const outer = currentRadius + (isReady ? 10 : 4);
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
+          ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
+          ctx.stroke();
+        }
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 42, 10 + chargeProgress * 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx - 14, cy - 42); ctx.lineTo(cx + 14, cy - 42);
+        ctx.moveTo(cx, cy - 56); ctx.lineTo(cx, cy - 28);
+        ctx.stroke();
 
         ctx.restore();
         return;
