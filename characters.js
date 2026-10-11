@@ -1025,7 +1025,7 @@ const characters = {
     position: { x: 100, y: 300 },
     facing: 1,
     isRanged: false,
-    passive: { name: '零錢滿地', description: '造成傷害時，至多每秒掉落一枚5–7元錢幣；雙方都能撿，對手撿到會直接消失。錢包上限40元。', dropCooldown: 1000, minCoins: 5, maxCoins: 7, walletCap: 40 },
+    passive: { name: '零錢滿地', description: '造成傷害時，至多每秒掉落一枚7–9元錢幣；雙方都能撿，對手撿到會直接消失。錢包上限40元。', dropCooldown: 1000, minCoins: 7, maxCoins: 9, walletCap: 40 },
     skills: {
       normal: {
         code: SKILL_CODES.YANGHONG_COFFEE,
