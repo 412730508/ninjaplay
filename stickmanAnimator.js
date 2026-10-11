@@ -4,6 +4,8 @@
     this.animationSpeed = 5; // 瘥?撟??銝甈∪??怠?
     this.stephenHeadImage = typeof Image === 'undefined' ? null : new Image();
     if (this.stephenHeadImage) this.stephenHeadImage.src = 'assets/portraits/stephen.png';
+    this.yangHongHeadImage = typeof Image === 'undefined' ? null : new Image();
+    if (this.yangHongHeadImage) this.yangHongHeadImage.src = 'assets/portraits/yanghong.png';
     
     // ?急鈭粹爸撉潛?瑽?(?箇???
     this.skeleton = {
@@ -1613,10 +1615,11 @@
     
     // ?? 蝜芾ˊ?剝
     if (schoolId === 'stephen') this.drawStephenHead(ctx, frame, colors, equipment);
+    else if (schoolId === 'yanghong') this.drawYangHongHead(ctx, frame, colors, equipment);
     else this.drawHead(ctx, frame, colors, equipment);
     
     // ?? 蝜芾ˊ?剖葆
-    if (schoolId !== 'stephen') this.drawHeadband(ctx, frame, equipment.headband);
+    if (!['stephen', 'yanghong'].includes(schoolId)) this.drawHeadband(ctx, frame, equipment.headband);
     
     // ??蝜芾ˊ?寞???蝎?
     this.drawSpecialEffects(ctx, frame, equipment, x, y);
@@ -1633,7 +1636,20 @@
     ctx.translate(frame.head.x, frame.head.y - 65);
     ctx.rotate((frame.head.rotation || 0) * Math.PI / 180);
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(this.stephenHeadImage, -20, -22, 40, 40);
+    ctx.drawImage(this.stephenHeadImage, -22, -24, 44, 44);
+    ctx.restore();
+  }
+
+  drawYangHongHead(ctx, frame, colors, equipment) {
+    if (!this.yangHongHeadImage?.complete || !this.yangHongHeadImage.naturalWidth) {
+      this.drawHead(ctx, frame, colors, equipment);
+      return;
+    }
+    ctx.save();
+    ctx.translate(frame.head.x, frame.head.y - 65);
+    ctx.rotate((frame.head.rotation || 0) * Math.PI / 180);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this.yangHongHeadImage, -22, -24, 44, 44);
     ctx.restore();
   }
 

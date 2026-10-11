@@ -2281,7 +2281,18 @@ body::after {
 }
 
 #tournamentScreen .tournament-card .tournament-card-role {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   max-width: calc(100% - 18px);
+  overflow: visible;
+  white-space: normal;
+}
+
+#tournamentScreen .tournament-card .tournament-card-role > span {
+  display: block;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2358,7 +2369,8 @@ body::after {
 .tournament-card-state.is-picked { border-color: rgba(255, 212, 98, .56); background: rgba(104, 77, 24, .88); color: #ffefbb; }
 .tournament-card .tournament-card-portrait { z-index: -2; right: -3px; bottom: -5px; width: 69%; height: 91%; object-fit: contain; opacity: .64; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .6)); }
 .tournament-card .tournament-card-name { position: relative; z-index: 2; display: block; max-width: 76%; padding: 2px 0; color: #fff8e9; font-size: clamp(.72rem, .94vw, .95rem); text-wrap: pretty; }
-.tournament-card .tournament-card-role { z-index: 2; bottom: 9px; left: 11px; max-width: 62%; padding: 3px 6px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 6px; background: rgba(8, 12, 23, .76); color: #d6def0; font-size: .6rem; }
+.tournament-card .tournament-card-role { z-index: 2; bottom: 7px; left: 9px; display: flex; max-width: 62%; flex-direction: column; align-items: flex-start; gap: 2px; padding: 0; border: 0; background: transparent; color: #d6def0; font-size: .54rem; line-height: 1.15; }
+.tournament-card .tournament-card-role > span { display: block; max-width: 100%; overflow: hidden; padding: 2px 5px; border: 1px solid rgba(255, 255, 255, .1); border-radius: 5px; background: rgba(8, 12, 23, .84); text-overflow: ellipsis; white-space: nowrap; }
 
 .tournament-card.cursor-p1 { border: 2px solid #ff5968; box-shadow: 0 0 0 2px rgba(255, 79, 99, .25), 0 0 25px rgba(255, 72, 83, .42), inset 0 0 25px rgba(255, 61, 72, .12); transform: translateY(-3px) scale(1.015); }
 .tournament-card.cursor-p2 { outline: 2px solid #58b6ff; outline-offset: -5px; box-shadow: 0 0 0 2px rgba(72, 165, 255, .24), 0 0 25px rgba(62, 150, 255, .42), inset 0 0 25px rgba(64, 157, 255, .12); transform: translateY(-3px) scale(1.015); }

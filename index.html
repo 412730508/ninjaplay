@@ -63,7 +63,7 @@
     }
     </script>
     
-    <link rel="stylesheet" href="ninjaStyles.css?v=loadout-fit-2">
+    <link rel="stylesheet" href="ninjaStyles.css?v=yanghong-roles-1">
     
     <!-- 🔍 Canonical URL -->
     <link rel="canonical" href="https://412730508.github.io/ninjaplay/">
@@ -364,12 +364,12 @@
         <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
     </footer>
 
-    <script src="characters.js?v=yanghong-1"></script>
+    <script src="characters.js?v=yanghong-2"></script>
     <script src="balance.js?v=balance-0.3.0"></script>
     <script src="talents.js?v=dojo-loadout-2"></script>
     <script src="particleSystem.js?v=stephen-vfx-3"></script>
     <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
-    <script src="stickmanAnimator.js?v=yanghong-vfx-1"></script>
+    <script src="stickmanAnimator.js?v=yanghong-head-2"></script>
     <script src="gameEngine.js?v=yanghong-combat-1"></script>
     <script src="aiController.js"></script>
     <script>
@@ -599,7 +599,7 @@
                 return `<div class="${cardClass}" data-id="${id}" role="gridcell" aria-label="${char.name}${accessibleState}">
                     <span class="tournament-card-head"><span class="tournament-card-index">${String(index + 1).padStart(2, '0')}</span>${stateLabel}</span>
                     <span class="tournament-card-name">${char.name}</span>
-                    <span class="tournament-card-role">${characterRoles[id]?.primary || char.organization}</span>
+                    <span class="tournament-card-role"><span>主｜${characterRoles[id]?.primary || char.organization}</span>${characterRoles[id]?.secondary ? `<span>次｜${characterRoles[id].secondary}</span>` : ''}</span>
                     ${portrait ? `<img class="tournament-card-portrait" data-portrait="${portrait}" alt="">` : ''}
                 </div>`;
             }).join('');
