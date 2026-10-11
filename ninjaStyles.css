@@ -1942,7 +1942,7 @@ body::after {
   #characterSelect .selected-metric, #characterSelect .selected-skill-pill { padding: 3px 6px; font-size: 0.62rem; }
   #characterSelect .roster-grid {
     height: calc(100% - 56px); grid-template-columns: repeat(7, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 7px;
+    grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 7px;
   }
   #characterSelect .roster-grid .character-card { min-height: 0; height: 100%; padding: 7px; border-radius: 12px; }
   #characterSelect .roster-grid .character-card-main { gap: 5px; }
@@ -3533,6 +3533,92 @@ body::after {
   object-fit: cover;
   object-position: center;
   transform: scale(1.08);
+}
+
+/* Transparent forgefire cutout: preserve only the portrait artwork, not its old tile. */
+#characterSelect .roster-grid .character-card[data-character-id="forgefire"] .character-icon-block {
+  overflow: visible;
+  border-color: transparent;
+  border-radius: 0 !important;
+  background: transparent;
+  box-shadow: none;
+}
+#characterSelect .roster-grid .character-card[data-character-id="forgefire"] .character-portrait {
+  object-fit: contain;
+  transform: none;
+}
+
+/* Six columns produce balanced, equal-height rows instead of a tiny isolated last row. */
+@media (min-width: 1081px) and (min-height: 600px) {
+  #characterSelect .roster-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+.match-report-toggle {
+  position: fixed;
+  right: 18px;
+  bottom: 88px;
+  z-index: 121;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  color: #fff4d7;
+  font-family: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+  line-height: 1.1;
+  background: linear-gradient(145deg, rgba(30, 39, 65, .98), rgba(10, 15, 31, .98));
+  border: 1px solid rgba(255, 203, 96, .58);
+  border-radius: 12px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .38);
+  cursor: pointer;
+}
+.match-report-toggle:hover,
+.match-report-copy:hover { border-color: #ffe18b; filter: brightness(1.12); }
+.match-report-panel {
+  position: fixed;
+  right: 18px;
+  bottom: 140px;
+  z-index: 122;
+  display: flex;
+  flex-direction: column;
+  width: min(440px, calc(100vw - 28px));
+  max-height: min(66vh, 540px);
+  padding: 16px;
+  color: #f4f0e8;
+  background: linear-gradient(145deg, rgba(18, 24, 43, .98), rgba(8, 12, 25, .99));
+  border: 1px solid rgba(255, 203, 96, .45);
+  border-radius: 16px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .55);
+}
+.match-report-panel[hidden] { display: none !important; }
+.match-report-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.match-report-kicker { color: #f6c953; font-size: .62rem; font-weight: 800; letter-spacing: .16em; }
+.match-report-header h2 { margin: 3px 0 0; font-size: 1.2rem; }
+.match-report-close {
+  width: 34px; height: 34px; color: #f3e8cf; font-size: 1.4rem;
+  background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 9px; cursor: pointer;
+}
+.match-report-hint { margin: 9px 0; color: rgba(236, 239, 248, .68); font-size: .76rem; }
+.match-report-text {
+  width: 100%; min-height: 170px; flex: 1 1 auto; resize: vertical;
+  padding: 10px; color: #e8edf8; font: 12px/1.55 Consolas, "Microsoft JhengHei", monospace;
+  background: rgba(3, 7, 17, .8); border: 1px solid rgba(255, 255, 255, .12); border-radius: 9px;
+}
+.match-report-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; }
+.match-report-actions [role="status"] { color: #e8cf89; font-size: .75rem; }
+.match-report-copy {
+  padding: 8px 14px; color: #211703; font-family: inherit; font-size: .8rem; font-weight: 800; line-height: 1.2;
+  background: linear-gradient(120deg, #f0bd36, #ffdf7b); border: 1px solid #ffe596;
+  border-radius: 9px; cursor: pointer;
+}
+@media (max-width: 680px) {
+  .match-report-toggle { right: 10px; bottom: 70px; }
+  .match-report-panel { right: 10px; bottom: 118px; width: calc(100vw - 20px); }
 }
 
 @media (max-width: 760px) {

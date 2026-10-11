@@ -63,7 +63,7 @@
     }
     </script>
     
-    <link rel="stylesheet" href="ninjaStyles.css?v=avatar-only-forgefire-1">
+    <link rel="stylesheet" href="ninjaStyles.css?v=match-report-equal-roster-1">
     
     <!-- 🔍 Canonical URL -->
     <link rel="canonical" href="https://412730508.github.io/ninjaplay/">
@@ -358,6 +358,25 @@
         </button>
     </div>
 
+    <button type="button" class="match-report-toggle" id="matchReportToggle" onclick="toggleMatchReport()" aria-expanded="false" aria-controls="matchReportPanel">
+        <span aria-hidden="true">📋</span> 戰報
+    </button>
+    <section class="match-report-panel" id="matchReportPanel" role="dialog" aria-labelledby="matchReportTitle" hidden>
+        <header class="match-report-header">
+            <div>
+                <span class="match-report-kicker">MATCH HISTORY</span>
+                <h2 id="matchReportTitle">對戰戰報</h2>
+            </div>
+            <button type="button" class="match-report-close" onclick="closeMatchReport()" aria-label="關閉戰報">×</button>
+        </header>
+        <p class="match-report-hint">記錄雙方角色與勝負，可直接貼到試算表整理。</p>
+        <textarea id="matchReportText" class="match-report-text" readonly spellcheck="false" aria-label="可複製的對戰戰報"></textarea>
+        <footer class="match-report-actions">
+            <span id="matchReportStatus" role="status" aria-live="polite"></span>
+            <button type="button" class="match-report-copy" onclick="copyMatchReport()">複製全部</button>
+        </footer>
+    </section>
+
     <!-- 🔍 添加頁腳 -->
     <footer class="game-footer">
         <p>&copy; 2026 火柴人魔法亂鬥 | 免費線上忍者格鬥遊戲</p>
@@ -389,6 +408,102 @@
         // 道場鬥技盃：禁兩角、蛇形選六角；每人選角的先後就是三戰出場順序。
         let tournamentState = null;
         let tournamentWinnerWatcher = null;
+        const MATCH_REPORT_STORAGE_KEY = 'ninjaDuelMatchReportV1';
+        let matchReportWatcher = null;
+        let lastRecordedMatchWinner = null;
+        let matchReportEntries = loadMatchReport();
+
+        function loadMatchReport() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(MATCH_REPORT_STORAGE_KEY) || '[]');
+                return Array.isArray(saved) ? saved.filter(entry => entry && entry.player1 && entry.player2 && entry.winner && entry.loser).slice(0, 300) : [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function matchReportSafeCell(value) {
+            return String(value ?? '').replace(/[\t\r\n]+/g, ' ').trim();
+        }
+
+        function renderMatchReport() {
+            const field = document.getElementById('matchReportText');
+            if (!field) return;
+            const header = ['日期', '玩家1角色', '玩家2角色', '勝方', '敗方'].join('\t');
+            const rows = matchReportEntries.map(entry => [entry.date, entry.player1, entry.player2, entry.winner, entry.loser].map(matchReportSafeCell).join('\t'));
+            field.value = [header, ...rows].join('\n');
+            const status = document.getElementById('matchReportStatus');
+            if (status) {
+                delete status.dataset.copied;
+                status.textContent = `共 ${matchReportEntries.length} 場`;
+            }
+        }
+
+        function toggleMatchReport() {
+            const panel = document.getElementById('matchReportPanel');
+            if (!panel) return;
+            if (panel.hidden) {
+                panel.hidden = false;
+                document.getElementById('matchReportToggle')?.setAttribute('aria-expanded', 'true');
+                renderMatchReport();
+            } else {
+                closeMatchReport();
+            }
+        }
+
+        function closeMatchReport() {
+            const panel = document.getElementById('matchReportPanel');
+            if (panel) panel.hidden = true;
+            document.getElementById('matchReportToggle')?.setAttribute('aria-expanded', 'false');
+        }
+
+        async function copyMatchReport() {
+            const field = document.getElementById('matchReportText');
+            const status = document.getElementById('matchReportStatus');
+            if (!field) return;
+            renderMatchReport();
+            try {
+                await navigator.clipboard.writeText(field.value);
+            } catch (error) {
+                field.focus();
+                field.select();
+                if (!document.execCommand('copy')) {
+                    if (status) status.textContent = '已選取內容，請按 Ctrl+C 複製';
+                    return;
+                }
+            }
+            if (status) {
+                status.textContent = '已複製，可直接貼上';
+                status.dataset.copied = 'true';
+            }
+        }
+
+        function recordMatchResult() {
+            if (matchReportWatcher) clearInterval(matchReportWatcher);
+            matchReportWatcher = setInterval(() => {
+                const winnerId = game?.gameState?.winner;
+                if (!winnerId) {
+                    lastRecordedMatchWinner = null;
+                    return;
+                }
+                if (winnerId === lastRecordedMatchWinner) return;
+                const winner = game?.players?.[winnerId];
+                const loserId = winnerId === 'player1' ? 'player2' : 'player1';
+                const loser = game?.players?.[loserId];
+                if (!winner || !loser) return;
+                lastRecordedMatchWinner = winnerId;
+                matchReportEntries.unshift({
+                    date: new Date().toLocaleString('zh-TW', { hour12: false }),
+                    player1: characters[game.players.player1?.id]?.name || game.players.player1?.id || '玩家1',
+                    player2: characters[game.players.player2?.id]?.name || game.players.player2?.id || '玩家2',
+                    winner: characters[winner.id]?.name || winner.id || (winnerId === 'player1' ? '玩家1' : '玩家2'),
+                    loser: characters[loser.id]?.name || loser.id || (loserId === 'player1' ? '玩家1' : '玩家2')
+                });
+                matchReportEntries = matchReportEntries.slice(0, 300);
+                try { localStorage.setItem(MATCH_REPORT_STORAGE_KEY, JSON.stringify(matchReportEntries)); } catch (error) { /* keep this match available in memory */ }
+                if (!document.getElementById('matchReportPanel')?.hidden) renderMatchReport();
+            }, 250);
+        }
 
         function tournamentCharacterIds() {
             const order = id => id === 'forgefire' ? 1 : id === 'yanghong' ? 2 : 0;
@@ -2549,6 +2664,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeSkillGuide();
+                closeMatchReport();
             }
         });
         
@@ -2569,6 +2685,7 @@
             
             // 初始化角色選擇
             initCharacterSelection();
+            recordMatchResult();
             
             const selectMapBtn = document.getElementById('selectMapBtn');
             const startBattleBtn = document.getElementById('startBattleBtn');
