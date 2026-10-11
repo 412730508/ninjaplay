@@ -84,7 +84,9 @@ const SKILL_CODES = {
   STEPHEN_STEAK: 'STP_001',
   STEPHEN_GRILL: 'STP_002',
   STEPHEN_SMOKE: 'STP_003',
-  STEPHEN_BREATH: 'STP_004'
+  STEPHEN_BREATH: 'STP_004',
+  YANGHONG_COFFEE: 'YH_001',
+  YANGHONG_TONGUE: 'YH_002'
 };
 
 const STEPHEN_STEAK_SKILLS = {
@@ -1008,6 +1010,52 @@ const characters = {
     stephenForm: 'steak',
     forms: { steak: STEPHEN_STEAK_SKILLS, smoke: STEPHEN_SMOKE_SKILLS },
     skills: STEPHEN_STEAK_SKILLS
+  },
+
+  yanghong: {
+    id: 'yanghong',
+    name: '騷0揚紘',
+    organization: '咖啡金庫',
+    maxHp: 100,
+    hp: 100,
+    attackDamage: 4,
+    attackSpeed: 850,
+    attackRange: 70,
+    moveSpeed: 250,
+    position: { x: 100, y: 300 },
+    facing: 1,
+    isRanged: false,
+    passive: { name: '零錢滿地', description: '造成傷害時，至多每秒掉落一枚5–7元錢幣；雙方都能撿，對手撿到會直接消失。錢包上限40元。', dropCooldown: 1000, minCoins: 5, maxCoins: 7, walletCap: 40 },
+    skills: {
+      normal: {
+        code: SKILL_CODES.YANGHONG_COFFEE,
+        name: '咖啡拉花',
+        type: '蓄力／多段直線傷害',
+        cooldown: 8000,
+        maxDuration: 1750,
+        tickRate: 350,
+        tickDamage: 3,
+        maxHits: 5,
+        range: 210,
+        width: 64,
+        moveMultiplier: 0.55,
+        slowMultiplier: 0.9,
+        slowDuration: 380
+      },
+      ultimate: {
+        code: SKILL_CODES.YANGHONG_TONGUE,
+        name: '瘋狂舔拭者',
+        type: '前方抓取／吞噬',
+        cooldown: 24000,
+        range: 300,
+        width: 86,
+        windup: 450,
+        costPerSecond: 20,
+        damagePerSecond: 7,
+        maxSeconds: 2,
+        swallowedMoveMultiplier: 0.3
+      }
+    }
   }
 };
 

@@ -364,13 +364,13 @@
         <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
     </footer>
 
-    <script src="characters.js?v=stephen-1"></script>
+    <script src="characters.js?v=yanghong-1"></script>
     <script src="balance.js?v=balance-0.3.0"></script>
     <script src="talents.js?v=dojo-loadout-2"></script>
     <script src="particleSystem.js?v=stephen-vfx-3"></script>
     <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
-    <script src="stickmanAnimator.js?v=stephen-vfx-3"></script>
-    <script src="gameEngine.js?v=spirit-holy-light-1"></script>
+    <script src="stickmanAnimator.js?v=yanghong-vfx-1"></script>
+    <script src="gameEngine.js?v=yanghong-combat-1"></script>
     <script src="aiController.js"></script>
     <script>
         // 全局遊戲引擎實例
@@ -391,7 +391,8 @@
         let tournamentWinnerWatcher = null;
 
         function tournamentCharacterIds() {
-            return Object.keys(characters).sort((a, b) => (a === 'forgefire') - (b === 'forgefire'));
+            const order = id => id === 'forgefire' ? 1 : id === 'yanghong' ? 2 : 0;
+            return Object.keys(characters).sort((a, b) => order(a) - order(b));
         }
 
         function tournamentBindings() {
@@ -935,7 +936,8 @@
             puppeteer: '🎭',
             azure_disciple: '⚡',
             shamisen: '🎸',
-            stephen: '🥩'
+            stephen: '🥩',
+            yanghong: '☕'
         };
 
         // Player-supplied pixel portraits for the first ten roster slots.
@@ -984,7 +986,8 @@
             puppeteer: { primary: '傀儡設局', secondary: '遠近切換' },
             azure_disciple: { primary: '蓄能爆發', secondary: '高機動刺殺' },
             shamisen: { primary: '遠距控場', secondary: '節奏消耗' },
-            stephen: { primary: '坦克控場', secondary: '雙型態續戰' }
+            stephen: { primary: '坦克控場', secondary: '雙型態續戰' },
+            yanghong: { primary: '資源滾雪球', secondary: '抓取壓制' }
         };
 
         function formatCooldown(ms) {
@@ -1034,7 +1037,10 @@
 
             Object.entries(characters)
                 // The newest challenger always occupies the final roster plate.
-                .sort(([firstId], [secondId]) => (firstId === 'forgefire') - (secondId === 'forgefire'))
+                .sort(([firstId], [secondId]) => {
+                    const order = id => id === 'forgefire' ? 1 : id === 'yanghong' ? 2 : 0;
+                    return order(firstId) - order(secondId);
+                })
                 .forEach(([, char]) => {
                     rosterGrid.appendChild(createCharacterCard(char));
                 });
@@ -2145,6 +2151,14 @@
                     description: '固定面向噴出煙幕，期間不能移動；煙內敵人緩速，面向小周時額外受到持續傷害。效果結束後切換為牛排周。',
                     effects: ['距離300px', '持續3秒', '緩速60%／3秒', '面向小周時每秒10傷害', '冷卻22秒']
                 },
+                [SKILL_CODES.YANGHONG_COFFEE]: {
+                    description: '按住紙杯持續潑出熱咖啡，奶泡流沿前方掃過；按越久越多段，受控或放開按鍵就會停止。',
+                    effects: ['每段3傷害', '每350ms一段，最多5段', '命中緩速10%', '最長1.75秒', '施放時移速降低45%', '冷卻8秒']
+                },
+                [SKILL_CODES.YANGHONG_TONGUE]: {
+                    description: '舌頭先向前蓄勢，命中300px內的目標後吞入；吞噬期間可緩慢移動並每秒消耗20元、造成7傷害，最後吐出並重置咖啡拉花。',
+                    effects: ['前搖0.45秒', '最低花費20元', '每秒20元／7傷害', '最多吞噬2秒', '吞噬時移速30%', '奧義冷卻24秒', '吐出後咖啡拉花重置']
+                },
                 [SKILL_CODES.WATER_SHIELD]: {
                     description: '水之護盾環繞身體，3秒內減少50%受到的傷害，並獲得移速加成。護盾結束後回復5 HP，再加上80%儲存傷害值。',
                     effects: ['減傷50%', '持續3秒', '移速+25', '結束回復5 HP + 80%儲存傷害', '冷卻8秒']
@@ -2435,7 +2449,10 @@
             };
             
             Object.entries(characters)
-                .sort(([firstId], [secondId]) => (firstId === 'forgefire') - (secondId === 'forgefire'))
+                .sort(([firstId], [secondId]) => {
+                    const order = id => id === 'forgefire' ? 1 : id === 'yanghong' ? 2 : 0;
+                    return order(firstId) - order(secondId);
+                })
                 .forEach(([id, char]) => {
                 const card = document.createElement('div');
                 card.className = 'character-guide-card';

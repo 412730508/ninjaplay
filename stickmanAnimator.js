@@ -151,6 +151,11 @@
         primary: '#34282C',
         secondary: '#B36B43',
         accent: '#F2C28B'
+      },
+      yanghong: {
+        primary: '#3A2422',
+        secondary: '#B87543',
+        accent: '#F4D8A1'
       }
     };
     
@@ -321,6 +326,13 @@
       stephen: {
         weapon: { type: 'steak', color: '#B45A31' },
         eyeColor: '#F4D2A7'
+      },
+      yanghong: {
+        headband: { color: '#6B382E', pattern: '☕' },
+        weapon: { type: 'coffee_cup', color: '#C88750' },
+        eyeColor: '#5B3028',
+        bodyPattern: 'cafe_apron',
+        specialEffect: 'coffee_steam'
       }
     };
     
@@ -337,6 +349,8 @@
       stephenEat: this.createStephenEatAnimation(),
       stephenGrill: this.createStephenGrillAnimation(),
       stephenBreath: this.createStephenBreathAnimation(),
+      coffeePour: this.createYangPourAnimation(),
+      tongueLash: this.createYangTongueAnimation(),
       defend: this.createDefendAnimation(),
       
       // 憸函頂??賢???
@@ -547,6 +561,21 @@
       leftLeg: { upperRotation: -18, lowerRotation: 15 },
       rightLeg: { upperRotation: 20, lowerRotation: 8 }
     }));
+  }
+
+  createYangPourAnimation() {
+    return Array.from({ length: 12 }, (_, i) => {
+      const sway = Math.sin(i / 11 * Math.PI) * 7;
+      return { head: { x: 4, y: 2, rotation: 10 }, body: { rotation: -5 }, leftArm: { upperRotation: -42, lowerRotation: -28 }, rightArm: { upperRotation: -58 + sway, lowerRotation: -42 + sway }, leftLeg: { upperRotation: -4, lowerRotation: 8 }, rightLeg: { upperRotation: 5, lowerRotation: 5 }, weaponRotation: -0.5 + sway * 0.008 };
+    });
+  }
+
+  createYangTongueAnimation() {
+    return Array.from({ length: 12 }, (_, i) => {
+      const lash = Math.max(0, Math.min(1, i / 4));
+      const recover = Math.max(0, (i - 7) / 5);
+      return { head: { x: 2 + 8 * lash * (1 - recover), y: -3 * lash, rotation: 18 * lash }, body: { rotation: 11 * lash * (1 - recover) }, leftArm: { upperRotation: -28 - 20 * lash, lowerRotation: -16 }, rightArm: { upperRotation: -42 - 56 * lash, lowerRotation: -24 - 22 * lash }, leftLeg: { upperRotation: 10 * lash, lowerRotation: 16 * lash }, rightLeg: { upperRotation: -8 * lash, lowerRotation: 13 * lash } };
+    });
   }
   
   // 鍛炎忍者：雙手將重刃拉至背後，再以全身重量向前劈下。
@@ -1952,6 +1981,23 @@
       ctx.restore();
     }
 
+    if (equipment.specialEffect === 'coffee_steam') {
+      const time = Date.now() * 0.003;
+      ctx.save();
+      ctx.lineCap = 'round';
+      for (let wisp = 0; wisp < 3; wisp++) {
+        const drift = Math.sin(time + wisp * 1.7) * 3;
+        ctx.globalAlpha = 0.28 + (wisp % 2) * 0.12;
+        ctx.strokeStyle = wisp === 1 ? '#fff0cf' : '#d6b38b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(12 + wisp * 5, -40);
+        ctx.bezierCurveTo(8 + drift + wisp * 5, -47, 18 + drift + wisp * 5, -53, 13 + wisp * 5, -60);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     if (equipment.specialEffect === 'forge_sparks') {
       const time = Date.now() * 0.006;
       ctx.save();
@@ -2068,6 +2114,17 @@
     ctx.moveTo(0, -50);
     ctx.lineTo(0, 0);
     ctx.stroke();
+
+    if (equipment.bodyPattern === 'cafe_apron') {
+      ctx.save();
+      ctx.fillStyle = '#5a2d28'; ctx.strokeStyle = '#e5b77a'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(-10, -43); ctx.lineTo(10, -43); ctx.lineTo(13, -5); ctx.lineTo(-13, -5); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#d9aa6d'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-6, -42); ctx.lineTo(-3, -34); ctx.lineTo(0, -42); ctx.lineTo(3, -34); ctx.lineTo(6, -42); ctx.stroke();
+      ctx.fillStyle = '#c98d52'; ctx.fillRect(-13, -13, 26, 4);
+      ctx.fillStyle = '#f0d39a'; ctx.beginPath(); ctx.arc(0, -22, 2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
     
     // ? 撗拍霅瑞
     if (equipment.armor) {
@@ -2309,6 +2366,21 @@
         ctx.beginPath(); ctx.ellipse(1, -8, 16, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#EBD0A7';
         ctx.beginPath(); ctx.ellipse(0, -8, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        break;
+      case 'coffee_cup':
+        ctx.save();
+        ctx.rotate(frame.weaponRotation ?? -0.25);
+        ctx.shadowColor = '#f0c78a'; ctx.shadowBlur = 5;
+        ctx.fillStyle = '#f4ead8'; ctx.strokeStyle = '#9a5b37'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(-7, -18, 15, 21, 3); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = '#f2d2a0'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(0.5, -17, 7, 2.5, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = '#b46e43'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(8, -13); ctx.quadraticCurveTo(16, -14, 13, -6); ctx.quadraticCurveTo(11, -3, 8, -6); ctx.stroke();
+        ctx.fillStyle = '#6b3928'; ctx.beginPath(); ctx.ellipse(0, -17, 5, 1.8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,242,208,.95)'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(-2, -18); ctx.quadraticCurveTo(2, -21, 3, -17); ctx.quadraticCurveTo(1, -15, -1, -17); ctx.stroke();
         ctx.restore();
         break;
       case 'cigarette':
@@ -2913,7 +2985,7 @@
       'abyssTentacle', 'beastLiberation', 'boulderToss', 'rebelMinion',
       'chainOfPain', 'objectionParry', 'finalVerdict', 'exileGaleDash',
       'stormExecution', 'puppetDeploy', 'phantomSwap', 'divineSmite',
-      'grandThunderSlash', 'staccatoStrike', 'deadlyCanon'
+      'grandThunderSlash', 'staccatoStrike', 'deadlyCanon', 'coffeePour', 'tongueLash'
     ];
     
     if (skillAnimations.includes(animationName)) {
