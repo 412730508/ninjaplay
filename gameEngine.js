@@ -9685,6 +9685,10 @@
     if (has('long_breath')) player.forms.smoke.ultimate.range = 340;
     if (has('extra_bite')) normal.heal = 9;
     if (has('thick_smoke')) player.stephenSmokeAttackSlow = 0.85;
+    if (has('yanghong_tip_bonus')) { player.passive.minCoins += 3; player.passive.maxCoins += 3; }
+    if (has('yanghong_long_tongue')) ultimate.range = 360;
+    if (has('yanghong_refill')) { normal.maxHits += 1; normal.maxDuration += normal.tickRate; }
+    if (has('yanghong_quick_pocket')) player.talentYangHongQuickPocket = true;
   }
 
   triggerTournamentSkillEnd(player, skill) {
@@ -10028,6 +10032,10 @@
           collector.yangWallet = Math.min(cap, (collector.yangWallet || 0) + coin.value);
           this.addVisualEffect(collector.position.x, collector.position.y - 35, 'coin_pickup', '¥');
           if (stored > 0) this.addDamageNumber(collector.position.x, collector.position.y - 48, `+${stored}元`, 'heal');
+          if (stored > 0 && collector.talentYangHongQuickPocket) {
+            const cooldown = this.cooldowns[playerId];
+            if (cooldown && cooldown.normal > 0) cooldown.normal = Math.max(0, cooldown.normal - 1000);
+          }
           this.addCombatLog(stored > 0 ? `${collector.name} 撿到${stored}元，錢包 ${collector.yangWallet}/${cap}。` : '錢包已滿，這枚錢幣沒有增加金額。', playerId, 'status');
         } else {
           this.addVisualEffect(coin.x, coin.y - 8, 'coin_lost', '✦');

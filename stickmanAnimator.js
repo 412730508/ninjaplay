@@ -1648,6 +1648,8 @@
     ctx.save();
     ctx.translate(frame.head.x, frame.head.y - 65);
     ctx.rotate((frame.head.rotation || 0) * Math.PI / 180);
+    // The supplied portrait faces opposite the stickman's default forward direction.
+    ctx.scale(-1, 1);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(this.yangHongHeadImage, -22, -24, 44, 44);
     ctx.restore();
