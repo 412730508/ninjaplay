@@ -9854,7 +9854,6 @@
         player.yangWallet = 0;
         player.yangCoffee = null;
         player.yangUltimate = null;
-        player.yangLastCoinAt = 0;
       }
     }
     this.gameState.yangHongCoins = [];
@@ -9880,7 +9879,6 @@
     player.yangWallet = 0;
     player.yangCoffee = null;
     player.yangUltimate = null;
-    player.yangLastCoinAt = 0;
     delete player.yangSwallowedBy;
   }
 
@@ -9989,12 +9987,12 @@
     if (attacker?.id !== 'yanghong' || !target || attacker.hp <= 0) return;
     const passive = attacker.passive;
     const now = Date.now();
-    if (now - (attacker.yangLastCoinAt || 0) < passive.dropCooldown) return;
-    attacker.yangLastCoinAt = now;
+    if (Math.random() >= (passive.dropChance ?? 0.33)) return;
     const value = passive.minCoins + Math.floor(Math.random() * (passive.maxCoins - passive.minCoins + 1));
     const angle = Math.random() * Math.PI * 2;
     const radius = 25 + Math.random() * 27;
     this.gameState.yangHongCoins.push({
+      ownerSide: attacker === this.players.player1 ? 'player1' : 'player2',
       x: Math.max(30, Math.min(this.canvasWidth - 30, target.position.x + Math.cos(angle) * radius)),
       y: target.position.y + Math.sin(angle) * radius * 0.55,
       value,
@@ -10021,28 +10019,26 @@
   updateYangHongSystems() {
     const now = Date.now();
     this.gameState.yangHongCoins = (this.gameState.yangHongCoins || []).filter(coin => now < coin.expiresAt);
-    for (const coin of this.gameState.yangHongCoins) {
-      for (const playerId of ['player1', 'player2']) {
-        const collector = this.players[playerId];
-        if (!collector || collector.yangSwallowedBy || collector.yangUltimate?.phase === 'swallow' || Math.hypot(collector.position.x - coin.x, collector.position.y - coin.y) > 40) continue;
-        this.gameState.yangHongCoins = this.gameState.yangHongCoins.filter(item => item !== coin);
-        if (collector.id === 'yanghong') {
-          const cap = collector.passive.walletCap;
-          const stored = Math.min(coin.value, cap - (collector.yangWallet || 0));
-          collector.yangWallet = Math.min(cap, (collector.yangWallet || 0) + coin.value);
-          this.addVisualEffect(collector.position.x, collector.position.y - 35, 'coin_pickup', '¥');
-          if (stored > 0) this.addDamageNumber(collector.position.x, collector.position.y - 48, `+${stored}元`, 'heal');
-          if (stored > 0 && collector.talentYangHongQuickPocket) {
-            const cooldown = this.cooldowns[playerId];
-            if (cooldown && cooldown.normal > 0) cooldown.normal = Math.max(0, cooldown.normal - 1000);
-          }
-          this.addCombatLog(stored > 0 ? `${collector.name} 撿到${stored}元，錢包 ${collector.yangWallet}/${cap}。` : '錢包已滿，這枚錢幣沒有增加金額。', playerId, 'status');
-        } else {
-          this.addVisualEffect(coin.x, coin.y - 8, 'coin_lost', '✦');
-          this.addCombatLog(`${collector.name} 搶先踩掉了零錢！`, playerId, 'status');
-        }
-        break;
+    for (let index = 0; index < this.gameState.yangHongCoins.length;) {
+      const coin = this.gameState.yangHongCoins[index];
+      const playerId = coin.ownerSide;
+      const collector = this.players[playerId];
+      if (!collector || collector.id !== 'yanghong' || collector.yangSwallowedBy || collector.yangUltimate?.phase === 'swallow' || Math.hypot(collector.position.x - coin.x, collector.position.y - coin.y) > 40) {
+        index++;
+        continue;
       }
+
+      this.gameState.yangHongCoins.splice(index, 1);
+      const cap = collector.passive.walletCap;
+      const stored = Math.min(coin.value, cap - (collector.yangWallet || 0));
+      collector.yangWallet = Math.min(cap, (collector.yangWallet || 0) + coin.value);
+      this.addVisualEffect(collector.position.x, collector.position.y - 35, 'coin_pickup', '¥');
+      if (stored > 0) this.addDamageNumber(collector.position.x, collector.position.y - 48, `+${stored}元`, 'heal');
+      if (stored > 0 && collector.talentYangHongQuickPocket) {
+        const cooldown = this.cooldowns[playerId];
+        if (cooldown && cooldown.normal > 0) cooldown.normal = Math.max(0, cooldown.normal - 1000);
+      }
+      this.addCombatLog(stored > 0 ? `${collector.name} 撿到${stored}元，錢包 ${collector.yangWallet}/${cap}。` : '錢包已滿，這枚錢幣沒有增加金額。', playerId, 'status');
     }
 
     for (const playerId of ['player1', 'player2']) {

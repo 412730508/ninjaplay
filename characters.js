@@ -1025,7 +1025,7 @@ const characters = {
     position: { x: 100, y: 300 },
     facing: 1,
     isRanged: false,
-    passive: { name: '零錢滿地', description: '造成傷害時，至多每秒掉落一枚7–9元錢幣；雙方都能撿，對手撿到會直接消失。錢包上限40元。', dropCooldown: 1000, minCoins: 7, maxCoins: 9, walletCap: 40 },
+    passive: { name: '零錢滿地', description: '每次造成傷害均有33%機率掉落7–9元錢幣，只有揚紘本人能撿取；錢包上限40元。', dropChance: 0.33, minCoins: 7, maxCoins: 9, walletCap: 40 },
     skills: {
       normal: {
         code: SKILL_CODES.YANGHONG_COFFEE,
@@ -1046,7 +1046,7 @@ const characters = {
         code: SKILL_CODES.YANGHONG_TONGUE,
         name: '瘋狂舔拭者',
         type: '前方抓取／吞噬',
-        cooldown: 24000,
+        cooldown: 15000,
         range: 300,
         width: 86,
         windup: 450,
