@@ -10080,6 +10080,12 @@
           this.addCombatLog('舌頭撲空！零錢保留，奧義進入冷卻。', playerId, 'status');
           continue;
         }
+        if (!this.canYangHongCapture(target)) {
+          player.yangUltimate = null;
+          this.addVisualEffect(player.position.x + ultimate.facing * 30, player.position.y - 40, 'tongue_miss', '〰');
+          this.addCombatLog('對手正處於無法吞入的狀態，吞噬沒有成功。', playerId, 'status');
+          continue;
+        }
         const seconds = Math.min(ultimate.skill.maxSeconds, Math.floor((player.yangWallet || 0) / ultimate.skill.costPerSecond));
         if (seconds < 1) {
           player.yangUltimate = null;
@@ -10091,9 +10097,10 @@
         ultimate.captureDistance = dx;
         ultimate.endsAt = now + seconds * 1000;
         ultimate.nextTick = now + 1000;
+        const targetSide = ultimate.target === this.players.player1 ? 'player1' : 'player2';
+        this.interruptYangHongTarget(ultimate.target, targetSide);
         ultimate.target.yangSwallowedBy = playerId;
         ultimate.target.effects.blocking = 0;
-        const targetSide = ultimate.target === this.players.player1 ? 'player1' : 'player2';
         if (this.gameState.defending[targetSide]) this.gameState.defending[targetSide].active = false;
         ultimate.target.position.x = player.position.x + ultimate.facing * 25;
         ultimate.target.position.y = player.position.y - 28;
@@ -10119,6 +10126,83 @@
           this.finishYangSwallow(playerId, false);
         }
       }
+    }
+  }
+
+  canYangHongCapture(target) {
+    if (!target || target.hp <= 0 || target.isExecuting) return false;
+    const now = Date.now();
+    if ((target.effects?.invulnerable || 0) <= now) return true;
+
+    // The Exile Blade is vulnerable while its kunai is travelling. Once the
+    // kunai connects, the execution's invulnerability makes capture impossible.
+    return target.id === 'exileblade' && this.gameState.projectiles.some(projectile =>
+      projectile.type === 'shadowKunai' && projectile.owner === target
+    );
+  }
+
+  interruptYangHongTarget(target, targetSide) {
+    if (!target) return;
+
+    // Cancel channel/wind-up attacks before their delayed callbacks can resolve.
+    if (target.flameGodBladeTimer) {
+      clearTimeout(target.flameGodBladeTimer);
+      target.flameGodBladeTimer = null;
+      target.effects.casting = 0;
+    }
+    if (target.iaiFlashTimer) {
+      clearTimeout(target.iaiFlashTimer);
+      target.iaiFlashTimer = null;
+      target.effects.casting = 0;
+    }
+    if (target.spiritChargeStart) {
+      if (target.spiritChargeTimer) clearTimeout(target.spiritChargeTimer);
+      target.spiritChargeTimer = null;
+      target.spiritChargeStart = null;
+      target.effects.casting = 0;
+      this.gameState.effects = (this.gameState.effects || []).filter(effect => effect.casterKey !== targetSide || effect.type !== 'judgment_indicator');
+    }
+    const canon = this.gameState.shamisenCanon?.[targetSide];
+    if (canon?.active) {
+      canon.active = false;
+      target.effects.casting = 0;
+    }
+    if (target.id === 'stephen' && target.stephenUltimate) {
+      target.stephenUltimate = null;
+      target.effects.casting = 0;
+    }
+
+    // Blood-devour tethers are owned by the caster, so clear either side of
+    // the relationship when the caster or tethered target is swallowed.
+    for (const player of [this.players.player1, this.players.player2]) {
+      const curse = player?.effects?.bloodCurseTether;
+      if (curse && (player === target || curse.target === target)) player.effects.bloodCurseTether = null;
+    }
+
+    if (this.gameState.adjudicatorDomain?.ownerId === targetSide) {
+      this.gameState.adjudicatorDomain = null;
+      for (const player of [this.players.player1, this.players.player2]) {
+        if (player) player.effects.verdictSlowApplied = false;
+      }
+    }
+
+    if (target.id === 'kage') {
+      this.gameState.shadowClones[targetSide] = [];
+      if (this.gameState.shadowMimic) this.gameState.shadowMimic[targetSide] = null;
+    }
+    if (target.id === 'forgefire') {
+      this.gameState.hazards = (this.gameState.hazards || []).filter(hazard =>
+        hazard.type !== 'fire_trail' || hazard.ownerSide !== targetSide
+      );
+    }
+
+    // If swallowed during kunai travel, remove the projectile before it can
+    // trigger the invulnerable multi-hit execution. Other invulnerable phases
+    // are rejected by canYangHongCapture above.
+    if (target.id === 'exileblade') {
+      this.gameState.projectiles = (this.gameState.projectiles || []).filter(projectile =>
+        projectile.type !== 'shadowKunai' || projectile.owner !== target
+      );
     }
   }
 
@@ -12342,8 +12426,10 @@
         this.addCombatLog(`${player.name} 正在蓄力 炎神巨刃！`, playerSide, 'status');
         this.addVisualEffect(player.position.x, player.position.y - 42, 'fire_charge', '🔥');
 
-        setTimeout(() => {
-          if (this.gameState.winner || player.hp <= 0 || opponent.hp <= 0 || player.effects.stunned > Date.now()) return;
+        if (player.flameGodBladeTimer) clearTimeout(player.flameGodBladeTimer);
+        player.flameGodBladeTimer = setTimeout(() => {
+          player.flameGodBladeTimer = null;
+          if (this.gameState.winner || player.hp <= 0 || opponent.hp <= 0 || player.yangSwallowedBy || player.effects.stunned > Date.now()) return;
 
           player.effects.casting = 0;
           const strikeRange = skill.range || 400;
@@ -12371,6 +12457,7 @@
             tickRate: skill.trailTickRate || 1000,
             lastTickTime: Date.now(),
             createdAt: Date.now(),
+            ownerSide: playerId,
             targetRef: opponent
           });
           this.addVisualEffect(player.position.x + player.facing * 100, player.position.y - 30, 'flame_god_blade', '🗡️');
@@ -15226,8 +15313,10 @@
     this.addCombatLog(`正在蓄力..`, playerSide, 'status');
     this.addVisualEffect(player.position.x, player.position.y, 'channel', '⚔️');
 
-    setTimeout(() => {
-      if (!this.players[playerId] || this.gameState.winner) return;
+    if (player.iaiFlashTimer) clearTimeout(player.iaiFlashTimer);
+    player.iaiFlashTimer = setTimeout(() => {
+      player.iaiFlashTimer = null;
+      if (!this.players[playerId] || this.gameState.winner || player.yangSwallowedBy) return;
 
       // ??蝯?嚗蝘餃撠?甇?餈???
       const preIaiX = player.position.x;
