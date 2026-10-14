@@ -153,10 +153,70 @@
         // Avoid a generic burst that hides the griddle and smoke silhouettes.
         break;
       }
+      case 'YH_001': // 楊紘・咖啡拉花
+        this.createYangHongCoffeeEffect(x, y, facing);
+        break;
+      case 'YH_002': // 楊紘・瘋狂舔拭者
+        this.createYangHongTongueEffect(x, y, facing);
+        break;
       default:
         console.warn('未處理的技能特效代碼：', skillCode);
     }
 
+  }
+
+  createYangHongCoffeeEffect(x, y, facing = 1) {
+    const direction = facing < 0 ? -1 : 1;
+    // Coffee crema and a short, readable pour stream; the gameplay's sustained
+    // channel supplies repeated ticks, so this cue stays compact rather than noisy.
+    this.particles.push({
+      x: x + direction * 24, y: y - 38, radius: 3, maxRadius: 19,
+      color: '#D99A55', life: 300, maxLife: 300, alpha: 0.8,
+      type: 'coffee_crema_ring'
+    });
+    this.particles.push({
+      x: x + direction * 18, y: y - 54, endX: x + direction * 55,
+      endY: y - 33, width: 5, color: '#C47A3B', life: 260,
+      maxLife: 260, alpha: 0.8, type: 'coffee_pour_stream'
+    });
+    for (let i = 0; i < 5; i++) {
+      const progress = (i + 1) / 6;
+      this.particles.push({
+        x: x + direction * (22 + progress * 31),
+        y: y - 50 + progress * 18 + (Math.random() - 0.5) * 7,
+        vx: direction * (10 + Math.random() * 20),
+        vy: -15 - Math.random() * 22,
+        size: 2 + Math.random() * 2,
+        color: i % 2 ? '#F5D7A0' : '#8D4E2B',
+        life: 280 + Math.random() * 120, maxLife: 400,
+        alpha: 0.9, type: 'coffee_splash'
+      });
+    }
+  }
+
+  createYangHongTongueEffect(x, y, facing = 1) {
+    const direction = facing < 0 ? -1 : 1;
+    // A forked, tapered lash silhouette is more legible than a generic burst.
+    const originX = x + direction * 20;
+    const originY = y - 42;
+    const tipX = x + direction * 108;
+    const tipY = y - 46;
+    this.particles.push({
+      x: originX, y: originY, endX: tipX, endY: tipY,
+      width: 7, color: '#F06B88', life: 260, maxLife: 260,
+      alpha: 0.95, type: 'tongue_lash'
+    });
+    this.particles.push({
+      x: originX + direction * 10, y: originY - 5,
+      endX: tipX - direction * 8, endY: tipY - 7,
+      width: 2, color: '#FFD0D7', life: 230, maxLife: 230,
+      alpha: 0.95, type: 'tongue_highlight'
+    });
+    this.particles.push({
+      x: tipX, y: tipY, radius: 3, maxRadius: 22,
+      color: '#FF8CA2', life: 300, maxLife: 300, alpha: 0.8,
+      type: 'tongue_impact_ring'
+    });
   }
 
   // 八名基礎忍者的普攻不再共用同一種命中火花；這些效果只負責演出，不改變判定。

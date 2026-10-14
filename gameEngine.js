@@ -11828,6 +11828,9 @@
       this.cooldowns[playerId].normal = now;
       this.clearSkillReady(playerId, 'normal');
       this.playAnimation(player, 'coffeePour');
+      if (typeof particleSystem !== 'undefined' && particleSystem) {
+        particleSystem.createSkillEffect(selectedSkill.code, player.position.x, player.position.y, player.facing);
+      }
       return;
     }
 
@@ -11983,7 +11986,7 @@
     this.playSkillAnimation(player, skill.code);
     
     // ?萄遣??賜??
-    if (!['stephen', 'yanghong'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+    if (player.id !== 'stephen' && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createSkillEffect(skill.code, player.position.x, player.position.y, player.facing);
     }
 

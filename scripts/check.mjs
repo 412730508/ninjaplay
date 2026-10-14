@@ -208,6 +208,19 @@ try {
   for (const code of Object.values(skillCodes)) {
     particleSystem.createSkillEffect(code, 320, 280, 1);
   }
+  for (const [code, expectedTypes] of [
+    ['YH_001', ['coffee_crema_ring', 'coffee_pour_stream', 'coffee_splash']],
+    ['YH_002', ['tongue_lash', 'tongue_highlight', 'tongue_impact_ring']]
+  ]) {
+    particleSystem.particles = [];
+    particleSystem.createSkillEffect(code, 320, 280, -1);
+    for (const type of expectedTypes) {
+      if (!particleSystem.particles.some(particle => particle.type === type)) {
+        throw new Error(`${code} is missing its authored effect component: ${type}`);
+      }
+    }
+    particleSystem.render(renderContext);
+  }
   for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen']) {
     particleSystem.createElementalBasicAttackEffect(elementalId, 320, 280, 1, 80);
     particleSystem.createElementalImpactEffect(elementalId, 400, 280);
@@ -308,6 +321,212 @@ try {
   }
   for (let frame = 0; frame < 30 && duel.gameState.projectiles.length; frame++) duel.updateProjectiles();
   if (foe.hp !== facingDamage - 15 || foe.effects.slowMultiplier > 0.02) throw new Error('Stephen flying steak did not apply full damage and slow on impact');
+
+  // Exercise Yang Hong's complete ultimate lifecycle against live target states.
+  const startYangCapture = (targetId, configure = () => {}) => {
+    const game = new NinjaGame();
+    game.selectCharacters('yanghong', targetId);
+    game.addVisualEffect = () => {};
+    game.addDamageNumber = () => {};
+    game.addCombatLog = () => {};
+    const attacker = game.players.player1;
+    const target = game.players.player2;
+    attacker.position.x = 350;
+    attacker.position.y = 400;
+    attacker.facing = 1;
+    attacker.yangWallet = 40;
+    target.position.x = 470;
+    target.position.y = 400;
+    configure(game, attacker, target);
+    game.useSkill('player1', 'ultimate');
+    if (attacker.yangUltimate?.phase !== 'windup') throw new Error(`Yang Hong ultimate did not enter wind-up against ${targetId}`);
+    simulatedNow += attacker.skills.ultimate.windup;
+    game.updateYangHongSystems();
+    return { game, attacker, target };
+  };
+
+  const interruptChecks = [
+    ['forgefire', (game, _attacker, target) => {
+      target.flameGodBladeTimer = 77;
+      target.effects.casting = simulatedNow + 700;
+      game.gameState.hazards.push({ type: 'fire_trail', ownerSide: 'player2' }, { type: 'fire_trail', ownerSide: 'player1' });
+    }, (game, _attacker, target) => {
+      if (target.flameGodBladeTimer !== null || target.effects.casting !== 0) throw new Error('Swallow did not cancel Flame God Blade charge');
+      if (game.gameState.hazards.length !== 1 || game.gameState.hazards[0].ownerSide !== 'player1') throw new Error('Swallow did not remove only the swallowed Forgefire trail');
+    }],
+    ['ronin', (_game, _attacker, target) => {
+      target.iaiFlashTimer = 78;
+      target.effects.casting = simulatedNow + 500;
+    }, (_game, _attacker, target) => {
+      if (target.iaiFlashTimer !== null || target.effects.casting !== 0) throw new Error('Swallow did not cancel Iai Flash charge');
+    }],
+    ['rei', (game, _attacker, target) => {
+      target.spiritChargeStart = simulatedNow - 300;
+      target.spiritChargeTimer = 79;
+      target.effects.casting = simulatedNow + 900;
+      game.gameState.effects.push({ casterKey: 'player2', type: 'judgment_indicator' });
+    }, (game, _attacker, target) => {
+      if (target.spiritChargeStart !== null || target.spiritChargeTimer !== null || target.effects.casting !== 0) throw new Error('Swallow did not cancel Spirit Judgment charge');
+      if (game.gameState.effects.some(effect => effect.casterKey === 'player2' && effect.type === 'judgment_indicator')) throw new Error('Swallow left the Spirit Judgment indicator active');
+    }],
+    ['shamisen', (game, _attacker, target) => {
+      game.gameState.shamisenCanon ||= { player1: {}, player2: {} };
+      game.gameState.shamisenCanon.player2 = { active: true, endsAt: simulatedNow + 3000 };
+      target.effects.casting = simulatedNow + 3000;
+    }, (game, _attacker, target) => {
+      if (game.gameState.shamisenCanon.player2.active || target.effects.casting !== 0) throw new Error('Swallow did not stop Deadly Canon');
+    }],
+    ['stephen', (_game, _attacker, target) => {
+      target.stephenForm = 'smoke';
+      target.stephenUltimate = { form: 'smoke', endsAt: simulatedNow + 3000 };
+      target.effects.casting = simulatedNow + 3000;
+    }, (_game, _attacker, target) => {
+      if (target.stephenUltimate !== null || target.effects.casting !== 0) throw new Error('Swallow did not stop Stephen smoke ultimate');
+    }],
+    ['warlock', (_game, _attacker, target) => {
+      target.effects.bloodCurseTether = { target: target, endsAt: simulatedNow + 3000 };
+    }, (_game, _attacker, target) => {
+      if (target.effects.bloodCurseTether !== null) throw new Error('Swallow did not break the Blood Devour tether when its owner was captured');
+    }],
+    ['adjudicator', (game, attacker, target) => {
+      game.gameState.adjudicatorDomain = { ownerId: 'player2', x: 470, radius: 250 };
+      target.effects.verdictSlowApplied = true;
+      attacker.effects.verdictSlowApplied = true;
+    }, (game, attacker, target) => {
+      if (game.gameState.adjudicatorDomain !== null || target.effects.verdictSlowApplied || attacker.effects.verdictSlowApplied) throw new Error('Swallow did not remove the captured Adjudicator domain');
+    }],
+    ['kage', game => {
+      game.gameState.shadowClones.player2 = [{ hp: 5 }];
+      game.gameState.shadowMimic.player2 = { x: 300, y: 200 };
+    }, game => {
+      if (game.gameState.shadowClones.player2.length || game.gameState.shadowMimic.player2 !== null) throw new Error('Swallow did not clear Shadow clones and mimic');
+    }]
+  ];
+  for (const [targetId, configure, verify] of interruptChecks) {
+    const result = startYangCapture(targetId, configure);
+    if (result.attacker.yangUltimate?.phase !== 'swallow' || result.target.yangSwallowedBy !== 'player1') {
+      throw new Error(`Yang Hong did not swallow eligible ${targetId}`);
+    }
+    verify(result.game, result.attacker, result.target);
+  }
+
+  // Tethers are cleared both when the captured fighter owns the tether and when
+  // the captured fighter is the tether's victim.
+  {
+    const { attacker, target } = startYangCapture('katon', (game, _yang, foe) => {
+      foe.effects.bloodCurseTether = null;
+      game.players.player1.effects.bloodCurseTether = { target: foe, endsAt: simulatedNow + 3000 };
+    });
+    if (attacker.effects.bloodCurseTether !== null || target.yangSwallowedBy !== 'player1') throw new Error('Swallow did not break a Blood Devour tether targeting the captured fighter');
+  }
+
+  // Special invulnerable/execution states, insufficient funds, and a wind-up
+  // that loses range must fail cleanly without spending coins or applying a grab.
+  {
+    const { attacker, target } = startYangCapture('azure_disciple', (_game, _yang, foe) => {
+      foe.effects.invulnerable = simulatedNow + 5000;
+    });
+    if (attacker.yangUltimate !== null || target.yangSwallowedBy || attacker.yangWallet !== 40) throw new Error('Yang Hong captured an invulnerable target or spent wallet funds on a rejected grab');
+  }
+  {
+    const game = new NinjaGame();
+    game.selectCharacters('yanghong', 'katon');
+    game.addCombatLog = () => {};
+    const attacker = game.players.player1;
+    attacker.yangWallet = 19;
+    game.useSkill('player1', 'ultimate');
+    if (attacker.yangUltimate || game.cooldowns.player1.ultimate !== 0) throw new Error('Yang Hong started the ultimate without the minimum 20 coins');
+  }
+  {
+    const { attacker, target } = startYangCapture('katon', (_game, _yang, foe) => { foe.position.x = 900; });
+    if (attacker.yangUltimate !== null || target.yangSwallowedBy || attacker.yangWallet !== 40) throw new Error('Out-of-range wind-up did not resolve as a clean miss');
+  }
+  {
+    const { attacker, target } = startYangCapture('exileblade', (_game, _yang, foe) => { foe.isExecuting = true; });
+    if (attacker.yangUltimate !== null || target.yangSwallowedBy) throw new Error('Yang Hong captured a target during the Exile Blade execution phase');
+  }
+
+  // The listed exception permits capture only while Exile Blade's kunai is in
+  // flight; capture then removes the projectile before its hit callback can land.
+  {
+    const { game, attacker, target } = startYangCapture('exileblade', (duel, _yang, foe) => {
+      foe.effects.invulnerable = simulatedNow + 3000;
+      duel.gameState.projectiles.push({ type: 'shadowKunai', owner: foe });
+    });
+    if (attacker.yangUltimate?.phase !== 'swallow' || game.gameState.projectiles.some(projectile => projectile.type === 'shadowKunai' && projectile.owner === target)) {
+      throw new Error('In-flight Exile Blade kunai did not allow and safely cancel the capture');
+    }
+  }
+
+  // Complete the regular catch -> per-second cost/damage -> spit lifecycle and
+  // verify the legacy Coffee cooldown-reset behavior survives the interruption work.
+  {
+    const { game, attacker, target } = startYangCapture('katon');
+    game.cooldowns.player1.normal = simulatedNow + 5000;
+    const hpBefore = target.hp;
+    simulatedNow += 1000;
+    game.updateYangHongSystems();
+    if (attacker.yangWallet !== 20 || target.hp !== hpBefore - 7 || target.yangSwallowedBy !== 'player1') throw new Error('Yang Hong swallow tick did not charge 20 coins and deal 7 damage');
+    simulatedNow += 1000;
+    game.updateYangHongSystems();
+    if (attacker.yangUltimate !== null || target.yangSwallowedBy || game.cooldowns.player1.normal !== 0) throw new Error('Yang Hong did not spit the target out and reset Coffee Art cooldown');
+    if (target.effects.stunned <= simulatedNow) throw new Error('Yang Hong spit did not apply its brief landing stun');
+  }
+
+  // P2 must be able to perform the same full interaction while facing left.
+  {
+    const game = new NinjaGame();
+    game.selectCharacters('katon', 'yanghong');
+    game.addVisualEffect = () => {};
+    game.addDamageNumber = () => {};
+    game.addCombatLog = () => {};
+    const target = game.players.player1;
+    const attacker = game.players.player2;
+    target.position.x = 350;
+    target.position.y = 400;
+    attacker.position.x = 470;
+    attacker.position.y = 400;
+    attacker.facing = -1;
+    attacker.yangWallet = 40;
+    game.useSkill('player2', 'ultimate');
+    simulatedNow += attacker.skills.ultimate.windup;
+    game.updateYangHongSystems();
+    if (attacker.yangUltimate?.phase !== 'swallow' || target.yangSwallowedBy !== 'player2') throw new Error('P2 could not capture a target while facing left');
+    simulatedNow += 2000;
+    game.updateYangHongSystems();
+    if (attacker.yangUltimate !== null || target.yangSwallowedBy || game.cooldowns.player2.normal !== 0) throw new Error('P2 swallow did not finish and reset the normal skill');
+  }
+
+  // Existing multi-hit Coffee Art remains usable and resolves its full stream.
+  {
+    const emittedYangHongEffects = [];
+    engineContext.particleSystem = { createSkillEffect: (...args) => emittedYangHongEffects.push(args) };
+    const game = new NinjaGame();
+    game.selectCharacters('yanghong', 'katon');
+    game.addVisualEffect = () => {};
+    game.addDamageNumber = () => {};
+    game.addCombatLog = () => {};
+    const attacker = game.players.player1;
+    const target = game.players.player2;
+    attacker.position.x = 350;
+    attacker.position.y = 400;
+    attacker.facing = 1;
+    attacker.yangWallet = 40;
+    target.position.x = 420;
+    target.position.y = 400;
+    const hpBefore = target.hp;
+    game.useSkill('player1', 'normal');
+    for (let hit = 1; hit <= attacker.skills.normal.maxHits; hit++) {
+      simulatedNow += attacker.skills.normal.tickRate;
+      game.updateYangHongSystems();
+    }
+    if (attacker.yangCoffee || target.hp !== hpBefore - attacker.skills.normal.maxHits * attacker.skills.normal.tickDamage) {
+      throw new Error('Coffee Art multi-hit stream did not complete at its configured hit cap');
+    }
+    if (!emittedYangHongEffects.some(([code]) => code === 'YH_001')) throw new Error('Coffee Art did not dispatch its authored particles in a real skill activation');
+    game.useSkill('player1', 'ultimate');
+    if (!emittedYangHongEffects.some(([code]) => code === 'YH_002')) throw new Error('Tongue ultimate did not dispatch its authored particles in a real skill activation');
+  }
 } catch (error) {
   console.error(`Skill integration check failed: ${error.message}`);
   failed = true;
