@@ -383,13 +383,13 @@
         <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
     </footer>
 
-    <script src="characters.js?v=yanghong-coins-every-third-1"></script>
+    <script src="characters.js?v=gladiator-beast-school-1"></script>
     <script src="balance.js?v=balance-0.3.1"></script>
     <script src="talents.js?v=yanghong-talent-1"></script>
-    <script src="particleSystem.js?v=yanghong-coffee-tongue-vfx-1"></script>
+    <script src="particleSystem.js?v=gladiator-beast-vfx-1"></script>
     <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
-    <script src="stickmanAnimator.js?v=yanghong-head-3"></script>
-    <script src="gameEngine.js?v=yanghong-wallet-corner-parry-dot-1"></script>
+    <script src="stickmanAnimator.js?v=gladiator-beast-school-1"></script>
+    <script src="gameEngine.js?v=gladiator-beast-arena-1"></script>
     <script src="aiController.js"></script>
     <script>
         // 全局遊戲引擎實例
@@ -506,7 +506,7 @@
         }
 
         function tournamentCharacterIds() {
-            const order = id => id === 'forgefire' ? 1 : id === 'yanghong' ? 2 : 0;
+            const order = id => id === 'forgefire' ? 1 : id === 'yanghong' ? 2 : id === 'gladiator' ? 3 : 0;
             return Object.keys(characters).sort((a, b) => order(a) - order(b));
         }
 
@@ -1003,7 +1003,8 @@
             puppeteer: 'puppet',
             azure_disciple: 'lightning',
             shamisen: 'sound',
-            stephen: 'fire'
+            stephen: 'fire',
+            gladiator: 'beast'
         };
         
         const skillIcons = {
@@ -1027,7 +1028,8 @@
             puppeteer: { normal: '🎭', ultimate: '💨' },
             azure_disciple: { normal: '⚡', ultimate: '🌩️' },
             shamisen: { normal: '🎼', ultimate: '🎵' },
-            stephen: { normal: '🥩', ultimate: '🔥' }
+            stephen: { normal: '🥩', ultimate: '🔥' },
+            gladiator: { normal: '🛡️', ultimate: '🏛️' }
         };
 
         const characterIcons = {
@@ -1052,7 +1054,8 @@
             azure_disciple: '⚡',
             shamisen: '🎸',
             stephen: '🥩',
-            yanghong: '☕'
+            yanghong: '☕',
+            gladiator: '🏛️'
         };
 
         // Player-supplied pixel portraits for the first ten roster slots.
@@ -1104,7 +1107,8 @@
             azure_disciple: { primary: '蓄能爆發', secondary: '高機動刺殺' },
             shamisen: { primary: '遠距控場', secondary: '節奏消耗' },
             stephen: { primary: '坦克控場', secondary: '雙型態續戰' },
-            yanghong: { primary: '資源滾雪球', secondary: '抓取壓制' }
+            yanghong: { primary: '資源滾雪球', secondary: '抓取壓制' },
+            gladiator: { primary: '狂戰爆發', secondary: '領域封鎖' }
         };
 
         function formatCooldown(ms) {
@@ -1155,7 +1159,7 @@
             Object.entries(characters)
                 // The newest challenger always occupies the final roster plate.
                 .sort(([firstId], [secondId]) => {
-                    const order = id => id === 'forgefire' ? 1 : id === 'yanghong' ? 2 : 0;
+                    const order = id => id === 'forgefire' ? 1 : id === 'yanghong' ? 2 : id === 'gladiator' ? 3 : 0;
                     return order(firstId) - order(secondId);
                 })
                 .forEach(([, char]) => {
@@ -2567,7 +2571,7 @@
             
             Object.entries(characters)
                 .sort(([firstId], [secondId]) => {
-                    const order = id => id === 'forgefire' ? 1 : id === 'yanghong' ? 2 : 0;
+                    const order = id => id === 'forgefire' ? 1 : id === 'yanghong' ? 2 : id === 'gladiator' ? 3 : 0;
                     return order(firstId) - order(secondId);
                 })
                 .forEach(([id, char]) => {

@@ -64,6 +64,11 @@
         secondary: '#FF5A1F',
         accent: '#FFD166'
       },
+      gladiator: { // 猛獸派角鬥者：暗鐵、競技場金與血紅
+        primary: '#3B3030',
+        secondary: '#C58B3B',
+        accent: '#B93636'
+      },
       suijin: { // 瘞游?? - ?蝟?
         primary: '#2196F3',   // ?
         secondary: '#03A9F4', // 瘛箄?

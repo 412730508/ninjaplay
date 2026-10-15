@@ -86,7 +86,9 @@ const SKILL_CODES = {
   STEPHEN_SMOKE: 'STP_003',
   STEPHEN_BREATH: 'STP_004',
   YANGHONG_COFFEE: 'YH_001',
-  YANGHONG_TONGUE: 'YH_002'
+  YANGHONG_TONGUE: 'YH_002',
+  GLADIATOR_WILL: 'GLD_001',
+  GLADIATOR_CAESAR: 'GLD_002'
 };
 
 const STEPHEN_STEAK_SKILLS = {
@@ -1054,6 +1056,56 @@ const characters = {
         damagePerSecond: 7,
         maxSeconds: 2,
         swallowedMoveMultiplier: 0.3
+      }
+    }
+  },
+
+  gladiator: {
+    id: 'gladiator',
+    name: '束縛角鬥者',
+    organization: '猛獸派',
+    maxHp: 100,
+    hp: 100,
+    attackDamage: 3,
+    attackSpeed: 900,
+    attackRange: 65,
+    moveSpeed: 270,
+    position: { x: 100, y: 300 },
+    facing: 1,
+    passive: {
+      name: '血腥殺戮',
+      description: '每第二次普攻命中追加3點傷害；每次命中累積一格，集滿4格進入5秒狂戰，攻速400毫秒、傷害5。命中普攻使鬥士意志冷卻減少0.5秒。',
+      bonusHitEvery: 2,
+      bonusDamage: 3,
+      energyPerHit: 1,
+      energyToBerserk: 4,
+      berserkDuration: 5000,
+      berserkAttackSpeed: 400,
+      berserkDamage: 5,
+      willCooldownReduction: 500
+    },
+    skills: {
+      normal: {
+        code: SKILL_CODES.GLADIATOR_WILL,
+        name: '鬥士意志',
+        type: '防禦／加速',
+        cooldown: 15000,
+        duration: 3000,
+        damageReduction: 0.6,
+        moveMultiplier: 1.1
+      },
+      ultimate: {
+        code: SKILL_CODES.GLADIATOR_CAESAR,
+        name: '誰是凱薩',
+        type: '前空翻／震擊／角鬥場',
+        cooldown: 20000,
+        leapDistance: 150,
+        leapDuration: 500,
+        leapHeight: 78,
+        damage: 8,
+        impactRadius: 150,
+        arenaRadius: 100,
+        arenaDuration: 4000
       }
     }
   }

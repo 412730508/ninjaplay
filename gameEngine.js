@@ -42,6 +42,7 @@
       combatFlourishes: [], // 共用戰鬥演出：普攻斬擊、技能起手與命中爆發
       tournamentPickups: { enabled: false, nextSpawnAt: 0, warning: null, items: [] },
       yangHongCoins: [],
+      gladiatorArena: null,
       // ?儭??啣?嚗?折?蝳衣頂蝯?
       defending: {
         player1: { 
@@ -229,6 +230,7 @@
     this.updateShamisenSystems(deltaTime);
     this.updateStephenSystems();
     this.updateYangHongSystems();
+    this.updateGladiatorSystems();
 
     // 道場鬥技盃：每二十秒產生一次補給，並提前五秒標出落點。
     this.updateTournamentPickups();
@@ -445,6 +447,7 @@
     // 皜脫?????
     this.renderProjectiles();
     this.renderYangHongSystems();
+    this.renderGladiatorArena();
     
     // ? 皜脫??琿
     this.renderTraps();
@@ -572,7 +575,8 @@
       exileblade: ['#66F5F3', '#006B75', '#E5FFFF'],
       puppeteer: ['#D6A2FF', '#4A148C', '#F3E5F5'],
       azure_disciple: ['#75D9FF', '#0047AB', '#E1F5FE'],
-      shamisen: ['#FFD180', '#A74E2D', '#FFF0D6']
+      shamisen: ['#FFD180', '#A74E2D', '#FFF0D6'],
+      gladiator: ['#F3B94F', '#63352F', '#FFF0B0']
     };
     return palettes[characterId] || ['#FFFFFF', '#6B7280', '#FFFFFF'];
   }
@@ -605,7 +609,7 @@
 
   // 基礎忍者的戰鬥筆觸各自獨立，避免所有角色最後都只剩同一種彩色圓環。
   renderElementalCombatFlourish(ctx, effect, progress, fade) {
-    const elemental = ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen'];
+    const elemental = ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen', 'gladiator'];
     if (!elemental.includes(effect.element)) return false;
 
     const isImpact = effect.kind === 'impact';
@@ -1118,6 +1122,41 @@
       if (isImpact) { ctx.globalAlpha = fade * 0.7; ctx.beginPath(); ctx.ellipse(x, y - 15, 18 + progress * 32, 6 + progress * 13, 0, 0, Math.PI * 2); ctx.stroke(); }
       return true;
     }
+
+    if (effect.element === 'gladiator') {
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 13 * power;
+      ctx.globalAlpha = fade * 0.92;
+      if (!isImpact) {
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(x + facing * 8, y + 17);
+        ctx.lineTo(x + facing * 43, y - 16);
+        ctx.lineTo(x + facing * 66, y + 8);
+        ctx.stroke();
+        ctx.strokeStyle = effect.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x + facing * 47, y - 2, 13 + progress * 10, Math.PI, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = effect.highlight;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(x, y + 15, 12 + progress * 33, 8 + progress * 13, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = effect.color;
+        ctx.lineWidth = 2;
+        for (let mark = -1; mark <= 1; mark++) {
+          ctx.beginPath();
+          ctx.moveTo(x + mark * 15, y + 20);
+          ctx.lineTo(x + mark * 23, y - 4);
+          ctx.stroke();
+        }
+      }
+      return true;
+    }
     return true;
   }
 
@@ -1409,16 +1448,26 @@
             const progress = (now - player._knockupAnim.startTime) / player._knockupAnim.duration;
             knockupOffsetY = -Math.sin(progress * Math.PI) * 60; // ?蝺???0px
           }
-          stickmanAnimator.drawStickman(
-            this.ctx, 
-            player.position.x, 
-            player.position.y + knockupOffsetY, 
-            currentFrame, 
-            player.id, 
-            player.facing,
-            1,
-            player.stephenForm
-          );
+          if (player.gladiatorLeap) {
+            const leap = player.gladiatorLeap;
+            const progress = Math.max(0, Math.min(1, (Date.now() - leap.startedAt) / leap.skill.leapDuration));
+            this.ctx.save();
+            this.ctx.translate(player.position.x, player.position.y - 24);
+            this.ctx.rotate(leap.facing * progress * Math.PI * 2);
+            stickmanAnimator.drawStickman(this.ctx, 0, 24, currentFrame, player.id, player.facing);
+            this.ctx.restore();
+          } else {
+            stickmanAnimator.drawStickman(
+              this.ctx,
+              player.position.x,
+              player.position.y + knockupOffsetY,
+              currentFrame,
+              player.id,
+              player.facing,
+              1,
+              player.stephenForm
+            );
+          }
         }
         
         if (player.effects.bloodShield > 0) {
@@ -8973,7 +9022,9 @@
       [SKILL_CODES.STEPHEN_SMOKE]: 'stephenBreath',
       [SKILL_CODES.STEPHEN_BREATH]: 'stephenBreath',
       [SKILL_CODES.YANGHONG_COFFEE]: 'coffeePour',
-      [SKILL_CODES.YANGHONG_TONGUE]: 'tongueLash'
+      [SKILL_CODES.YANGHONG_TONGUE]: 'tongueLash',
+      [SKILL_CODES.GLADIATOR_WILL]: 'gladiatorWill',
+      [SKILL_CODES.GLADIATOR_CAESAR]: 'gladiatorFlip'
     };
     
     const animation = animationMap[skillCode] || 'idle';
@@ -10017,6 +10068,103 @@
       const hit = this.dealDamage(opponent, coffee.skill.tickDamage, playerId, { isDamageOverTime: true });
       if (hit.hit) this.applyStephenSlow(opponent, coffee.skill.slowMultiplier, coffee.skill.slowDuration, now);
     }
+  }
+
+  updateGladiatorSystems() {
+    const now = Date.now();
+    const arena = this.gameState.gladiatorArena;
+    if (arena) {
+      if (now >= arena.expiresAt || !this.players[arena.targetId] || this.players[arena.targetId].hp <= 0) {
+        this.gameState.gladiatorArena = null;
+      } else {
+        const target = this.players[arena.targetId];
+        const dx = target.position.x - arena.x;
+        const dy = target.position.y - arena.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance > arena.radius) {
+          const scale = arena.radius / distance;
+          target.position.x = arena.x + dx * scale;
+          target.position.y = arena.y + dy * scale;
+        }
+      }
+    }
+
+    ['player1', 'player2'].forEach(playerId => {
+      const player = this.players[playerId];
+      if (!player || player.id !== 'gladiator') return;
+
+      if (player.gladiatorBerserkUntil > now) {
+        player.attackDamage = player.passive.berserkDamage;
+        player.attackSpeed = player.passive.berserkAttackSpeed;
+      } else if (player.gladiatorBerserkUntil) {
+        player.gladiatorBerserkUntil = 0;
+        player.gladiatorEnergy = 0;
+        player.attackDamage = 3;
+        player.attackSpeed = 900;
+        this.addCombatLog(`${player.name} 的狂戰狀態結束。`, playerId, 'status');
+      }
+
+      const leap = player.gladiatorLeap;
+      if (!leap) return;
+      const progress = Math.max(0, Math.min(1, (now - leap.startedAt) / leap.skill.leapDuration));
+      player.position.x = leap.startX + (leap.endX - leap.startX) * progress;
+      player.position.y = leap.startY - Math.sin(progress * Math.PI) * leap.skill.leapHeight;
+      if (progress < 1) return;
+
+      player.position.x = leap.endX;
+      player.position.y = leap.startY;
+      player.effects.invulnerable = Math.max(leap.previousInvulnerable, now);
+      player.gladiatorLeap = null;
+
+      const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+      const opponent = this.players[opponentId];
+      const distance = opponent ? Math.hypot(opponent.position.x - leap.endX, opponent.position.y - leap.startY) : Infinity;
+      this.gameState.effects.push({
+        type: 'gladiator_stomp', x: leap.endX, y: leap.startY,
+        startTime: now, duration: 500
+      });
+      this.addVisualEffect(leap.endX, leap.startY - 20, 'gladiator_stomp', '⚡');
+      this.triggerCameraShake(10, 300);
+      if (!opponent || opponent.hp <= 0 || distance > leap.skill.impactRadius) return;
+
+      const result = this.dealDamageWithResult(opponent, leap.skill.damage, playerId);
+      if (!result.hit || result.blocked || result.immune) return;
+      this.gameState.gladiatorArena = {
+        ownerId: playerId,
+        targetId: opponentId,
+        x: leap.endX,
+        y: leap.startY,
+        radius: leap.skill.arenaRadius,
+        expiresAt: now + leap.skill.arenaDuration
+      };
+      this.addCombatLog(`${opponent.name} 被困在角鬥場中！`, playerId, 'skill');
+    });
+  }
+
+  renderGladiatorArena() {
+    const arena = this.gameState.gladiatorArena;
+    if (!arena || !this.ctx) return;
+    const ctx = this.ctx;
+    const remaining = Math.max(0, Math.min(1, (arena.expiresAt - Date.now()) / 500));
+    ctx.save();
+    ctx.globalAlpha = 0.28 + remaining * 0.2;
+    ctx.strokeStyle = '#f3b94f';
+    ctx.shadowColor = '#ff8b32';
+    ctx.shadowBlur = 16;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([13, 8]);
+    ctx.beginPath();
+    ctx.ellipse(arena.x, arena.y + 27, arena.radius, arena.radius * 0.38, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineWidth = 2;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(arena.x + side * arena.radius * 0.8, arena.y + 27);
+      ctx.lineTo(arena.x + side * arena.radius, arena.y - 35);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   updateYangHongSystems() {
@@ -11178,6 +11326,10 @@
     if (player.id === 'yanghong' && player.yangUltimate?.phase === 'swallow') {
       speed = player.moveSpeed * player.skills.ultimate.swallowedMoveMultiplier;
     }
+    if (player.effects.gladiatorWillUntil > Date.now()) {
+      speed *= player.skills.normal.moveMultiplier;
+    }
+    if (player.gladiatorLeap) return;
     player.position.x += direction * speed * 0.016;
     player.facing = direction;
     
@@ -11189,14 +11341,23 @@
     const now = Date.now();
     const player = this.players[playerId];
     const opponent = this.players[playerId === 'player1' ? 'player2' : 'player1'];
+
+    if (player?.id === 'gladiator' && player.gladiatorBerserkUntil && player.gladiatorBerserkUntil <= now) {
+      player.gladiatorBerserkUntil = 0;
+      player.gladiatorEnergy = 0;
+      player.attackDamage = 3;
+      player.attackSpeed = 900;
+    }
     
-    if (!player || player.yangSwallowedBy || player.yangUltimate || player.effects.stunned > now || player.effects.casting > now || player.effects.chainDisabled > now || player.effects.chainCasting > now || player.stephenChargeStart || player.stephenEatingUntil > now || player.stephenSmokeUntil > now || this.isPlayerDefending(playerId)) return;
+    if (!player || player.yangSwallowedBy || player.yangUltimate || player.gladiatorLeap || player.effects.stunned > now || player.effects.casting > now || player.effects.chainDisabled > now || player.effects.chainCasting > now || player.stephenChargeStart || player.stephenEatingUntil > now || player.stephenSmokeUntil > now || this.isPlayerDefending(playerId)) return;
     
     // ?儭?Exile Blade: block attacks during execution
     if (player.isExecuting) return;
     
     // ? 蝎暸????恍銵????
-    let effectiveAttackSpeed = player.attackSpeed;
+    let effectiveAttackSpeed = player.id === 'gladiator' && player.gladiatorBerserkUntil > now
+      ? player.passive.berserkAttackSpeed
+      : player.attackSpeed;
     if (player.effects.stealthAttackSpeedBuff > now && player.id === 'ranger') {
       effectiveAttackSpeed = player.skills.ultimate.boostedAttackSpeed;
     }
@@ -11211,6 +11372,8 @@
         ? 'gavelSmash'
         : player.id === 'forgefire'
           ? 'forgefireSlash'
+          : player.id === 'gladiator'
+            ? 'gladiatorAttack'
           : 'attack'
     );
     if (player.id !== 'stephen') this.spawnCombatFlourish('swing', player, opponent, player.id === 'forgefire' || player.id === 'adjudicator' ? 1.35 : 1);
@@ -11219,7 +11382,7 @@
       player.stephenAttackForm = player.stephenForm;
       player.stephenAttackFacing = player.facing;
     }
-    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
+    if (['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen', 'gladiator'].includes(player.id) && typeof particleSystem !== 'undefined' && particleSystem) {
       particleSystem.createElementalBasicAttackEffect(
         player.id,
         player.position.x,
@@ -11603,6 +11766,37 @@
 
     if (damageResult.hit && player.id === 'stephen' && player.stephenForm === 'smoke') {
       this.applyStephenSlow(opponent, player.stephenSmokeAttackSlow || 0.9, 1000, now);
+    }
+
+    if (damageResult.hit && player.id === 'gladiator') {
+      const passive = player.passive;
+      const hits = (player.gladiatorHitCount || 0) + 1;
+      player.gladiatorHitCount = hits;
+
+      // Every second landed basic attack adds a separate 3-damage strike;
+      // the passive's energy meter still advances only once for this hit.
+      if (hits % passive.bonusHitEvery === 0) {
+        this.dealDamageWithResult(opponent, passive.bonusDamage, playerId);
+        this.addVisualEffect(opponent.position.x, opponent.position.y - 22, 'gladiator_blood', '🩸');
+      }
+
+      if ((player.gladiatorBerserkUntil || 0) <= now) {
+        player.gladiatorEnergy = Math.min(passive.energyToBerserk, (player.gladiatorEnergy || 0) + passive.energyPerHit);
+        if (player.gladiatorEnergy >= passive.energyToBerserk) {
+          player.gladiatorBerserkUntil = now + passive.berserkDuration;
+          player.attackDamage = passive.berserkDamage;
+          player.attackSpeed = passive.berserkAttackSpeed;
+          this.addCombatLog(`${player.name} 進入狂戰狀態！`, playerId, 'skill');
+          this.addVisualEffect(player.position.x, player.position.y - 30, 'gladiator_berserk', '🐺');
+          this.triggerCameraShake(4, 180);
+        }
+      }
+
+      const normalSkill = player.skills.normal;
+      const cooldownAt = this.cooldowns[playerId].normal;
+      if (cooldownAt > 0 && now - cooldownAt < normalSkill.cooldown) {
+        this.cooldowns[playerId].normal = Math.max(now - normalSkill.cooldown, cooldownAt - passive.willCooldownReduction);
+      }
     }
     
     // ?? 鋆捱????格???萎犖
@@ -12026,6 +12220,27 @@
         player.yangUltimate = { phase: 'windup', startedAt: now, endsAt: now + skill.windup, target: opponent, skill, facing: player.facing };
         this.playAnimation(player, 'tongueLash');
         this.addCombatLog(`${player.name} 張口蓄勢，舌影鎖定前方！`, playerId, 'skill');
+        break;
+      case SKILL_CODES.GLADIATOR_WILL:
+        player.effects.gladiatorWillUntil = now + skill.duration;
+        this.addVisualEffect(player.position.x, player.position.y - 25, 'gladiator_will', '🛡️');
+        this.addCombatLog(`${player.name} 鬥士意志：減傷60%、移速提高10%！`, playerId, 'status');
+        break;
+      case SKILL_CODES.GLADIATOR_CAESAR:
+        player.gladiatorLeap = {
+          startedAt: now,
+          endsAt: now + skill.leapDuration,
+          startX: player.position.x,
+          startY: player.position.y,
+          endX: Math.max(80, Math.min(this.canvasWidth - 80, player.position.x + player.facing * skill.leapDistance)),
+          facing: player.facing,
+          skill,
+          previousInvulnerable: player.effects.invulnerable || 0
+        };
+        player.effects.invulnerable = Math.max(player.effects.invulnerable || 0, now + skill.leapDuration);
+        this.playAnimation(player, 'gladiatorFlip');
+        this.addCombatLog(`${player.name} 前空翻踏向前方！`, playerId, 'skill');
+        this.triggerCameraShake(2, 120);
         break;
       case SKILL_CODES.STEPHEN_STEAK: {
         const charge = player.stephenChargeDuration || 0;
@@ -14760,6 +14975,14 @@
     // ?爸 敺∠敹?霈澈銝剜???50%
     if (target.id === 'beastmaster' && target.golemTransforming) {
       damage = Math.round(damage * 0.5);
+    }
+
+    if (target.id === 'gladiator' && target.effects.gladiatorWillUntil > now) {
+      const originalDamage = damage;
+      damage = Math.max(1, Math.round(damage * (1 - target.skills.normal.damageReduction)));
+      if (damage < originalDamage) {
+        this.addVisualEffect(target.position.x, target.position.y - 20, 'gladiator_will_hit', '🛡️');
+      }
     }
 
     // ?爸 敺∠敹楊?貉??莎???摰喳?????

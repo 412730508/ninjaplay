@@ -159,10 +159,32 @@
       case 'YH_002': // 楊紘・瘋狂舔拭者
         this.createYangHongTongueEffect(x, y, facing);
         break;
+      case 'GLD_001':
+        this.createGladiatorWillEffect(x, y);
+        break;
+      case 'GLD_002':
+        this.createGladiatorStompEffect(x + facing * 150, y);
+        break;
       default:
         console.warn('未處理的技能特效代碼：', skillCode);
     }
 
+  }
+
+  createGladiatorWillEffect(x, y) {
+    this.particles.push({ x, y: y - 25, radius: 16, maxRadius: 46, color: '#F3B94F', life: 420, maxLife: 420, alpha: 0.72, type: 'taijutsu_impact_ring' });
+    this.particles.push({ x, y: y - 25, endX: x - 23, endY: y - 5, color: '#FFE7A3', width: 4, life: 340, maxLife: 340, alpha: 0.9, type: 'impact_fist_line' });
+    this.particles.push({ x, y: y - 25, endX: x + 23, endY: y - 5, color: '#D88A30', width: 4, life: 340, maxLife: 340, alpha: 0.9, type: 'impact_fist_line' });
+  }
+
+  createGladiatorStompEffect(x, y) {
+    for (let ring = 0; ring < 3; ring++) {
+      this.particles.push({ x, y: y + 22, radius: 8, maxRadius: 54 + ring * 23, color: ring === 1 ? '#FFF0B0' : '#D9943F', life: 500 + ring * 70, maxLife: 640, alpha: 0.74 - ring * 0.13, type: 'taijutsu_impact_ring' });
+    }
+    for (let shard = 0; shard < 8; shard++) {
+      const side = shard % 2 ? 1 : -1;
+      this.particles.push({ x: x + side * 8, y: y + 18, endX: x + side * (26 + shard * 3), endY: y + 8 - (shard % 3) * 5, color: shard % 2 ? '#E8C477' : '#FFF0C1', width: 2.5, life: 250 + (shard % 3) * 30, maxLife: 310, alpha: 0.9, type: 'impact_fist_line' });
+    }
   }
 
   createYangHongCoffeeEffect(x, y, facing = 1) {
@@ -416,6 +438,10 @@
     if (element === 'shamisen') {
       for (let wave = 0; wave < 3; wave++) this.particles.push({ x: handX, y: handY + (wave - 1) * 8, endX: tipX, endY: handY + (wave - 1) * 14, color: wave === 1 ? '#FFF0D6' : '#FFD180', width: wave === 1 ? 3 : 2, life: 260, maxLife: 260, alpha: 0.82, type: 'shamisen_attack_wave' });
     }
+    if (element === 'gladiator') {
+      this.particles.push({ x: handX, y: handY + 8, endX: tipX, endY: handY + 2, color: '#F4D28D', width: 4, life: 190, maxLife: 190, alpha: 0.9, type: 'impact_fist_line' });
+      this.particles.push({ x: tipX, y: handY + 2, radius: 3, maxRadius: 21, color: '#C93636', life: 230, maxLife: 230, alpha: 0.68, type: 'taijutsu_impact_ring' });
+    }
   }
 
   createElementalImpactEffect(element, x, y) {
@@ -542,6 +568,13 @@
     }
     if (element === 'shamisen') {
       for (let ring = 0; ring < 3; ring++) this.particles.push({ x, y: y - 16, radius: 4, maxRadius: 30 + ring * 17, color: ring === 1 ? '#FFF0D6' : '#FFD180', life: 320, maxLife: 320, alpha: 0.74 - ring * 0.13, type: 'shamisen_impact_ring' });
+    }
+    if (element === 'gladiator') {
+      this.particles.push({ x, y: y + 18, radius: 5, maxRadius: 46, color: '#F3B94F', life: 300, maxLife: 300, alpha: 0.82, type: 'taijutsu_impact_ring' });
+      for (let chip = 0; chip < 4; chip++) {
+        const side = chip % 2 ? 1 : -1;
+        this.particles.push({ x: x + side * 5, y: y + 20, endX: x + side * (20 + chip * 5), endY: y + 5, color: '#E4C17A', width: 2, life: 180, maxLife: 180, alpha: 0.85, type: 'impact_fist_line' });
+      }
     }
   }
 

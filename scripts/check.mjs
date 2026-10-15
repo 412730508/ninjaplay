@@ -137,7 +137,20 @@ try {
     ['stephen', 'attackDamage', 7],
     ['yanghong', 'passive.hitsPerDrop', 3],
     ['yanghong', 'passive.coinsPerDrop', 7],
-    ['yanghong', 'skills.ultimate.cooldown', 14000]
+    ['yanghong', 'skills.ultimate.cooldown', 14000],
+    ['gladiator', 'maxHp', 100],
+    ['gladiator', 'attackDamage', 3],
+    ['gladiator', 'attackSpeed', 900],
+    ['gladiator', 'moveSpeed', 270],
+    ['gladiator', 'skills.normal.cooldown', 15000],
+    ['gladiator', 'skills.normal.duration', 3000],
+    ['gladiator', 'skills.normal.damageReduction', 0.6],
+    ['gladiator', 'skills.ultimate.cooldown', 20000],
+    ['gladiator', 'skills.ultimate.leapDistance', 150],
+    ['gladiator', 'skills.ultimate.leapDuration', 500],
+    ['gladiator', 'skills.ultimate.damage', 8],
+    ['gladiator', 'skills.ultimate.arenaRadius', 100],
+    ['gladiator', 'skills.ultimate.arenaDuration', 4000]
   ];
   for (const [characterId, propertyPath, expected] of expectedValues) {
     const actual = propertyPath.split('.').reduce((value, key) => value?.[key], roster[characterId]);
@@ -213,6 +226,19 @@ try {
     particleSystem.createSkillEffect(code, 320, 280, 1);
   }
   for (const [code, expectedTypes] of [
+    ['GLD_001', ['taijutsu_impact_ring', 'impact_fist_line']],
+    ['GLD_002', ['taijutsu_impact_ring', 'impact_fist_line']]
+  ]) {
+    particleSystem.particles = [];
+    particleSystem.createSkillEffect(code, 320, 280, 1);
+    for (const type of expectedTypes) {
+      if (!particleSystem.particles.some(particle => particle.type === type)) {
+        throw new Error(`${code} is missing its authored effect component: ${type}`);
+      }
+    }
+    particleSystem.render(renderContext);
+  }
+  for (const [code, expectedTypes] of [
     ['YH_001', ['coffee_crema_ring', 'coffee_pour_stream', 'coffee_splash']],
     ['YH_002', ['tongue_lash', 'tongue_highlight', 'tongue_impact_ring']]
   ]) {
@@ -225,7 +251,7 @@ try {
     }
     particleSystem.render(renderContext);
   }
-  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen']) {
+  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen', 'gladiator']) {
     particleSystem.createElementalBasicAttackEffect(elementalId, 320, 280, 1, 80);
     particleSystem.createElementalImpactEffect(elementalId, 400, 280);
   }
@@ -252,7 +278,7 @@ try {
   for (const name of ['stephenCharge', 'stephenThrow', 'stephenEat', 'stephenGrill', 'stephenBreath']) {
     if (stephenAnimator.animations[name]?.length !== 12) throw new Error(`Stephen animation is missing: ${name}`);
   }
-  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen']) {
+  for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen', 'gladiator']) {
     for (const kind of ['swing', 'impact']) {
       const rendered = NinjaGame.prototype.renderElementalCombatFlourish.call({}, renderContext, {
         element: elementalId, kind, x: 320, y: 250, targetX: 400, targetY: 250,
@@ -265,6 +291,120 @@ try {
   // Exercise both Stephen forms, including the moving grill and key-release charge.
   let simulatedNow = 100000;
   engineContext.Date = class extends Date { static now() { return simulatedNow; } };
+
+  // Exercise the gladiator's hit-count passive, one-stack-per-attack energy,
+  // Will cooldown reduction/mitigation, leap immunity, stomp, and cage bounds.
+  const gladiatorGame = new NinjaGame();
+  gladiatorGame.selectCharacters('gladiator', 'fujin');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake', 'spawnCombatFlourish']) gladiatorGame[method] = () => {};
+  const gladiator = gladiatorGame.players.player1;
+  const gladiatorTarget = gladiatorGame.players.player2;
+  gladiator.position = { x: 300, y: 300 };
+  gladiatorTarget.position = { x: 350, y: 300 };
+  gladiator.effects.counterAttack = 0;
+  for (let hit = 0; hit < 4; hit++) {
+    simulatedNow += 901;
+    gladiatorGame.attack('player1');
+  }
+  if (gladiatorTarget.hp !== 82 || gladiator.gladiatorHitCount !== 4 || gladiator.gladiatorEnergy !== 4 || gladiator.attackDamage !== 5 || gladiator.attackSpeed !== 400 || gladiator.gladiatorBerserkUntil !== simulatedNow + 5000) {
+    throw new Error('Gladiator passive did not add the second-hit damage and trigger exactly one berserk at four landed attacks');
+  }
+  simulatedNow += 5000;
+  gladiatorGame.updateGladiatorSystems();
+  if (gladiator.attackDamage !== 3 || gladiator.attackSpeed !== 900 || gladiator.gladiatorEnergy !== 0) {
+    throw new Error('Gladiator berserk did not expire back to base stats and clear energy');
+  }
+
+  const willGame = new NinjaGame();
+  willGame.selectCharacters('gladiator', 'katon');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake', 'spawnCombatFlourish']) willGame[method] = () => {};
+  const willUser = willGame.players.player1;
+  willGame.players.player2.position.x = willUser.position.x + 40;
+  willGame.useSkill('player1', 'normal');
+  const willStartX = willUser.position.x;
+  willGame.movePlayer('player1', 1);
+  if (Math.abs(willUser.position.x - (willStartX + 270 * 1.1 * 0.016)) > 0.01) {
+    throw new Error('Gladiator Will did not increase movement speed by ten percent');
+  }
+  const willCooldownAt = willGame.cooldowns.player1.normal;
+  const willHp = willUser.hp;
+  const willDamage = willGame.dealDamage(willUser, 10, 'player2');
+  if (!willDamage.hit || willUser.hp !== willHp - 4 || willUser.effects.gladiatorWillUntil !== simulatedNow + 3000) {
+    throw new Error('Gladiator Will did not apply 60% damage reduction for three seconds');
+  }
+  willGame.attack('player1');
+  if (willGame.cooldowns.player1.normal !== willCooldownAt - 500) {
+    throw new Error('Gladiator basic-attack hit did not reduce Will cooldown by 0.5 seconds');
+  }
+  simulatedNow += 3000;
+  const expiredWillHp = willUser.hp;
+  willGame.dealDamage(willUser, 10, 'player2');
+  if (willUser.hp !== expiredWillHp - 10) throw new Error('Gladiator Will damage reduction remained active after its duration');
+
+  const leapGame = new NinjaGame();
+  leapGame.selectCharacters('gladiator', 'fujin');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake', 'spawnCombatFlourish']) leapGame[method] = () => {};
+  const leaper = leapGame.players.player1;
+  const leapTarget = leapGame.players.player2;
+  leaper.position = { x: 300, y: 300 };
+  leapTarget.position = { x: 450, y: 300 };
+  leapGame.useSkill('player1', 'ultimate');
+  if (!leaper.gladiatorLeap || leapGame.dealDamage(leaper, 10, 'player2').immune !== true) {
+    throw new Error('Gladiator ultimate did not enter an invulnerable leap');
+  }
+  simulatedNow += 250;
+  leapGame.updateGladiatorSystems();
+  if (Math.abs(leaper.position.x - 375) > 0.1 || leaper.position.y >= 300) {
+    throw new Error('Gladiator did not travel forward and rise during the front flip');
+  }
+  simulatedNow += 250;
+  leapGame.updateGladiatorSystems();
+  if (leaper.gladiatorLeap || leapTarget.hp !== 92 || leapGame.gameState.gladiatorArena?.targetId !== 'player2') {
+    throw new Error('Gladiator landing failed to deal 8 damage and start the four-second arena');
+  }
+  leapTarget.position.x = 700;
+  leapGame.updateGladiatorSystems();
+  if (leapTarget.position.x !== 550) throw new Error('Gladiator arena did not enforce its 100px radius boundary');
+  simulatedNow += 4000;
+  leapGame.updateGladiatorSystems();
+  if (leapGame.gameState.gladiatorArena !== null) throw new Error('Gladiator arena did not expire after four seconds');
+
+  const edgeLeapGame = new NinjaGame();
+  edgeLeapGame.selectCharacters('gladiator', 'fujin');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake', 'spawnCombatFlourish']) edgeLeapGame[method] = () => {};
+  edgeLeapGame.players.player1.position = { x: 300, y: 300 };
+  edgeLeapGame.players.player2.position = { x: 600, y: 300 };
+  edgeLeapGame.useSkill('player1', 'ultimate');
+  simulatedNow += 500;
+  edgeLeapGame.updateGladiatorSystems();
+  if (edgeLeapGame.players.player2.hp !== 92 || edgeLeapGame.gameState.gladiatorArena?.radius !== 100) {
+    throw new Error('Gladiator impact radius did not include a target exactly 150px from the landing point');
+  }
+
+  const playerTwoLeapGame = new NinjaGame();
+  playerTwoLeapGame.selectCharacters('fujin', 'gladiator');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake', 'spawnCombatFlourish']) playerTwoLeapGame[method] = () => {};
+  playerTwoLeapGame.players.player2.position = { x: 700, y: 300 };
+  playerTwoLeapGame.players.player2.facing = -1;
+  playerTwoLeapGame.players.player1.position = { x: 550, y: 300 };
+  playerTwoLeapGame.useSkill('player2', 'ultimate');
+  simulatedNow += 500;
+  playerTwoLeapGame.updateGladiatorSystems();
+  if (playerTwoLeapGame.players.player2.position.x !== 550 || playerTwoLeapGame.players.player1.hp !== 92 || playerTwoLeapGame.gameState.gladiatorArena?.ownerId !== 'player2') {
+    throw new Error('Gladiator ultimate did not work when played from P2 facing left');
+  }
+
+  const missedLeapGame = new NinjaGame();
+  missedLeapGame.selectCharacters('gladiator', 'fujin');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake', 'spawnCombatFlourish']) missedLeapGame[method] = () => {};
+  missedLeapGame.players.player1.position = { x: 300, y: 300 };
+  missedLeapGame.players.player2.position = { x: 650, y: 300 };
+  missedLeapGame.useSkill('player1', 'ultimate');
+  simulatedNow += 500;
+  missedLeapGame.updateGladiatorSystems();
+  if (missedLeapGame.players.player2.hp !== 100 || missedLeapGame.gameState.gladiatorArena) {
+    throw new Error('Gladiator ultimate incorrectly damaged or trapped a target outside its 150px landing radius');
+  }
 
   // Yang Hong's wallet must stay at the top corner on his side, away from the
   // character health label regardless of whether he is P1 or P2.
