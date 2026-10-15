@@ -17,6 +17,13 @@ This pass deliberately improves characters whose core payoff was difficult to re
 
 蠍子與雅音忍・弦鳴已改由其角色設計直接定義，沒有額外的平衡覆寫。
 
+## Follow-up balance pass — 0.3.1
+
+- 騷0揚紘：每 3 次成功造成傷害固定掉落 7 元；多段技能逐段計數；瘋狂舔拭者冷卻 14 秒。
+- 牛排館老闆・史蒂芬・周：普攻傷害提高至 7。
+- 騷0揚紘「快速找零」主卡：每 2 次傷害掉落固定 7 元，不再改變掉落金額。
+- 鍛炎忍者：更新為玩家提供的新像素頭像。
+
 ## Match feedback template
 
 Record only what was observable in a match:

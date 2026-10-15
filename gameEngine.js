@@ -9685,7 +9685,7 @@
     if (has('long_breath')) player.forms.smoke.ultimate.range = 340;
     if (has('extra_bite')) normal.heal = 9;
     if (has('thick_smoke')) player.stephenSmokeAttackSlow = 0.85;
-    if (has('yanghong_tip_bonus')) { player.passive.minCoins += 3; player.passive.maxCoins += 3; }
+    if (has('yanghong_tip_bonus')) player.passive.hitsPerDrop = Math.max(2, player.passive.hitsPerDrop - 1);
     if (has('yanghong_long_tongue')) ultimate.range = 360;
     if (has('yanghong_refill')) { normal.maxHits += 1; normal.maxDuration += normal.tickRate; }
     if (has('yanghong_quick_pocket')) player.talentYangHongQuickPocket = true;
@@ -9986,9 +9986,12 @@
   dropYangCoin(attacker, target) {
     if (attacker?.id !== 'yanghong' || !target || attacker.hp <= 0) return;
     const passive = attacker.passive;
+    const hitsPerDrop = Math.max(1, passive.hitsPerDrop || 3);
+    attacker.yangCoinDamageCount = (attacker.yangCoinDamageCount || 0) + 1;
+    if (attacker.yangCoinDamageCount < hitsPerDrop) return;
+    attacker.yangCoinDamageCount = 0;
     const now = Date.now();
-    if (Math.random() >= (passive.dropChance ?? 0.33)) return;
-    const value = passive.minCoins + Math.floor(Math.random() * (passive.maxCoins - passive.minCoins + 1));
+    const value = passive.coinsPerDrop || 7;
     const angle = Math.random() * Math.PI * 2;
     const radius = 25 + Math.random() * 27;
     this.gameState.yangHongCoins.push({

@@ -1,11 +1,15 @@
 // NinjaPlay balance tuning lives here so it can be adjusted without touching the combat engine.
 // Values are deliberately small and are reviewed as a single balance patch.
-const BALANCE_VERSION = '0.3.0';
+const BALANCE_VERSION = '0.3.1';
 
 const BALANCE_PATCH = {
   fujin: {
     attackDamage: 7,
     skills: { ultimate: { cooldown: 11000 } }
+  },
+  stephen: { attackDamage: 7 },
+  yanghong: {
+    skills: { ultimate: { cooldown: 14000 } }
   },
   katon: {
     skills: { normal: { cooldown: 8000 } }

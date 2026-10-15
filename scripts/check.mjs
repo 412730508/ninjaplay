@@ -133,7 +133,11 @@ try {
     ['forgefire', 'skills.normal.cooldown', 7000],
     ['forgefire', 'skills.normal.stun', 500],
     ['forgefire', 'skills.ultimate.chargeTime', 700],
-    ['forgefire', 'skills.ultimate.trailDuration', 3000]
+    ['forgefire', 'skills.ultimate.trailDuration', 3000],
+    ['stephen', 'attackDamage', 7],
+    ['yanghong', 'passive.hitsPerDrop', 3],
+    ['yanghong', 'passive.coinsPerDrop', 7],
+    ['yanghong', 'skills.ultimate.cooldown', 14000]
   ];
   for (const [characterId, propertyPath, expected] of expectedValues) {
     const actual = propertyPath.split('.').reduce((value, key) => value?.[key], roster[characterId]);
@@ -238,7 +242,7 @@ try {
     throw new Error('particle safety limit did not prune an overloaded frame');
   }
 
-  const engineContext = vm.createContext({ console, setTimeout: () => 0, clearTimeout: () => {} });
+  const engineContext = vm.createContext({ console, Math: Object.create(Math), setTimeout: () => 0, clearTimeout: () => {} });
   vm.runInContext(readFileSync(resolve(root, 'characters.js'), 'utf8'), engineContext);
   vm.runInContext(engineSource, engineContext);
   const NinjaGame = vm.runInContext('NinjaGame', engineContext);
@@ -511,10 +515,11 @@ try {
     attacker.position.x = 350;
     attacker.position.y = 400;
     attacker.facing = 1;
-    attacker.yangWallet = 40;
     target.position.x = 420;
     target.position.y = 400;
     const hpBefore = target.hp;
+    const originalRandom = engineContext.Math.random;
+    engineContext.Math.random = () => 0.5;
     game.useSkill('player1', 'normal');
     for (let hit = 1; hit <= attacker.skills.normal.maxHits; hit++) {
       simulatedNow += attacker.skills.normal.tickRate;
@@ -523,9 +528,58 @@ try {
     if (attacker.yangCoffee || target.hp !== hpBefore - attacker.skills.normal.maxHits * attacker.skills.normal.tickDamage) {
       throw new Error('Coffee Art multi-hit stream did not complete at its configured hit cap');
     }
+    engineContext.Math.random = originalRandom;
+    if (attacker.yangCoinDamageCount !== 2 || attacker.yangWallet !== 7) throw new Error(`Coffee Art damage ticks did not count individually: counter=${attacker.yangCoinDamageCount}, wallet=${attacker.yangWallet}, coins=${game.gameState.yangHongCoins.length}`);
     if (!emittedYangHongEffects.some(([code]) => code === 'YH_001')) throw new Error('Coffee Art did not dispatch its authored particles in a real skill activation');
+    attacker.yangWallet = 40;
     game.useSkill('player1', 'ultimate');
     if (!emittedYangHongEffects.some(([code]) => code === 'YH_002')) throw new Error('Tongue ultimate did not dispatch its authored particles in a real skill activation');
+  }
+
+  // The passive is deterministic: no drop for the first two successful hits,
+  // exactly seven coins on the third, and only the owning Yang Hong can collect.
+  {
+    const game = new NinjaGame();
+    game.selectCharacters('yanghong', 'katon');
+    game.addVisualEffect = () => {};
+    game.addDamageNumber = () => {};
+    game.addCombatLog = () => {};
+    const attacker = game.players.player1;
+    const target = game.players.player2;
+    attacker.position.x = 100;
+    attacker.position.y = 100;
+    target.position.x = 500;
+    target.position.y = 400;
+    game.dropYangCoin(attacker, target);
+    game.dropYangCoin(attacker, target);
+    if (game.gameState.yangHongCoins.length !== 0 || attacker.yangCoinDamageCount !== 2) throw new Error('Yang Hong dropped coins before the third damage instance');
+    game.dropYangCoin(attacker, target);
+    if (game.gameState.yangHongCoins.length !== 1 || game.gameState.yangHongCoins[0].value !== 7 || attacker.yangCoinDamageCount !== 0) {
+      throw new Error('Yang Hong did not drop exactly seven coins on each third damage instance');
+    }
+    const coin = game.gameState.yangHongCoins[0];
+    coin.x = target.position.x;
+    coin.y = target.position.y;
+    game.updateYangHongSystems();
+    if (attacker.yangWallet !== 0 || game.gameState.yangHongCoins.length !== 1) throw new Error('Opponent collected a coin that belongs to Yang Hong');
+    attacker.position.x = coin.x;
+    attacker.position.y = coin.y;
+    game.updateYangHongSystems();
+    if (attacker.yangWallet !== 7 || game.gameState.yangHongCoins.length !== 0) throw new Error('Yang Hong did not collect the seven-coin drop into his wallet');
+    game.dropYangCoin(attacker, target);
+    game.dropYangCoin(attacker, target);
+    if (game.gameState.yangHongCoins.length !== 0) throw new Error('Yang Hong passive counter did not restart after a drop');
+    game.dropYangCoin(attacker, target);
+    if (game.gameState.yangHongCoins.length !== 1 || game.gameState.yangHongCoins[0].value !== 7) throw new Error('Yang Hong did not generate the next deterministic drop');
+
+    const talented = new NinjaGame();
+    talented.selectCharacters('yanghong', 'katon', { player1: { primary: 'yanghong_tip_bonus' } });
+    const talentedAttacker = talented.players.player1;
+    const talentedTarget = talented.players.player2;
+    if (talentedAttacker.passive.hitsPerDrop !== 2) throw new Error('Yang Hong Quick Change talent no longer adjusts the deterministic drop interval');
+    talented.dropYangCoin(talentedAttacker, talentedTarget);
+    talented.dropYangCoin(talentedAttacker, talentedTarget);
+    if (talented.gameState.yangHongCoins.length !== 1 || talented.gameState.yangHongCoins[0].value !== 7) throw new Error('Yang Hong talent altered the fixed seven-coin drop value');
   }
 } catch (error) {
   console.error(`Skill integration check failed: ${error.message}`);

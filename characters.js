@@ -1025,7 +1025,7 @@ const characters = {
     position: { x: 100, y: 300 },
     facing: 1,
     isRanged: false,
-    passive: { name: '零錢滿地', description: '每次造成傷害均有33%機率掉落7–9元錢幣，只有揚紘本人能撿取；錢包上限40元。', dropChance: 0.33, minCoins: 7, maxCoins: 9, walletCap: 40 },
+    passive: { name: '零錢滿地', description: '每造成3次傷害，固定掉落7枚硬幣；技能的每段傷害都會計數。只有揚紘本人能撿取；錢包上限40元。', hitsPerDrop: 3, coinsPerDrop: 7, walletCap: 40 },
     skills: {
       normal: {
         code: SKILL_CODES.YANGHONG_COFFEE,
