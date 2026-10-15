@@ -8981,8 +8981,8 @@
   }
 
   // ? 靽桀儔嚗Ⅱ靽?dealDamage ?寞?摮
-  dealDamage(target, damage, source) {
-    return this.dealDamageWithResult(target, damage, source);
+  dealDamage(target, damage, source, options = {}) {
+    return this.dealDamageWithResult(target, damage, source, options);
   }
 
   // ? 靽桀儔嚗Ⅱ靽ddDamageNumber?寞?摮 - ?舀憭車憿?
@@ -9934,7 +9934,7 @@
         } else if (opponent?.hp > 0 && now >= player.stephenSmokeNextTick) {
           player.stephenSmokeNextTick = now + player.skills.normal.tickRate;
           if (Math.abs(opponent.position.x - player.position.x) <= player.skills.normal.radius && Math.abs(opponent.position.y - player.position.y) <= 70) {
-            this.dealDamage(opponent, player.skills.normal.damagePerTick, playerId);
+            this.dealDamage(opponent, player.skills.normal.damagePerTick, playerId, { isDamageOverTime: true });
           }
         }
       }
@@ -9962,7 +9962,7 @@
         if (inside) this.applyStephenSlow(opponent, ultimate.skill.slowMultiplier, 180, now);
         if (now >= ultimate.nextTick) {
           ultimate.nextTick = now + ultimate.skill.tickRate;
-          if (inside) this.dealDamage(opponent, ultimate.skill.damagePerTick, playerId);
+          if (inside) this.dealDamage(opponent, ultimate.skill.damagePerTick, playerId, { isDamageOverTime: true });
         }
       } else {
         const dx = opponent.position.x - player.position.x;
@@ -9970,7 +9970,7 @@
         if (inside) this.applyStephenSlow(opponent, ultimate.skill.slowMultiplier, ultimate.skill.slowDuration, now);
         if (now >= ultimate.nextTick) {
           ultimate.nextTick = now + ultimate.skill.tickRate;
-          if (inside && opponent.facing === -ultimate.facing) this.dealDamage(opponent, ultimate.skill.damagePerTick, playerId);
+          if (inside && opponent.facing === -ultimate.facing) this.dealDamage(opponent, ultimate.skill.damagePerTick, playerId, { isDamageOverTime: true });
         }
       }
     }
@@ -10014,7 +10014,7 @@
     const dy = opponent ? Math.abs(opponent.position.y - player.position.y) : Infinity;
     const inStream = opponent?.hp > 0 && dx >= 0 && dx <= coffee.skill.range && dy <= coffee.skill.width / 2;
     if (inStream) {
-      const hit = this.dealDamage(opponent, coffee.skill.tickDamage, playerId);
+      const hit = this.dealDamage(opponent, coffee.skill.tickDamage, playerId, { isDamageOverTime: true });
       if (hit.hit) this.applyStephenSlow(opponent, coffee.skill.slowMultiplier, coffee.skill.slowDuration, now);
     }
   }
@@ -10121,7 +10121,7 @@
           player.yangWallet = Math.max(0, player.yangWallet - ultimate.skill.costPerSecond);
           if (target && target.hp > 0) {
             target.yangSwallowedBy = null;
-            this.dealDamage(target, ultimate.skill.damagePerSecond, playerId);
+            this.dealDamage(target, ultimate.skill.damagePerSecond, playerId, { isDamageOverTime: true });
             target.yangSwallowedBy = playerId;
           }
         }
@@ -10301,14 +10301,27 @@
             ctx.save(); ctx.translate(tx, -5); ctx.rotate(swirl + i * Math.PI * 2 / 3); ctx.strokeStyle = i === 1 ? 'rgba(255,244,220,.92)' : 'rgba(196,117,73,.82)'; ctx.lineWidth = 4;
             ctx.beginPath(); ctx.ellipse(0, 0, 20 + i * 2, 8 + i, 0, .15, Math.PI * 1.65); ctx.stroke(); ctx.restore();
           }
-          ctx.fillStyle = '#fff0d7'; ctx.font = '900 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`¥${player.yangWallet || 0}`, tx, -29);
         }
         ctx.restore();
       }
+      // Keep the wallet readout in the upper corner on Yang Hong's side,
+      // separate from the floating health bar above his head.
+      const badgeWidth = 92;
+      const badgeHeight = 28;
+      const margin = 14;
+      const badgeX = playerId === 'player1' ? margin : this.canvasWidth - margin - badgeWidth;
+      const badgeY = 14;
+      const walletCap = player.passive?.walletCap || 40;
       ctx.save();
-      ctx.fillStyle = 'rgba(12,15,24,.82)'; ctx.strokeStyle = 'rgba(255,205,107,.8)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.roundRect(x - 25, y - 110, 50, 22, 8); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#ffe08a'; ctx.font = '900 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`¥ ${player.yangWallet || 0}`, x, y - 99);
+      ctx.fillStyle = 'rgba(12,15,24,.9)';
+      ctx.strokeStyle = 'rgba(255,205,107,.88)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeWidth, badgeHeight, 9); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffe08a';
+      ctx.font = '900 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`¥ ${player.yangWallet || 0} / ${walletCap}`, badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
       ctx.restore();
     }
   }
@@ -14600,7 +14613,7 @@
   }
 
   // ? 靽桀儔嚗??渡? dealDamageWithResult ?寞?
-  dealDamageWithResult(target, damage, source) {
+  dealDamageWithResult(target, damage, source, options = {}) {
     const now = Date.now();
     let result = { hit: false, blocked: false, immune: false };
     
@@ -14614,7 +14627,9 @@
 
     // ?? 鋆捱???塚?蝒?扳????芸??
     const parryAttacker = this.getAttackerFromSource(source);
-    if (target.effects.parryActive > now && parryAttacker && parryAttacker !== target) {
+    // Objection Parry counters discrete hits, not damage ticks already applied
+    // by poison, burning, or lingering damage zones.
+    if (!options.isDamageOverTime && target.effects.parryActive > now && parryAttacker && parryAttacker !== target) {
       target.effects.parryActive = 0;
       if (target.effects.casting > now) {
         target.effects.casting = 0;
@@ -14666,7 +14681,7 @@
     const targetId = target === this.players.player1 ? 'player1' : 'player2';
     const attackerId = target === this.players.player1 ? 'player2' : 'player1';
     
-    const blockResult = this.isAttackBlocked(attackerId, targetId);
+    const blockResult = options.isDamageOverTime ? null : this.isAttackBlocked(attackerId, targetId);
     
     if (blockResult === 'perfect') {
       // ??蝘?摰??脩戌嚗??典??怠摰喳??批
@@ -14707,7 +14722,7 @@
     }
     
     // ?潭?瑼Ｘ (撗拙?霅琿?)
-    if (target.effects.blocking > now) {
+    if (!options.isDamageOverTime && target.effects.blocking > now) {
       target.effects.blocking = 0;
       target.effects.counterAttack = now + 10000;
       
@@ -15128,7 +15143,7 @@
       if (dist <= zone.radius + 40) {
         // 瘥??瑕拿?文?
         if (now - zone.lastTick >= 1000) {
-          this.dealDamage(opponent, 2, zone.ownerId);
+          this.dealDamage(opponent, 2, zone.ownerId, { isDamageOverTime: true });
           this.addVisualEffect(opponent.position.x, opponent.position.y, 'fire_burn', '🔥');
           zone.lastTick = now;
           
@@ -15502,7 +15517,7 @@
         // 瘥??貉?tick
         if (now - tether.lastTickTime >= 1000) {
           tether.lastTickTime = now;
-          this.dealDamage(target, tether.drainPerSecond, playerId);
+          this.dealDamage(target, tether.drainPerSecond, playerId, { isDamageOverTime: true });
           this.applyBloodHeal(player, tether.healPerSecond, playerId);
           this.addCombatLog(`鮮血牽線吸取 ${tether.drainPerSecond}`, playerId, 'damage');
         }
@@ -15530,7 +15545,7 @@
         if (now - curse.lastTickTime >= curse.tickInterval) {
           curse.lastTickTime = now;
           curse.tickCount++;
-          this.dealDamage(target, curse.damagePerTick, playerId);
+          this.dealDamage(target, curse.damagePerTick, playerId, { isDamageOverTime: true });
           this.applyBloodHeal(player, curse.healPerTick, playerId);
           this.addCombatLog(`血咒持續！造成${curse.damagePerTick}傷害+回復${curse.healPerTick}`, playerId, 'damage');
         }
@@ -15755,7 +15770,7 @@
           if (!target || target.hp <= 0) return;
           const dist = Math.abs(target.position.x - smoke.x);
           if (dist <= smoke.radius) {
-            this.dealDamage(target, smoke.damagePerTick, smoke.ownerSide);
+            this.dealDamage(target, smoke.damagePerTick, smoke.ownerSide, { isDamageOverTime: true });
             // Apply slow
             target.effects.slowed = now + smoke.tickInterval + 100;
             target.effects.slowPercent = smoke.slow;

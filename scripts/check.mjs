@@ -265,6 +265,74 @@ try {
   // Exercise both Stephen forms, including the moving grill and key-release charge.
   let simulatedNow = 100000;
   engineContext.Date = class extends Date { static now() { return simulatedNow; } };
+
+  // Yang Hong's wallet must stay at the top corner on his side, away from the
+  // character health label regardless of whether he is P1 or P2.
+  for (const [yangSide, leftSide] of [['player1', true], ['player2', false]]) {
+    const walletGame = new NinjaGame();
+    walletGame.selectCharacters(yangSide === 'player1' ? 'yanghong' : 'katon', yangSide === 'player2' ? 'yanghong' : 'katon');
+    walletGame.players[yangSide].yangWallet = 21;
+    walletGame.players[yangSide].position = { x: 400, y: 350 };
+    walletGame.canvasWidth = 800;
+    const walletLabels = [];
+    walletGame.ctx = new Proxy(renderContext, {
+      get(target, property) {
+        if (property === 'fillText') return (...args) => walletLabels.push(args);
+        return target[property];
+      }
+    });
+    walletGame.renderYangHongSystems();
+    const walletLabel = walletLabels.find(([text]) => text === '¥ 21 / 40');
+    const expectedX = leftSide ? 14 + 46 : 800 - 14 - 92 + 46;
+    if (!walletLabel || walletLabel[1] !== expectedX || walletLabel[2] !== 28) {
+      throw new Error(`Yang Hong wallet HUD was not anchored to the ${leftSide ? 'left' : 'right'} top corner`);
+    }
+    if (walletLabels.some(([text, , y]) => text === '¥ 21 / 40' && y === 350 - 99)) {
+      throw new Error('Yang Hong wallet HUD still overlaps the character health label');
+    }
+  }
+
+  // Objection Parry still counters discrete hits, while periodic damage keeps
+  // ticking without consuming the parry window or triggering a counterattack.
+  const parryGame = new NinjaGame();
+  parryGame.selectCharacters('adjudicator', 'stephen');
+  parryGame.addVisualEffect = () => {};
+  parryGame.addDamageNumber = () => {};
+  parryGame.addCombatLog = () => {};
+  parryGame.triggerCameraShake = () => {};
+  parryGame.spawnCombatFlourish = () => {};
+  const adjudicator = parryGame.players.player1;
+  const poisoner = parryGame.players.player2;
+  parryGame.executeObjectionParry(adjudicator, poisoner, adjudicator.skills.normal, 'player1', 'player1');
+  const parryUntil = adjudicator.effects.parryActive;
+  const adjudicatorHp = adjudicator.hp;
+  const poisonTick = parryGame.dealDamage(adjudicator, 3, 'player2', { isDamageOverTime: true });
+  if (!poisonTick.hit || poisonTick.blocked || adjudicator.hp !== adjudicatorHp - 3 || adjudicator.effects.parryActive !== parryUntil || poisoner.hp !== poisoner.maxHp) {
+    throw new Error('Periodic damage was incorrectly parried or consumed the objection window');
+  }
+  adjudicator.effects.poisonStacks = 2;
+  adjudicator.effects.poisonDotEnd = simulatedNow + 5000;
+  adjudicator.effects.poisonTickTime = simulatedNow;
+  parryGame.updateEffects();
+  if (adjudicator.hp !== adjudicatorHp - 5 || adjudicator.effects.parryActive !== parryUntil) {
+    throw new Error('Poison did not keep ticking during Objection Parry');
+  }
+  const grill = poisoner.skills.ultimate;
+  poisoner.position.x = adjudicator.position.x + 80;
+  poisoner.position.y = adjudicator.position.y;
+  poisoner.stephenUltimate = {
+    form: 'steak', skill: grill, nextTick: simulatedNow,
+    endsAt: simulatedNow + grill.duration, facing: 1
+  };
+  parryGame.updateStephenSystems();
+  if (adjudicator.hp !== adjudicatorHp - 5 - grill.damagePerTick || adjudicator.effects.parryActive !== parryUntil) {
+    throw new Error('A live damage-zone tick was stopped by Objection Parry');
+  }
+  const directHit = parryGame.dealDamage(adjudicator, 3, 'player2');
+  if (!directHit.blocked || adjudicator.hp !== adjudicatorHp - 5 - grill.damagePerTick || poisoner.hp !== poisoner.maxHp - adjudicator.skills.normal.counterDamage) {
+    throw new Error('Objection Parry no longer counters a discrete incoming hit');
+  }
+
   const duel = new NinjaGame();
   duel.selectCharacters('stephen', 'katon');
   duel.spawnCombatFlourish = () => {};
