@@ -363,13 +363,17 @@ try {
     throw new Error('Gladiator landing failed to deal 8 damage and start the four-second arena');
   }
   leaper.effects.gladiatorWillUntil = simulatedNow + 1000;
-  const gladiatorDrawCalls = new Set();
+  const gladiatorDrawCalls = [];
   leapGame.ctx = new Proxy({}, {
-    get: (_target, property) => (..._args) => gladiatorDrawCalls.add(property),
+    get: (_target, property) => (...args) => gladiatorDrawCalls.push({ property, args }),
     set: () => true
   });
   leapGame.renderGladiatorCombatVfx();
-  if (!gladiatorDrawCalls.has('ellipse') || !gladiatorDrawCalls.has('quadraticCurveTo') || !gladiatorDrawCalls.has('arc')) {
+  if (!gladiatorDrawCalls.some(call => call.property === 'ellipse') ||
+      !gladiatorDrawCalls.some(call => call.property === 'arc') ||
+      !gladiatorDrawCalls.some(call => call.property === 'quadraticCurveTo' &&
+        Math.abs(call.args[2] - leapGame.gameState.gladiatorArena.x) < 0.01 &&
+        call.args[3] > leapGame.gameState.gladiatorArena.y && call.args[3] < leapGame.gameState.gladiatorArena.y + 40)) {
     throw new Error('Gladiator shield and bound-target chain did not issue their canvas drawing calls');
   }
   leapTarget.position.x = 700;
@@ -617,6 +621,11 @@ try {
     }, (game, attacker, target) => {
       if (game.gameState.adjudicatorDomain !== null || target.effects.verdictSlowApplied || attacker.effects.verdictSlowApplied) throw new Error('Swallow did not remove the captured Adjudicator domain');
     }],
+    ['gladiator', (game, _attacker, _target) => {
+      game.gameState.gladiatorArena = { ownerId: 'player1', targetId: 'player2', x: 470, y: 400, radius: 100, expiresAt: simulatedNow + 4000 };
+    }, (game) => {
+      if (game.gameState.gladiatorArena !== null) throw new Error('Swallow did not break the Gladiator cage and its center-bound chains');
+    }],
     ['kage', game => {
       game.gameState.shadowClones.player2 = [{ hp: 5 }];
       game.gameState.shadowMimic.player2 = { x: 300, y: 200 };
@@ -630,6 +639,17 @@ try {
       throw new Error(`Yang Hong did not swallow eligible ${targetId}`);
     }
     verify(result.game, result.attacker, result.target);
+  }
+
+  // Capturing the gladiator who owns an active cage also cancels that persistent field.
+  {
+    const { game, target } = startYangCapture('gladiator', (duel, _attacker, gladiator) => {
+      duel.gameState.gladiatorArena = { ownerId: 'player2', targetId: 'player1', x: 350, y: 400, radius: 100, expiresAt: simulatedNow + 4000 };
+      gladiator.position.x = 470;
+    });
+    if (target.yangSwallowedBy !== 'player1' || game.gameState.gladiatorArena !== null) {
+      throw new Error('Swallowing the Gladiator did not cancel its active arena and chain restraint');
+    }
   }
 
   // Tethers are cleared both when the captured fighter owns the tether and when

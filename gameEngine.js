@@ -10239,10 +10239,11 @@
     const target = this.players[arena.targetId];
     if (!owner || !target || owner.hp <= 0 || target.hp <= 0) return;
 
-    const startX = owner.position.x + owner.facing * 13;
-    const startY = owner.position.y - 22;
-    const endX = target.position.x - owner.facing * 5;
-    const endY = target.position.y - 24;
+    // The captive is chained to the center of the arena, not to the gladiator.
+    const startX = target.position.x;
+    const startY = target.position.y - 25;
+    const endX = arena.x;
+    const endY = arena.y + 24;
     const dx = endX - startX;
     const dy = endY - startY;
     const distance = Math.hypot(dx, dy);
@@ -10254,12 +10255,11 @@
     ctx.shadowColor = '#FFB53D';
     ctx.shadowBlur = 13;
 
-    // Two heavy chain runs converge on the target, with a dark core and a bright
-    // metal edge so the restraint remains legible against both light and dark maps.
+    // Two heavy chain runs pull from the captive's shackle to the arena's center anchor.
     for (const strand of [-1, 1]) {
       const offset = strand * 7;
       const controlX = (startX + endX) / 2;
-      const controlY = (startY + endY) / 2 + 14 + strand * 5;
+      const controlY = (startY + endY) / 2 + 10 + strand * 5;
       ctx.globalAlpha = 0.94;
       ctx.strokeStyle = '#321D12';
       ctx.lineWidth = 7;
@@ -10316,6 +10316,26 @@
     ctx.beginPath();
     ctx.arc(cuffX, cuffY - 12, 4, 0, Math.PI * 2);
     ctx.fill();
+
+    // Iron ground ring and four rivets make the central endpoint unmistakable.
+    ctx.globalAlpha = 0.9;
+    ctx.shadowBlur = 12;
+    ctx.strokeStyle = '#321D12';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.ellipse(arena.x, arena.y + 27, 15, 6, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#FFE7A1';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(arena.x, arena.y + 27, 15, 6, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#F2C66D';
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(arena.x + side * 12, arena.y + 27, 2.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -10446,6 +10466,13 @@
 
   interruptYangHongTarget(target, targetSide) {
     if (!target) return;
+
+    const gladiatorArena = this.gameState.gladiatorArena;
+    if (gladiatorArena && (gladiatorArena.ownerId === targetSide || gladiatorArena.targetId === targetSide)) {
+      this.gameState.gladiatorArena = null;
+      this.addVisualEffect(gladiatorArena.x, gladiatorArena.y - 20, 'gladiator_chain_break', '⛓️');
+      this.addCombatLog('楊紘吞入對手，角鬥場鍊縛被打斷！', targetSide, 'status');
+    }
 
     // Cancel channel/wind-up attacks before their delayed callbacks can resolve.
     if (target.flameGodBladeTimer) {
