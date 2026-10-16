@@ -315,8 +315,19 @@ try {
     throw new Error('Gladiator berserk did not expire back to base stats and clear energy');
   }
 
+  const bloodFrenzyGame = new NinjaGame();
+  bloodFrenzyGame.selectCharacters('gladiator', 'fujin', { player1: { primary: 'gladiator_blood_frenzy' } });
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake', 'spawnCombatFlourish']) bloodFrenzyGame[method] = () => {};
+  bloodFrenzyGame.players.player1.position = { x: 300, y: 300 };
+  bloodFrenzyGame.players.player2.position = { x: 350, y: 300 };
+  simulatedNow += 901;
+  bloodFrenzyGame.attack('player1');
+  simulatedNow += 901;
+  bloodFrenzyGame.attack('player1');
+  if (bloodFrenzyGame.players.player2.hp !== 89) throw new Error('Blood Frenzy did not raise the passive second-hit bonus to five damage');
+
   const willGame = new NinjaGame();
-  willGame.selectCharacters('gladiator', 'katon');
+  willGame.selectCharacters('gladiator', 'katon', { player1: { secondary: 'gladiator_ironheart_stance' } });
   for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake', 'spawnCombatFlourish']) willGame[method] = () => {};
   const willUser = willGame.players.player1;
   willGame.players.player2.position.x = willUser.position.x + 40;
@@ -329,20 +340,20 @@ try {
   const willCooldownAt = willGame.cooldowns.player1.normal;
   const willHp = willUser.hp;
   const willDamage = willGame.dealDamage(willUser, 10, 'player2');
-  if (!willDamage.hit || willUser.hp !== willHp - 4 || willUser.effects.gladiatorWillUntil !== simulatedNow + 3000) {
-    throw new Error('Gladiator Will did not apply 60% damage reduction for three seconds');
+  if (!willDamage.hit || willUser.hp !== willHp - 4 || willUser.effects.gladiatorWillUntil !== simulatedNow + 3600) {
+    throw new Error('Ironheart Stance did not extend Gladiator Will to 3.6 seconds with 60% reduction');
   }
   willGame.attack('player1');
   if (willGame.cooldowns.player1.normal !== willCooldownAt - 500) {
     throw new Error('Gladiator basic-attack hit did not reduce Will cooldown by 0.5 seconds');
   }
-  simulatedNow += 3000;
+  simulatedNow += 3600;
   const expiredWillHp = willUser.hp;
   willGame.dealDamage(willUser, 10, 'player2');
   if (willUser.hp !== expiredWillHp - 10) throw new Error('Gladiator Will damage reduction remained active after its duration');
 
   const leapGame = new NinjaGame();
-  leapGame.selectCharacters('gladiator', 'fujin');
+  leapGame.selectCharacters('gladiator', 'fujin', { player1: { primary: 'gladiator_caesar_stomp', secondary: 'gladiator_central_binding' } });
   for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake', 'spawnCombatFlourish']) leapGame[method] = () => {};
   const leaper = leapGame.players.player1;
   const leapTarget = leapGame.players.player2;
@@ -359,8 +370,8 @@ try {
   }
   simulatedNow += 250;
   leapGame.updateGladiatorSystems();
-  if (leaper.gladiatorLeap || leapTarget.hp !== 92 || leapGame.gameState.gladiatorArena?.targetId !== 'player2') {
-    throw new Error('Gladiator landing failed to deal 8 damage and start the four-second arena');
+  if (leaper.gladiatorLeap || leapTarget.hp !== 89 || leapGame.gameState.gladiatorArena?.targetId !== 'player2' || leapGame.gameState.gladiatorArena.expiresAt !== simulatedNow + 4750) {
+    throw new Error('Caesar Stomp or Central Binding did not apply the 11-damage hit and 4.75-second arena');
   }
   leaper.effects.gladiatorWillUntil = simulatedNow + 1000;
   const gladiatorDrawCalls = [];
@@ -379,7 +390,7 @@ try {
   leapTarget.position.x = 700;
   leapGame.updateGladiatorSystems();
   if (leapTarget.position.x !== 550) throw new Error('Gladiator arena did not enforce its 100px radius boundary');
-  simulatedNow += 4000;
+  simulatedNow += 4750;
   leapGame.updateGladiatorSystems();
   if (leapGame.gameState.gladiatorArena !== null) throw new Error('Gladiator arena did not expire after four seconds');
 

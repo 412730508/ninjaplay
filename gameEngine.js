@@ -9744,6 +9744,10 @@
     if (has('yanghong_long_tongue')) ultimate.range = 360;
     if (has('yanghong_refill')) { normal.maxHits += 1; normal.maxDuration += normal.tickRate; }
     if (has('yanghong_quick_pocket')) player.talentYangHongQuickPocket = true;
+    if (has('gladiator_blood_frenzy')) player.passive.bonusDamage = 5;
+    if (has('gladiator_caesar_stomp')) ultimate.damage = 11;
+    if (has('gladiator_ironheart_stance')) normal.duration = 3600;
+    if (has('gladiator_central_binding')) ultimate.arenaDuration = 4750;
   }
 
   triggerTournamentSkillEnd(player, skill) {
