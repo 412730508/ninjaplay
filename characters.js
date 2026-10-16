@@ -537,7 +537,7 @@ const characters = {
         code: SKILL_CODES.ELF_TALISMAN,
         name: '精靈守護符',
         type: '三色輪轉',
-        cooldown: 12000,
+        cooldown: 11000,
         cycleInterval: 400,
         talismanColors: ['red', 'purple', 'blue'],
         red: {
@@ -566,7 +566,7 @@ const characters = {
         code: SKILL_CODES.STEALTH_DASH,
         name: '脫隱術',
         type: '隱身突進',
-        cooldown: 9000,
+        cooldown: 8000,
         dashDistance: 300,
         empoweredDamage: 8,
         slowPercent: 0.3,

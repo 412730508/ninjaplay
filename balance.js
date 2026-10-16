@@ -37,7 +37,7 @@ const BALANCE_PATCH = {
     skills: { ultimate: { range: 400 } }
   },
   ranger: {
-    skills: { normal: { cooldown: 10000 } }
+    skills: { normal: { cooldown: 9000 } }
   },
   warlock: { attackDamage: 4, attackSpeed: 700, attackHeal: 2 },
   beastmaster: {
