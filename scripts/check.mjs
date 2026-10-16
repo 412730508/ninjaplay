@@ -362,6 +362,16 @@ try {
   if (leaper.gladiatorLeap || leapTarget.hp !== 92 || leapGame.gameState.gladiatorArena?.targetId !== 'player2') {
     throw new Error('Gladiator landing failed to deal 8 damage and start the four-second arena');
   }
+  leaper.effects.gladiatorWillUntil = simulatedNow + 1000;
+  const gladiatorDrawCalls = new Set();
+  leapGame.ctx = new Proxy({}, {
+    get: (_target, property) => (..._args) => gladiatorDrawCalls.add(property),
+    set: () => true
+  });
+  leapGame.renderGladiatorCombatVfx();
+  if (!gladiatorDrawCalls.has('ellipse') || !gladiatorDrawCalls.has('quadraticCurveTo') || !gladiatorDrawCalls.has('arc')) {
+    throw new Error('Gladiator shield and bound-target chain did not issue their canvas drawing calls');
+  }
   leapTarget.position.x = 700;
   leapGame.updateGladiatorSystems();
   if (leapTarget.position.x !== 550) throw new Error('Gladiator arena did not enforce its 100px radius boundary');

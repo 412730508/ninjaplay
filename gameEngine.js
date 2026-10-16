@@ -470,6 +470,10 @@
       particleSystem.render(this.ctx);
     }
 
+    // Keep the gladiator's defensive silhouette and captured-target chain readable
+    // above busy hit particles for the full duration of each effect.
+    this.renderGladiatorCombatVfx();
+
     // Draw the sustained ultimate above particles and fighters so its waves
     // remain visible even in visually busy matches.
     this.renderShamisenCanon(this.ctx);
@@ -10164,6 +10168,154 @@
       ctx.lineTo(arena.x + side * arena.radius, arena.y - 35);
       ctx.stroke();
     }
+    ctx.restore();
+  }
+
+  renderGladiatorCombatVfx() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const now = Date.now();
+
+    ['player1', 'player2'].forEach(playerId => {
+      const player = this.players[playerId];
+      if (!player || player.id !== 'gladiator' || player.hp <= 0) return;
+      const remaining = (player.effects.gladiatorWillUntil || 0) - now;
+      if (remaining <= 0) return;
+
+      const { x, y } = player.position;
+      const pulse = 0.5 + Math.sin(now * 0.012) * 0.12;
+      const rotation = now * 0.0018;
+      ctx.save();
+      ctx.translate(x, y - 17);
+      ctx.globalAlpha = Math.min(1, remaining / 220) * 0.9;
+
+      // Two offset orbiting bands make the shield visibly wrap the whole fighter,
+      // while the chest crest anchors it to the character instead of reading as a buff icon.
+      for (let band = 0; band < 2; band++) {
+        ctx.save();
+        ctx.rotate(rotation * (band === 0 ? 1 : -0.72));
+        ctx.shadowColor = band === 0 ? '#FFD76A' : '#FFF0BD';
+        ctx.shadowBlur = 14 + pulse * 10;
+        ctx.strokeStyle = band === 0 ? 'rgba(255, 190, 70, 0.92)' : 'rgba(255, 245, 204, 0.82)';
+        ctx.lineWidth = band === 0 ? 3.2 : 1.8;
+        ctx.setLineDash(band === 0 ? [18, 8, 5, 8] : [5, 7]);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 30 + band * 4, 54 + band * 3, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.setLineDash([]);
+      ctx.shadowColor = '#FFF0BD';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = 'rgba(255, 205, 95, 0.24)';
+      ctx.strokeStyle = '#FFE6A0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -15);
+      ctx.lineTo(9, -7);
+      ctx.lineTo(0, 3);
+      ctx.lineTo(-9, -7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Bright orbit nodes communicate that the shield is active even at small scale.
+      for (let node = 0; node < 4; node++) {
+        const angle = rotation * (node % 2 ? -1 : 1) + node * Math.PI / 2;
+        const radiusX = 31;
+        const radiusY = 53;
+        ctx.globalAlpha = 0.72 + pulse * 0.2;
+        ctx.fillStyle = node % 2 ? '#FFF4C8' : '#F3B94F';
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * radiusX, Math.sin(angle) * radiusY, node % 2 ? 2.4 : 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    });
+
+    const arena = this.gameState.gladiatorArena;
+    if (!arena || now >= arena.expiresAt) return;
+    const owner = this.players[arena.ownerId];
+    const target = this.players[arena.targetId];
+    if (!owner || !target || owner.hp <= 0 || target.hp <= 0) return;
+
+    const startX = owner.position.x + owner.facing * 13;
+    const startY = owner.position.y - 22;
+    const endX = target.position.x - owner.facing * 5;
+    const endY = target.position.y - 24;
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const distance = Math.hypot(dx, dy);
+    if (distance < 1) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = '#FFB53D';
+    ctx.shadowBlur = 13;
+
+    // Two heavy chain runs converge on the target, with a dark core and a bright
+    // metal edge so the restraint remains legible against both light and dark maps.
+    for (const strand of [-1, 1]) {
+      const offset = strand * 7;
+      const controlX = (startX + endX) / 2;
+      const controlY = (startY + endY) / 2 + 14 + strand * 5;
+      ctx.globalAlpha = 0.94;
+      ctx.strokeStyle = '#321D12';
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY + offset);
+      ctx.quadraticCurveTo(controlX, controlY + offset, endX, endY + offset);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#D79A3B';
+      ctx.lineWidth = 3.2;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY + offset);
+      ctx.quadraticCurveTo(controlX, controlY + offset, endX, endY + offset);
+      ctx.stroke();
+
+      const links = Math.max(3, Math.floor(distance / 13));
+      for (let link = 0; link <= links; link++) {
+        const t = link / links;
+        const inverse = 1 - t;
+        const px = inverse * inverse * startX + 2 * inverse * t * controlX + t * t * endX;
+        const py = inverse * inverse * (startY + offset) + 2 * inverse * t * (controlY + offset) + t * t * (endY + offset);
+        const tangentX = 2 * inverse * (controlX - startX) + 2 * t * (endX - controlX);
+        const tangentY = 2 * inverse * (controlY + offset - (startY + offset)) + 2 * t * ((endY + offset) - (controlY + offset));
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(Math.atan2(tangentY, tangentX) + Math.PI / 2);
+        ctx.fillStyle = link % 2 ? '#F2C66D' : '#A96C28';
+        ctx.strokeStyle = '#FFE7A1';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 3.2, 5.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // A visible shackle around the torso makes the end of the chain read as a bind.
+    const cuffX = target.position.x;
+    const cuffY = target.position.y - 25;
+    ctx.globalAlpha = 0.95;
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = '#29190F';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.ellipse(cuffX, cuffY, 16, 12, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#F2C66D';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(cuffX, cuffY, 16, 12, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#FFF0BD';
+    ctx.beginPath();
+    ctx.arc(cuffX, cuffY - 12, 4, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
