@@ -2000,6 +2000,12 @@
     const healthText = `${player.hp}/${player.maxHp}`;
     this.ctx.strokeText(healthText, x, y - 120);
     this.ctx.fillText(healthText, x, y - 120);
+    if (player.id === 'yanghong' && player.effects.yangHongShield > 0) {
+      this.ctx.font = 'bold 12px Arial';
+      this.ctx.fillStyle = '#8fe7ff';
+      this.ctx.strokeText(`護盾 ${Math.ceil(player.effects.yangHongShield)}`, x, y - 137);
+      this.ctx.fillText(`護盾 ${Math.ceil(player.effects.yangHongShield)}`, x, y - 137);
+    }
     
     // 銵???
     const barWidth = 60;
@@ -9826,6 +9832,8 @@
       stealthAttackSpeedBuff: 0,
       talismanState: null,
       bloodShield: 0,
+      yangHongShield: 0,
+      yangHongShieldUntil: 0,
       tournamentArmor: 0,
       bloodTether: null,
       bloodCurseTether: null,
@@ -9881,6 +9889,8 @@
       stealthAttackSpeedBuff: 0,
       talismanState: null,
       bloodShield: 0,
+      yangHongShield: 0,
+      yangHongShieldUntil: 0,
       tournamentArmor: 0,
       bloodTether: null,
       bloodCurseTether: null,
@@ -10662,6 +10672,20 @@
             ctx.beginPath(); ctx.ellipse(0, 0, 20 + i * 2, 8 + i, 0, .15, Math.PI * 1.65); ctx.stroke(); ctx.restore();
           }
         }
+        ctx.restore();
+      }
+      if (player.effects.yangHongShield > 0 && player.effects.yangHongShieldUntil > now) {
+        const pulse = Math.sin(now * 0.014) * 3;
+        ctx.save();
+        ctx.fillStyle = 'rgba(117, 220, 255, 0.12)';
+        ctx.strokeStyle = 'rgba(117, 220, 255, 0.92)';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#75dcff';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.ellipse(x, y - 32, 33 + pulse, 52 + pulse, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
         ctx.restore();
       }
       // Keep the wallet readout in the upper corner on Yang Hong's side,
@@ -16145,7 +16169,7 @@
       }
 
       // 皜????
-      const nonTimestampEffects = ['poisonStacks', 'rangerPassiveCount', 'snowballCharges', 'fearDirection', 'fearStartX', 'lightningGuardFlatDR', 'talismanState', 'bloodShield', 'bloodTether', 'bloodCurseTether', 'slowMultiplier', 'waterShieldSpeedPercent', 'talentMoveMultiplier', 'talentFixedSpeedValue', 'talentAttackRangeBonus', 'afterglowDamageReduction', 'beatEchoHits', 'beatEchoSpeed']; // ??甈?銝???喉?銝?冽???頛???
+      const nonTimestampEffects = ['poisonStacks', 'rangerPassiveCount', 'snowballCharges', 'fearDirection', 'fearStartX', 'lightningGuardFlatDR', 'talismanState', 'bloodShield', 'yangHongShield', 'bloodTether', 'bloodCurseTether', 'slowMultiplier', 'waterShieldSpeedPercent', 'talentMoveMultiplier', 'talentFixedSpeedValue', 'talentAttackRangeBonus', 'afterglowDamageReduction', 'beatEchoHits', 'beatEchoSpeed']; // ??甈?銝???喉?銝?冽???頛???
       Object.keys(player.effects).forEach(effect => {
         if (nonTimestampEffects.includes(effect)) return;
         if (player.effects[effect] < now && player.effects[effect] > 0) {
