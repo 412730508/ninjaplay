@@ -258,5 +258,58 @@ function duel(targetId = 'katon', distance = 100) {
   assert.equal(game.gameState.shamisenCanon.player2.active, false);
   assert.equal(target.effects.casting, 0);
 }
+for (const [id, prepare, verify] of [
+  ['ronin', (game, target) => {
+    target.iaiFlashTimer = context.setTimeout(() => {}, 700);
+    target.effects.casting = now + 700;
+  }, (_game, target) => {
+    assert.equal(target.iaiFlashTimer, null);
+    assert.equal(target.effects.casting, 0);
+  }],
+  ['rei', (game, target) => {
+    target.spiritChargeStart = now - 100;
+    target.spiritChargeTimer = context.setTimeout(() => {}, 700);
+    game.gameState.effects.push({ casterKey: 'player2', type: 'judgment_indicator' });
+  }, (game, target) => {
+    assert.equal(target.spiritChargeStart, null);
+    assert.equal(target.spiritChargeTimer, null);
+    assert.ok(!game.gameState.effects.some(effect => effect.casterKey === 'player2' && effect.type === 'judgment_indicator'));
+  }],
+  ['warlock', (game, target) => {
+    target.effects.bloodCurseTether = { target: game.players.player1, endsAt: now + 2000 };
+  }, (_game, target) => assert.equal(target.effects.bloodCurseTether, null)],
+  ['adjudicator', (game, target) => {
+    game.gameState.adjudicatorDomain = { ownerId: 'player2', x: target.position.x, radius: 250 };
+    target.effects.verdictSlowApplied = true;
+  }, (game, target) => {
+    assert.equal(game.gameState.adjudicatorDomain, null);
+    assert.equal(target.effects.verdictSlowApplied, false);
+  }],
+  ['gladiator', (game, target) => {
+    game.gameState.gladiatorArena = { ownerId: 'player2', targetId: 'player1', x: target.position.x, y: target.position.y, radius: 100, expiresAt: now + 4000 };
+  }, game => assert.equal(game.gameState.gladiatorArena, null)],
+  ['kage', (game, target) => {
+    game.gameState.shadowClones.player2 = [{ hp: 5 }];
+    game.gameState.shadowMimic.player2 = { x: target.position.x, y: target.position.y };
+  }, game => {
+    assert.equal(game.gameState.shadowClones.player2.length, 0);
+    assert.equal(game.gameState.shadowMimic.player2, null);
+  }],
+  ['exileblade', (game, target) => {
+    target.effects.invulnerable = now + 2000;
+    game.gameState.projectiles.push({ type: 'shadowKunai', owner: target });
+  }, (game, target) => assert.ok(!game.gameState.projectiles.some(projectile => projectile.type === 'shadowKunai' && projectile.owner === target))]
+]) {
+  const { game, yang, target } = duel(id);
+  yang.yangWallet = 40;
+  prepare(game, target);
+  game.useSkill('player1', 'ultimate');
+  assert.equal(yang.yangUltimate?.target, target, `${id} should be captured`);
+  verify(game, target);
+  advance(game, 300);
+  assert.equal(target.yangSwallowedBy, 'player1');
+  advance(game, 2000);
+  assert.equal(target.yangSwallowedBy, null);
+}
 
 console.log('Yang Hong skill integration checks passed.');
