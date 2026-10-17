@@ -1407,7 +1407,7 @@
         }
 
         // ?弩 銵銋風?暹憭扳???
-        if (player.effects.bloodShield > 0) {
+        if (player.effects.bloodShield > 0 || player.effects.yangHongShield > 0) {
           this.ctx.save();
           this.ctx.translate(player.position.x, player.position.y);
           this.ctx.scale(1.05, 1.05);
@@ -1474,7 +1474,7 @@
           }
         }
         
-        if (player.effects.bloodShield > 0) {
+        if (player.effects.bloodShield > 0 || player.effects.yangHongShield > 0) {
           this.ctx.restore();
         }
 
@@ -9948,7 +9948,8 @@
     const skill = player.skills.normal;
     const duration = Math.min(now - player.stephenChargeStart, skill.maxCharge);
     player.stephenChargeStart = 0;
-    this.cooldowns[playerId].normal = now;
+    const cooldownReduction = duration >= (skill.chargeCooldownThreshold || 3000) ? (skill.chargeCooldownReduction || 3000) : 0;
+    this.cooldowns[playerId].normal = now - cooldownReduction;
     this.clearSkillReady(playerId, 'normal');
     if (player.hp <= 0 || player.effects.stunned > now || player.effects.rooted > now || player.effects.silenced > now) return;
     player.stephenChargeDuration = duration;
@@ -10101,6 +10102,13 @@
       const player = this.players[playerId];
       if (!player || player.id !== 'gladiator') return;
 
+      if (player.gladiatorArenaBuffUntil && now >= player.gladiatorArenaBuffUntil) {
+        player.maxHp = player.gladiatorArenaBaseMaxHp || player.maxHp;
+        player.hp = Math.min(player.hp, player.maxHp);
+        player.gladiatorArenaBaseMaxHp = 0;
+        player.gladiatorArenaBuffUntil = 0;
+      }
+
       if (player.gladiatorBerserkUntil > now) {
         player.attackDamage = player.passive.berserkDamage;
         player.attackSpeed = player.passive.berserkAttackSpeed;
@@ -10145,6 +10153,13 @@
         radius: leap.skill.arenaRadius,
         expiresAt: now + leap.skill.arenaDuration
       };
+        const hpBonus = Math.round(opponent.maxHp * (leap.skill.arenaHpBonusPercent || 0.2));
+        player.gladiatorArenaBaseMaxHp = player.maxHp;
+        player.maxHp += hpBonus;
+      player.hp = Math.min(player.maxHp, player.hp + hpBonus);
+      player.gladiatorArenaBuffUntil = now + leap.skill.arenaDuration;
+      player.gladiatorArenaMoveSpeedMultiplier = leap.skill.arenaMoveSpeedMultiplier || 1.2;
+      player.gladiatorArenaAttackSpeedMultiplier = leap.skill.arenaAttackSpeedMultiplier || 0.8;
       this.addCombatLog(`${opponent.name} 被困在角鬥場中！`, playerId, 'skill');
     });
   }
@@ -10345,6 +10360,17 @@
 
   updateYangHongSystems() {
     const now = Date.now();
+    for (const playerId of ['player1', 'player2']) {
+      const player = this.players[playerId];
+      if (player?.id === 'yanghong' && player.effects.yangHongShieldUntil && now >= player.effects.yangHongShieldUntil) {
+        const remaining = player.effects.yangHongShield || 0;
+        player.effects.yangHongShield = 0;
+        player.effects.yangHongShieldUntil = 0;
+        const healed = Math.min(remaining, player.maxHp - player.hp);
+        player.hp += healed;
+        if (healed > 0) this.addDamageNumber(player.position.x, player.position.y, healed, 'heal');
+      }
+    }
     this.gameState.yangHongCoins = (this.gameState.yangHongCoins || []).filter(coin => now < coin.expiresAt);
     for (let index = 0; index < this.gameState.yangHongCoins.length;) {
       const coin = this.gameState.yangHongCoins[index];
@@ -10552,6 +10578,9 @@
       target.effects.stunned = Math.max(target.effects.stunned || 0, Date.now() + 250);
     }
     player.yangUltimate = null;
+    player.effects.yangHongShield = (player.effects.yangHongShield || 0) + 10;
+    player.effects.yangHongShieldUntil = Date.now() + 3000;
+    this.addVisualEffect(player.position.x, player.position.y - 25, 'blood_shield', '🛡️');
     this.cooldowns[playerId].normal = 0;
     this.clearSkillReady(playerId, 'normal');
     this.addVisualEffect(player.position.x + (ultimate.facing || 1) * 55, player.position.y - 35, interrupted ? 'tongue_break' : 'coffee_spit', '✧');
@@ -11439,6 +11468,7 @@
     if (player.isExecuting) return;
     
     let speed = player.moveSpeed;
+    if (player.gladiatorArenaBuffUntil > Date.now()) speed *= (player.gladiatorArenaMoveSpeedMultiplier || 1.2);
     if (player.id === 'yanghong' && player.yangCoffee) speed *= player.skills.normal.moveMultiplier;
     if (player.id === 'yanghong' && player.yangUltimate?.phase === 'swallow') speed *= player.skills.ultimate.swallowedMoveMultiplier;
     
@@ -11544,6 +11574,7 @@
     if (player.effects.stealthAttackSpeedBuff > now && player.id === 'ranger') {
       effectiveAttackSpeed = player.skills.ultimate.boostedAttackSpeed;
     }
+    if (player.gladiatorArenaBuffUntil > now) effectiveAttackSpeed *= (player.gladiatorArenaAttackSpeedMultiplier || 0.8);
     if (now - this.cooldowns[playerId].attack < effectiveAttackSpeed) return;
     
     this.cooldowns[playerId].attack = now;
@@ -11822,7 +11853,7 @@
           const puppetDmg = player.passive?.puppetAttackDamage || 3;
           const puppetHit = this.dealDamage(opponent, puppetDmg, playerId);
           if (puppetHit.hit) {
-            puppet.storedDamage = (puppet.storedDamage || 0) + puppetDmg * (2 / 3);
+            puppet.storedDamage = (puppet.storedDamage || 0) + puppetDmg * (player.passive?.storedDamageRatio ?? (2 / 3));
           }
           this.addVisualEffect(puppet.x, puppet.y - 30, 'puppet_hit', '💥');
           this.addCombatLog('傀儡攻擊！', playerId, 'damage');
@@ -12438,7 +12469,7 @@
           const startX = player.position.x;
           this.gameState.projectiles.push({
             type: 'stephenSteak', owner: player, x: startX + player.facing * 35, y: player.position.y - 25,
-            startX, direction: player.facing, speed: 520, maxRange: skill.range,
+            startX, direction: player.facing, speed: 520, maxRange: skill.unlimitedRange ? null : skill.range,
             damage, slowMultiplier: 1 - slow, slowDuration: skill.slowDuration,
             createdAt: now
           });
@@ -12965,7 +12996,7 @@
         this.gameState.effects.push({
           x: player.position.x,
           y: player.position.y,
-          maxRadius: 150,
+          maxRadius: skill.range || 190,
           color: '#FFEB3B',
           duration: 600,
           type: 'range_indicator',
@@ -14058,7 +14089,8 @@
   // 嚙踢??靽桀儔嚗溶??executeThunderPunch ?寞?
   executeThunderPunch(player, opponent, skill, playerSide, playerId) {
     const distance = Math.abs(player.position.x - opponent.position.x);
-    if (distance > 150) return;  // ??蝭?150px
+    const range = skill.range || 190;
+    if (distance > range) return;
     
     let hitCount = 0;
     const punchInterval = setInterval(() => {
@@ -14068,7 +14100,7 @@
       }
       
       const currentDistance = Math.abs(player.position.x - opponent.position.x);
-      if (currentDistance > 150) {  // ??蝭?150px
+      if (currentDistance > range) {
         clearInterval(punchInterval);
         return;
       }
@@ -15276,6 +15308,13 @@
     damage = Math.round(damage);
     
     // ?弩 銵銋風?曉?嗅摰?
+    if (target.id === 'yanghong' && target.effects.yangHongShield > 0 && damage > 0) {
+      const absorbed = Math.min(target.effects.yangHongShield, damage);
+      target.effects.yangHongShield -= absorbed;
+      damage -= absorbed;
+  if (absorbed > 0) this.addVisualEffect(target.position.x, target.position.y, 'shield_absorb', '🛡️');
+    }
+
     if (target.effects.bloodShield > 0) {
       const absorbed = Math.min(target.effects.bloodShield, damage);
       target.effects.bloodShield -= absorbed;
@@ -15691,6 +15730,10 @@
   executeFlashCut(player, opponent, skill, playerSide, playerId) {
     const now = Date.now();
     const startX = player.position.x;
+    if (Math.abs(startX - opponent.position.x) > (skill.dashDistance || 200)) {
+      this.addCombatLog('瞬影斬距離不足，沒有命中。', playerSide, 'status');
+      return;
+    }
 
     // ?? ?祉宏?啣???敺?撠??Ｗ??????箇?典椰????鈭衣嚗?
     const behindOffset = 60 * (-opponent.facing);
@@ -17406,8 +17449,8 @@
   // *** Shamisen: Staccato Strike (Skill 1) ***
   executeStaccatoStrike(player, opponent, skill, playerSide, playerId) {
     const now = Date.now();
-    const range = skill.range || 150;
-    const hitX = player.position.x + player.facing * range;
+    const range = skill.range || 200;
+    const hitX = player.position.x;
     const hitY = player.position.y - 20;
 
     // Create visual effect at impact location
@@ -17415,13 +17458,12 @@
       particleSystem.createSkillEffect(skill.code, hitX, hitY, player.facing);
     }
 
-    // Hit detection: directional range check (like other instant skills)
+    // Hit detection: a circular pulse centered on the player.
     const dx = opponent.position.x - player.position.x;
-    const inFront = (dx === 0) || (Math.sign(dx) === player.facing);
-    const inRange = Math.abs(dx) <= range;
-    const yClose = Math.abs(player.position.y - opponent.position.y) <= 60;
+    const dy = opponent.position.y - player.position.y;
+    const inRange = Math.hypot(dx, dy) <= range;
 
-    if (inFront && inRange && yClose && opponent.hp > 0) {
+    if (inRange && opponent.hp > 0) {
       const damageResult = this.dealDamageWithResult(opponent, skill.damage || 10, playerId);
       if (damageResult.hit) {
         // Apply stun (interrupt)

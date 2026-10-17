@@ -1,18 +1,18 @@
 // NinjaPlay balance tuning lives here so it can be adjusted without touching the combat engine.
 // Values are deliberately small and are reviewed as a single balance patch.
-const BALANCE_VERSION = '0.3.1';
+const BALANCE_VERSION = '0.3.2';
 
 const BALANCE_PATCH = {
   fujin: {
     attackDamage: 7,
-    skills: { ultimate: { cooldown: 11000 } }
+    skills: { normal: { invulnerable: 1000 }, ultimate: { cooldown: 11000 } }
   },
   stephen: { attackDamage: 7 },
   yanghong: {
-    skills: { ultimate: { cooldown: 14000 } }
+    skills: { normal: { maxHits: 9 }, ultimate: { cooldown: 10000 } }
   },
   katon: {
-    skills: { normal: { cooldown: 8000 } }
+    skills: { normal: { cooldown: 8000, distance: 300 }, ultimate: { speed: 600 } }
   },
   dokusei: {
     skills: {
@@ -27,25 +27,26 @@ const BALANCE_PATCH = {
     }
   },
   suijin: {
-    skills: { normal: { baseHeal: 5, healPercent: 0.8 } }
+    skills: { normal: { baseHeal: 5, healPercent: 0.6 } }
   },
+  raijin: { moveSpeed: 320 },
   doton: { maxHp: 130, hp: 130 },
   kage: {
     skills: { ultimate: { cloneCount: 6, cloneDamage: 2 } }
   },
   rei: {
-    skills: { ultimate: { range: 400 } }
+    skills: { ultimate: { range: 350 } }
   },
-  ranger: {
-    skills: { normal: { cooldown: 9000 } }
+  ranger: { attackSpeed: 350, skills: { normal: { cooldown: 9000 } }
   },
-  warlock: { attackDamage: 4, attackSpeed: 700, attackHeal: 2 },
+  warlock: { maxHp: 95, hp: 95, attackDamage: 4, attackSpeed: 700, attackHeal: 2, skills: { ultimate: { damagePerTick: 12, healPerTick: 7 } } },
+  ronin: { attackDamage: 8 },
   beastmaster: {
     skills: {
       normal: { damage: 3 },
       ultimate: {
-        minStacksToCast: 3,
-        golemShield: 20,
+        minStacksToCast: 5,
+        golemShield: 10,
         transformRootRange: 200,
         golemSkillDelay: 300,
         revertCooldown: 3000
@@ -54,12 +55,15 @@ const BALANCE_PATCH = {
   },
   adjudicator: {
     moveSpeed: 240,
-    skills: { normal: { cooldown: 8000 } }
+    skills: { normal: { cooldown: 8000, parryDuration: 1500, counterDamage: 15 } }
   },
   azure_disciple: {
-    skills: { normal: { warningDuration: 200 } }
+    skills: { normal: { warningDuration: 200 }, ultimate: { strikeCount: 4 } }
   },
-  shamisen: { attackDamage: 5 },
+  shamisen: { attackDamage: 5, passive: { perfectWindow: [450, 600] }, skills: { normal: { range: 200 } } },
+  scorpion: { passive: { hazardWidth: 130 } },
+  puppeteer: { passive: { storedDamageRatio: 0.5 } },
+  stephen: { skills: { normal: { unlimitedRange: true, chargeCooldownThreshold: 3000, chargeCooldownReduction: 3000 } } },
   forgefire: {
     maxHp: 110,
     hp: 110,
@@ -82,6 +86,8 @@ function applyBalancePatch(roster, patch) {
         for (const [skillName, skillChanges] of Object.entries(value)) {
           Object.assign(character.skills[skillName], skillChanges);
         }
+      } else if (key === 'passive') {
+        Object.assign(character.passive, value);
       } else {
         character[key] = value;
       }

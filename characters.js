@@ -699,7 +699,7 @@ const characters = {
         name: '巨獸解放',
         type: '變身/定身',
         cooldown: 1000,
-        minStacksToCast: 4,
+        minStacksToCast: 5,
         stacksCost: 2,
         rootDuration: 2000,
         golemShield: 30,
@@ -714,7 +714,7 @@ const characters = {
         golemSkillAoE: 120,
         golemSkillDamage: 13,
         stackDrainInterval: 5000,
-        tagText: '需4層疊層 耗2層變身巨獸 定身敵人2秒'
+        tagText: '需5層疊層 耗2層變身巨獸 定身敵人2秒'
       }
     }
   },
@@ -1105,7 +1105,10 @@ const characters = {
         damage: 8,
         impactRadius: 150,
         arenaRadius: 100,
-        arenaDuration: 4000
+        arenaDuration: 4000,
+        arenaHpBonusPercent: 0.2,
+        arenaMoveSpeedMultiplier: 1.2,
+        arenaAttackSpeedMultiplier: 0.8
       }
     }
   }
