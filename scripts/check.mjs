@@ -138,7 +138,7 @@ try {
     ['stephen', 'attackDamage', 7],
     ['yanghong', 'passive.hitsPerDrop', 3],
     ['yanghong', 'passive.coinsPerDrop', 7],
-    ['yanghong', 'skills.ultimate.cooldown', 14000],
+    ['yanghong', 'skills.ultimate.cooldown', 10000],
     ['gladiator', 'maxHp', 100],
     ['gladiator', 'attackDamage', 3],
     ['gladiator', 'attackSpeed', 900],
@@ -448,12 +448,12 @@ try {
       }
     });
     walletGame.renderYangHongSystems();
-    const walletLabel = walletLabels.find(([text]) => text === '¥ 21 / 40');
+    const walletLabel = walletLabels.find(([text]) => text === '¥ 21 / 80');
     const expectedX = leftSide ? 14 + 46 : 800 - 14 - 92 + 46;
     if (!walletLabel || walletLabel[1] !== expectedX || walletLabel[2] !== 28) {
       throw new Error(`Yang Hong wallet HUD was not anchored to the ${leftSide ? 'left' : 'right'} top corner`);
     }
-    if (walletLabels.some(([text, , y]) => text === '¥ 21 / 40' && y === 350 - 99)) {
+    if (walletLabels.some(([text, , y]) => text === '¥ 21 / 80' && y === 350 - 99)) {
       throw new Error('Yang Hong wallet HUD still overlaps the character health label');
     }
   }
@@ -674,8 +674,8 @@ try {
     if (attacker.effects.bloodCurseTether !== null || target.yangSwallowedBy !== 'player1') throw new Error('Swallow did not break a Blood Devour tether targeting the captured fighter');
   }
 
-  // Special invulnerable/execution states, insufficient funds, and a wind-up
-  // that loses range must fail cleanly without spending coins or applying a grab.
+  // Special invulnerable/execution states and insufficient funds must fail
+  // cleanly without spending coins or applying a grab.
   {
     const { attacker, target } = startYangCapture('azure_disciple', (_game, _yang, foe) => {
       foe.effects.invulnerable = simulatedNow + 5000;
@@ -693,7 +693,7 @@ try {
   }
   {
     const { attacker, target } = startYangCapture('katon', (_game, _yang, foe) => { foe.position.x = 900; });
-    if (attacker.yangUltimate !== null || target.yangSwallowedBy || attacker.yangWallet !== 40) throw new Error('Out-of-range wind-up did not resolve as a clean miss');
+    if (attacker.yangUltimate?.phase !== 'swallow' || target.yangSwallowedBy !== 'player1') throw new Error('Tongue did not retain the target captured at cast time');
   }
   {
     const { attacker, target } = startYangCapture('exileblade', (_game, _yang, foe) => { foe.isExecuting = true; });
@@ -724,7 +724,7 @@ try {
     simulatedNow += 1000;
     game.updateYangHongSystems();
     if (attacker.yangUltimate !== null || target.yangSwallowedBy || game.cooldowns.player1.normal !== 0) throw new Error('Yang Hong did not spit the target out and reset Coffee Art cooldown');
-    if (target.effects.stunned <= simulatedNow) throw new Error('Yang Hong spit did not apply its brief landing stun');
+    if (target.effects.slowMultiplier !== 0.4 || target.effects.slowed !== simulatedNow + 2000) throw new Error('Yang Hong spit did not apply the two-second 60% slow');
   }
 
   // P2 must be able to perform the same full interaction while facing left.
@@ -779,7 +779,7 @@ try {
       throw new Error('Coffee Art multi-hit stream did not complete at its configured hit cap');
     }
     engineContext.Math.random = originalRandom;
-    if (attacker.yangCoinDamageCount !== 2 || attacker.yangWallet !== 7) throw new Error(`Coffee Art damage ticks did not count individually: counter=${attacker.yangCoinDamageCount}, wallet=${attacker.yangWallet}, coins=${game.gameState.yangHongCoins.length}`);
+    if (attacker.yangCoinDamageCount !== 1 || game.gameState.yangHongCoins.length !== 21) throw new Error(`Coffee Art damage ticks did not count individually: counter=${attacker.yangCoinDamageCount}, wallet=${attacker.yangWallet}, coins=${game.gameState.yangHongCoins.length}`);
     if (!emittedYangHongEffects.some(([code]) => code === 'YH_001')) throw new Error('Coffee Art did not dispatch its authored particles in a real skill activation');
     attacker.yangWallet = 40;
     game.useSkill('player1', 'ultimate');
@@ -804,14 +804,13 @@ try {
     game.dropYangCoin(attacker, target);
     if (game.gameState.yangHongCoins.length !== 0 || attacker.yangCoinDamageCount !== 2) throw new Error('Yang Hong dropped coins before the third damage instance');
     game.dropYangCoin(attacker, target);
-    if (game.gameState.yangHongCoins.length !== 1 || game.gameState.yangHongCoins[0].value !== 7 || attacker.yangCoinDamageCount !== 0) {
+    if (game.gameState.yangHongCoins.length !== 7 || game.gameState.yangHongCoins.some(coin => coin.value !== 1) || attacker.yangCoinDamageCount !== 0) {
       throw new Error('Yang Hong did not drop exactly seven coins on each third damage instance');
     }
     const coin = game.gameState.yangHongCoins[0];
-    coin.x = target.position.x;
-    coin.y = target.position.y;
+    for (const dropped of game.gameState.yangHongCoins) { dropped.x = target.position.x; dropped.y = target.position.y; }
     game.updateYangHongSystems();
-    if (attacker.yangWallet !== 0 || game.gameState.yangHongCoins.length !== 1) throw new Error('Opponent collected a coin that belongs to Yang Hong');
+    if (attacker.yangWallet !== 0 || game.gameState.yangHongCoins.length !== 7) throw new Error('Opponent collected a coin that belongs to Yang Hong');
     attacker.position.x = coin.x;
     attacker.position.y = coin.y;
     game.updateYangHongSystems();
@@ -820,7 +819,7 @@ try {
     game.dropYangCoin(attacker, target);
     if (game.gameState.yangHongCoins.length !== 0) throw new Error('Yang Hong passive counter did not restart after a drop');
     game.dropYangCoin(attacker, target);
-    if (game.gameState.yangHongCoins.length !== 1 || game.gameState.yangHongCoins[0].value !== 7) throw new Error('Yang Hong did not generate the next deterministic drop');
+    if (game.gameState.yangHongCoins.length !== 7 || game.gameState.yangHongCoins.some(dropped => dropped.value !== 1)) throw new Error('Yang Hong did not generate the next deterministic drop');
 
     const talented = new NinjaGame();
     talented.selectCharacters('yanghong', 'katon', { player1: { primary: 'yanghong_tip_bonus' } });
@@ -829,7 +828,7 @@ try {
     if (talentedAttacker.passive.hitsPerDrop !== 2) throw new Error('Yang Hong Quick Change talent no longer adjusts the deterministic drop interval');
     talented.dropYangCoin(talentedAttacker, talentedTarget);
     talented.dropYangCoin(talentedAttacker, talentedTarget);
-    if (talented.gameState.yangHongCoins.length !== 1 || talented.gameState.yangHongCoins[0].value !== 7) throw new Error('Yang Hong talent altered the fixed seven-coin drop value');
+    if (talented.gameState.yangHongCoins.length !== 7 || talented.gameState.yangHongCoins.some(dropped => dropped.value !== 1)) throw new Error('Yang Hong talent altered the fixed seven-coin drop value');
   }
 } catch (error) {
   console.error(`Skill integration check failed: ${error.message}`);

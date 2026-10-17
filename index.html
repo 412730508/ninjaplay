@@ -363,13 +363,13 @@
         <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
     </footer>
 
-    <script src="characters.js?v=stephen-breath-200ms-1"></script>
-    <script src="balance.js?v=balance-20261017-3"></script>
-    <script src="talents.js?v=gladiator-tournament-cards-1"></script>
+    <script src="characters.js?v=yanghong-balance-20261018-1"></script>
+    <script src="balance.js?v=yanghong-balance-20261018-1"></script>
+    <script src="talents.js?v=yanghong-balance-20261018-1"></script>
     <script src="particleSystem.js?v=gladiator-beast-vfx-1"></script>
     <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
     <script src="stickmanAnimator.js?v=gladiator-beast-school-1"></script>
-    <script src="gameEngine.js?v=yanghong-shield-fix-1"></script>
+    <script src="gameEngine.js?v=yanghong-balance-20261018-1"></script>
     <script src="aiController.js"></script>
     <script>
         // 全局遊戲引擎實例
@@ -2308,11 +2308,11 @@
                 },
                 [SKILL_CODES.YANGHONG_COFFEE]: {
                     description: '按住紙杯持續潑出熱咖啡，奶泡流沿前方掃過；按越久越多段，受控或放開按鍵就會停止。',
-                    effects: ['每段3傷害', '每350ms一段，最多9段', '命中緩速10%', '最長1.75秒', '施放時移速降低45%', '冷卻8秒']
+                    effects: ['每段2傷害', '每200ms一段，最多10段', '命中緩速10%', '最長2秒', '施放時移速降低45%', '冷卻8秒']
                 },
                 [SKILL_CODES.YANGHONG_TONGUE]: {
-                    description: '舌頭先向前蓄勢，命中300px內的目標後吞入；吞噬期間可緩慢移動並每秒消耗20元、造成7傷害，最後吐出；獲得10點護盾持續3秒，剩餘護盾在3秒後轉為回復生命，並重置咖啡拉花。',
-                    effects: ['前搖0.45秒', '最低花費20元', '每秒20元／7傷害', '最多吞噬2秒', '吞噬時移速30%', '10護盾持續3秒，剩餘轉為治療', '奧義冷卻10秒', '吐出後咖啡拉花重置']
+                    description: '舌頭包圍自身200px內的敵人，0.3秒後吞入；吞噬期間可緩慢移動並每秒消耗20元、造成7傷害，最後吐出400px並緩速60%持續2秒；獲得10點護盾持續3秒，剩餘護盾轉為回復生命，並重置咖啡拉花。',
+                    effects: ['包圍半徑200px', '0.3秒後吞入', '最低花費20元', '每秒20元／7傷害', '最多吞噬2秒', '吐出400px／緩速60%持續2秒', '10護盾持續3秒，剩餘轉為治療', '奧義冷卻10秒', '吐出後咖啡拉花重置']
                 },
                 [SKILL_CODES.WATER_SHIELD]: {
                     description: '水之護盾環繞身體，3秒內減少50%受到的傷害，並獲得移速加成。護盾結束後回復5 HP，再加上已損生命的60%。',

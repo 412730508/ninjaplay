@@ -9747,8 +9747,8 @@
     if (has('extra_bite')) normal.heal = 9;
     if (has('thick_smoke')) player.stephenSmokeAttackSlow = 0.85;
     if (has('yanghong_tip_bonus')) player.passive.hitsPerDrop = Math.max(2, player.passive.hitsPerDrop - 1);
-    if (has('yanghong_long_tongue')) ultimate.range = 360;
-    if (has('yanghong_refill')) { normal.maxHits += 1; normal.maxDuration += normal.tickRate; }
+    if (has('yanghong_long_tongue')) ultimate.range = 260;
+    if (has('yanghong_refill')) { normal.maxDuration += normal.tickRate; }
     if (has('yanghong_quick_pocket')) player.talentYangHongQuickPocket = true;
     if (has('gladiator_blood_frenzy')) player.passive.bonusDamage = 5;
     if (has('gladiator_caesar_stomp')) ultimate.damage = 11;
@@ -10048,9 +10048,7 @@
 
   releaseYangCoffee(playerId) {
     const player = this.players[playerId];
-    if (player?.id === 'yanghong' && player.yangCoffee && !player.yangCoffee.releasedAt) {
-      player.yangCoffee.releasedAt = Date.now();
-    }
+    if (player?.id === 'yanghong') player.yangCoffee = null;
   }
 
   dropYangCoin(attacker, target) {
@@ -10061,18 +10059,19 @@
     if (attacker.yangCoinDamageCount < hitsPerDrop) return;
     attacker.yangCoinDamageCount = 0;
     const now = Date.now();
-    const value = passive.coinsPerDrop || 7;
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 25 + Math.random() * 27;
-    this.gameState.yangHongCoins.push({
-      ownerSide: attacker === this.players.player1 ? 'player1' : 'player2',
-      x: Math.max(30, Math.min(this.canvasWidth - 30, target.position.x + Math.cos(angle) * radius)),
-      y: target.position.y + Math.sin(angle) * radius * 0.55,
-      value,
-      spawnedAt: now,
-      expiresAt: now + 6500,
-      phase: Math.random() * Math.PI * 2
-    });
+    for (let index = 0; index < (passive.coinsPerDrop || 7); index++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 25 + Math.random() * 27;
+      this.gameState.yangHongCoins.push({
+        ownerSide: attacker === this.players.player1 ? 'player1' : 'player2',
+        x: Math.max(30, Math.min(this.canvasWidth - 30, target.position.x + Math.cos(angle) * radius)),
+        y: target.position.y + Math.sin(angle) * radius * 0.55,
+        value: 1,
+        spawnedAt: now,
+        expiresAt: now + 6500,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
   }
 
   resolveYangCoffeeTick(playerId, coffee, now) {
@@ -10411,42 +10410,33 @@
 
       const coffee = player.yangCoffee;
       if (coffee) {
-        const interrupted = player.effects.stunned > now || player.effects.rooted > now || player.effects.silenced > now || player.hp <= 0;
+        const interrupted = player.effects.stunned > now || player.effects.rooted > now || player.effects.silenced > now || player.effects.feared > now || player.effects.chainDisabled > now || player.hp <= 0 || !!player.yangUltimate;
         const maxEnd = coffee.startedAt + coffee.skill.maxDuration;
-        const stopAt = coffee.releasedAt ? Math.min(coffee.releasedAt, maxEnd) : maxEnd;
         if (interrupted) {
           player.yangCoffee = null;
           this.addCombatLog('咖啡拉花被打斷。', playerId, 'status');
-        } else if (now >= stopAt) {
-          if (coffee.hits < coffee.skill.maxHits && coffee.nextTick <= stopAt) this.resolveYangCoffeeTick(playerId, coffee, now);
-          player.yangCoffee = null;
-        } else if (now >= coffee.nextTick && coffee.hits < coffee.skill.maxHits) {
-          this.resolveYangCoffeeTick(playerId, coffee, now);
-          if (coffee.hits >= coffee.skill.maxHits) player.yangCoffee = null;
+        } else {
+          while (coffee.hits < coffee.skill.maxHits && coffee.nextTick <= now && coffee.nextTick <= maxEnd) {
+            this.resolveYangCoffeeTick(playerId, coffee, now);
+          }
+          if (now >= maxEnd || coffee.hits >= coffee.skill.maxHits) player.yangCoffee = null;
         }
       }
 
       const ultimate = player.yangUltimate;
       if (!ultimate) continue;
       if (player.hp <= 0 || player.effects.stunned > now || player.effects.rooted > now || player.effects.silenced > now) {
-        this.finishYangSwallow(playerId, true);
+        if (ultimate.phase === 'swallow') this.finishYangSwallow(playerId, true);
+        else player.yangUltimate = null;
         continue;
       }
       if (ultimate.phase === 'windup') {
         if (now < ultimate.endsAt) continue;
         const target = ultimate.target;
-        const dx = target ? (target.position.x - player.position.x) * ultimate.facing : Infinity;
-        const dy = target ? Math.abs(target.position.y - player.position.y) : Infinity;
-        if (!target || target.hp <= 0 || dx < 0 || dx > ultimate.skill.range || dy > ultimate.skill.width / 2) {
+        if (!target || target.hp <= 0) {
           player.yangUltimate = null;
           this.addVisualEffect(player.position.x + ultimate.facing * 30, player.position.y - 40, 'tongue_miss', '〰');
           this.addCombatLog('舌頭撲空！零錢保留，奧義進入冷卻。', playerId, 'status');
-          continue;
-        }
-        if (!this.canYangHongCapture(target)) {
-          player.yangUltimate = null;
-          this.addVisualEffect(player.position.x + ultimate.facing * 30, player.position.y - 40, 'tongue_miss', '〰');
-          this.addCombatLog('對手正處於無法吞入的狀態，吞噬沒有成功。', playerId, 'status');
           continue;
         }
         const seconds = Math.min(ultimate.skill.maxSeconds, Math.floor((player.yangWallet || 0) / ultimate.skill.costPerSecond));
@@ -10455,13 +10445,13 @@
           this.addCombatLog('零錢不足，奧義沒有抓住對手。', playerId, 'status');
           continue;
         }
+        const swallowStart = ultimate.endsAt;
         ultimate.phase = 'swallow';
-        ultimate.startedAt = now;
-        ultimate.captureDistance = dx;
-        ultimate.endsAt = now + seconds * 1000;
-        ultimate.nextTick = now + 1000;
+        ultimate.startedAt = swallowStart;
+        ultimate.captureDistance = Math.hypot(target.position.x - player.position.x, target.position.y - player.position.y);
+        ultimate.endsAt = swallowStart + seconds * 1000;
+        ultimate.nextTick = swallowStart + 1000;
         const targetSide = ultimate.target === this.players.player1 ? 'player1' : 'player2';
-        this.interruptYangHongTarget(ultimate.target, targetSide);
         ultimate.target.yangSwallowedBy = playerId;
         ultimate.target.effects.blocking = 0;
         if (this.gameState.defending[targetSide]) this.gameState.defending[targetSide].active = false;
@@ -10476,14 +10466,12 @@
           target.position.x = player.position.x + ultimate.facing * 25;
           target.position.y = player.position.y - 28;
         }
-        if (now >= ultimate.nextTick && now <= ultimate.endsAt + 50) {
+        while (ultimate.nextTick <= now && ultimate.nextTick <= ultimate.endsAt && (player.yangWallet || 0) >= ultimate.skill.costPerSecond && target?.hp > 0) {
           ultimate.nextTick += 1000;
           player.yangWallet = Math.max(0, player.yangWallet - ultimate.skill.costPerSecond);
-          if (target && target.hp > 0) {
-            target.yangSwallowedBy = null;
-            this.dealDamage(target, ultimate.skill.damagePerSecond, playerId, { isDamageOverTime: true });
-            target.yangSwallowedBy = playerId;
-          }
+          target.yangSwallowedBy = null;
+          this.dealDamage(target, ultimate.skill.damagePerSecond, playerId, { isDamageOverTime: true });
+          target.yangSwallowedBy = playerId;
         }
         if (now >= ultimate.endsAt || (player.yangWallet || 0) < ultimate.skill.costPerSecond || !target || target.hp <= 0) {
           this.finishYangSwallow(playerId, false);
@@ -10506,6 +10494,24 @@
 
   interruptYangHongTarget(target, targetSide) {
     if (!target) return;
+
+    // A held button must not restart the old channel after the target is spat out.
+    const pressed = this.skillPressed?.[targetSide];
+    if (pressed) {
+      pressed.normal = true;
+      pressed.ultimate = true;
+    }
+    target.yangCoffee = null;
+    target.stephenChargeStart = 0;
+    target.stephenChargeDuration = 0;
+    target.stephenSmokeUntil = 0;
+    target.stephenSmokeNextTick = 0;
+    target.effects.casting = 0;
+    target.effects.chainCasting = 0;
+    if (target.thunderPunchInterval) {
+      clearInterval(target.thunderPunchInterval);
+      target.thunderPunchInterval = null;
+    }
 
     const gladiatorArena = this.gameState.gladiatorArena;
     if (gladiatorArena && (gladiatorArena.ownerId === targetSide || gladiatorArena.targetId === targetSide)) {
@@ -10580,16 +10586,18 @@
     const player = this.players[playerId];
     const ultimate = player?.yangUltimate;
     if (!player || !ultimate) return;
+    const now = Date.now();
     const target = ultimate.target;
     if (target) {
       target.yangSwallowedBy = null;
-      target.position.x = Math.max(60, Math.min(this.canvasWidth - 60, player.position.x + ultimate.facing * 78));
+      target.position.x = Math.max(60, Math.min(this.canvasWidth - 60, player.position.x + ultimate.facing * 400));
       target.position.y = player.position.y;
-      target.effects.stunned = Math.max(target.effects.stunned || 0, Date.now() + 250);
+      this.applyStephenSlow(target, 0.4, 2000, now);
     }
     player.yangUltimate = null;
-    player.effects.yangHongShield = (player.effects.yangHongShield || 0) + 10;
-    player.effects.yangHongShieldUntil = Date.now() + 3000;
+    player.yangCoffee = null;
+    player.effects.yangHongShield = 10;
+    player.effects.yangHongShieldUntil = now + 3000;
     this.addVisualEffect(player.position.x, player.position.y - 25, 'blood_shield', '🛡️');
     this.cooldowns[playerId].normal = 0;
     this.clearSkillReady(playerId, 'normal');
@@ -10659,6 +10667,14 @@
           ctx.strokeStyle = `rgba(255,223,199,${.28 + p * .65})`; ctx.lineWidth = 5 + p * 5; ctx.shadowColor = '#f48d93'; ctx.shadowBlur = 16;
           ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(28, -26, 48, 12, 78 + p * 35, -4); ctx.stroke();
           ctx.setLineDash([5, 7]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,195,179,.8)'; ctx.beginPath(); ctx.moveTo(10, 17); ctx.lineTo(ultimate.skill.range, 17); ctx.stroke(); ctx.setLineDash([]);
+          if (ultimate.target) {
+            const tx = (ultimate.target.position.x - x) * facing - 16;
+            const ty = ultimate.target.position.y - y + 19;
+            ctx.strokeStyle = `rgba(255,177,185,${.55 + p * .4})`;
+            ctx.lineWidth = 4 + p * 4;
+            ctx.beginPath(); ctx.moveTo(78 + p * 35, -4); ctx.quadraticCurveTo(tx * .75, -34, tx, ty); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(tx, ty, 27 - p * 8, 43 - p * 12, 0, 0, Math.PI * 2); ctx.stroke();
+          }
         } else {
           const pullProgress = Math.min(1, Math.max(0, (now - ultimate.startedAt) / 230));
           const tx = 25 + (ultimate.captureDistance || 0) * (1 - pullProgress);
@@ -10695,7 +10711,7 @@
       const margin = 14;
       const badgeX = playerId === 'player1' ? margin : this.canvasWidth - margin - badgeWidth;
       const badgeY = 14;
-      const walletCap = player.passive?.walletCap || 40;
+      const walletCap = player.passive?.walletCap || 80;
       ctx.save();
       ctx.fillStyle = 'rgba(12,15,24,.9)';
       ctx.strokeStyle = 'rgba(255,205,107,.88)';
@@ -12455,9 +12471,18 @@
         // Charging is started on key-down; the timer system owns its multi-hit stream.
         break;
       case SKILL_CODES.YANGHONG_TONGUE:
-        player.yangUltimate = { phase: 'windup', startedAt: now, endsAt: now + skill.windup, target: opponent, skill, facing: player.facing };
+        player.yangCoffee = null;
+        const targetInRange = opponent?.hp > 0 && Math.hypot(opponent.position.x - player.position.x, opponent.position.y - player.position.y) <= skill.range;
+        const capturedTarget = targetInRange && this.canYangHongCapture(opponent) ? opponent : null;
+        player.yangUltimate = { phase: 'windup', startedAt: now, endsAt: now + skill.windup, target: capturedTarget, skill, facing: player.facing };
+        if (capturedTarget) {
+          const targetSide = capturedTarget === this.players.player1 ? 'player1' : 'player2';
+          this.interruptYangHongTarget(capturedTarget, targetSide);
+          capturedTarget.effects.stunned = Math.max(capturedTarget.effects.stunned || 0, now + skill.windup);
+          this.addVisualEffect(capturedTarget.position.x, capturedTarget.position.y - 35, 'tongue_capture', '✦');
+        }
         this.playAnimation(player, 'tongueLash');
-        this.addCombatLog(`${player.name} 張口蓄勢，舌影鎖定前方！`, playerId, 'skill');
+        this.addCombatLog(`${player.name} 張口蓄勢，舌頭包圍周圍的對手！`, playerId, 'skill');
         break;
       case SKILL_CODES.GLADIATOR_WILL:
         player.effects.gladiatorWillUntil = now + skill.duration;
@@ -14118,15 +14143,18 @@
     if (distance > range) return;
     
     let hitCount = 0;
+    if (player.thunderPunchInterval) clearInterval(player.thunderPunchInterval);
     const punchInterval = setInterval(() => {
-      if (opponent.hp <= 0 || player.hp <= 0) {
+      if (opponent.hp <= 0 || player.hp <= 0 || player.yangSwallowedBy || player.effects.stunned > Date.now()) {
         clearInterval(punchInterval);
+        player.thunderPunchInterval = null;
         return;
       }
       
       const currentDistance = Math.abs(player.position.x - opponent.position.x);
       if (currentDistance > range) {
         clearInterval(punchInterval);
+        player.thunderPunchInterval = null;
         return;
       }
       
@@ -14152,6 +14180,7 @@
       
       if (hitCount >= skill.hits) {
         clearInterval(punchInterval);
+        player.thunderPunchInterval = null;
 
         if (player.talentThunderStride) {
           player.effects.talentMoveBoost = Date.now() + 800;
@@ -14167,6 +14196,7 @@
         }, skill.stun); // ?蝯?敺???蝺拚?
       }
     }, 300);
+    player.thunderPunchInterval = punchInterval;
   }
 
   // ? ??誘??- 銵???
@@ -15075,7 +15105,7 @@
     if (!target || target.hp <= 0) {
       return result;
     }
-    if (target.yangSwallowedBy) {
+    if (target.yangSwallowedBy || this.getAttackerFromSource(source)?.yangSwallowedBy) {
       result.immune = true;
       return result;
     }
@@ -16169,7 +16199,7 @@
       }
 
       // 皜????
-      const nonTimestampEffects = ['poisonStacks', 'rangerPassiveCount', 'snowballCharges', 'fearDirection', 'fearStartX', 'lightningGuardFlatDR', 'talismanState', 'bloodShield', 'yangHongShield', 'bloodTether', 'bloodCurseTether', 'slowMultiplier', 'waterShieldSpeedPercent', 'talentMoveMultiplier', 'talentFixedSpeedValue', 'talentAttackRangeBonus', 'afterglowDamageReduction', 'beatEchoHits', 'beatEchoSpeed']; // ??甈?銝???喉?銝?冽???頛???
+      const nonTimestampEffects = ['poisonStacks', 'rangerPassiveCount', 'snowballCharges', 'fearDirection', 'fearStartX', 'lightningGuardFlatDR', 'talismanState', 'bloodShield', 'yangHongShield', 'yangHongShieldUntil', 'bloodTether', 'bloodCurseTether', 'slowMultiplier', 'waterShieldSpeedPercent', 'talentMoveMultiplier', 'talentFixedSpeedValue', 'talentAttackRangeBonus', 'afterglowDamageReduction', 'beatEchoHits', 'beatEchoSpeed']; // ??甈?銝???喉?銝?冽???頛???
       Object.keys(player.effects).forEach(effect => {
         if (nonTimestampEffects.includes(effect)) return;
         if (player.effects[effect] < now && player.effects[effect] > 0) {

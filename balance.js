@@ -9,7 +9,7 @@ const BALANCE_PATCH = {
   },
   stephen: { attackDamage: 7 },
   yanghong: {
-    skills: { normal: { maxHits: 9 }, ultimate: { cooldown: 10000 } }
+    skills: { normal: { maxHits: 10 }, ultimate: { cooldown: 10000 } }
   },
   katon: {
     skills: { normal: { cooldown: 8000, distance: 300 }, ultimate: { speed: 600 } }
