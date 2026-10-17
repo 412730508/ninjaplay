@@ -11938,9 +11938,9 @@
     
     // ??瘚芯犖?恥鋡怠?嚗??銵?- 2蝘?餅??脣蝝????銝活?格蝒??
     if (player.id === 'ronin' && player.passive) {
-      const lastAttackTime = player.effects.roninLastAttackTime || 0;
-      if (now - lastAttackTime >= player.passive.idleThreshold) {
-        // Sheathed state triggered: mini-dash + bonus damage
+      const lastAttackTime = player.effects.roninLastAttackTime;
+      if (Number.isFinite(lastAttackTime) && now - lastAttackTime >= player.passive.idleThreshold) {
+        // Consume the sheathed state on this normal attack only.
         player.position.x += player.passive.dashDistance * player.facing;
         player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x));
         damage += player.passive.bonusDamage;
