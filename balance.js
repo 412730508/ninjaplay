@@ -1,6 +1,6 @@
 // NinjaPlay balance tuning lives here so it can be adjusted without touching the combat engine.
 // Values are deliberately small and are reviewed as a single balance patch.
-const BALANCE_VERSION = '0.3.2';
+const BALANCE_VERSION = '0.3.3';
 
 const BALANCE_PATCH = {
   fujin: {
