@@ -63,7 +63,7 @@
     }
     </script>
     
-    <link rel="stylesheet" href="ninjaStyles.css?v=match-report-equal-roster-1">
+    <link rel="stylesheet" href="ninjaStyles.css?v=selection-tournament-layout-1">
     
     <!-- 🔍 Canonical URL -->
     <link rel="canonical" href="https://412730508.github.io/ninjaplay/">
@@ -74,8 +74,8 @@
     
     <!-- 🔍 添加語義化HTML結構 -->
     <header>
-        <h1 class="ninja-title">🥷 火柴人魔法亂鬥 🥷</h1>
-        <p class="game-subtitle">二十名忍者對決，誰是最強戰士？</p>
+        <h1 class="ninja-title">火柴人魔法亂鬥</h1>
+        <p class="game-subtitle">選擇你的忍者</p>
     </header>
 
     <!-- 技能介紹按鈕 -->
@@ -100,83 +100,64 @@
 
     <!-- 🎮 界面 1：英雄選擇 -->
     <div id="characterSelect" class="game-screen">
-        <h2 class="screen-title">⚔️ 選擇你的忍者 ⚔️</h2>
-        <div class="selection-hero">
-            <div class="selection-hero-copy">
-                <span class="selection-kicker">Roster Control</span>
-                <p>改成單一角色名單後，整個選角畫面不再重複渲染兩份角色卡。你只需要在中央挑人，左右兩側則專注顯示玩家配置與最終結果。</p>
-            </div>
-            <div class="selection-hero-status">
-                <div class="selection-count-card">
-                    <span class="count-label">已鎖定忍者</span>
-                    <strong id="selectionCount">0/2</strong>
-                </div>
-                <p>提示：先選玩家欄位，再從中央角色池點選。滑鼠懸停才會展開技能。</p>
-            </div>
-        </div>
         <div class="character-selection">
             <div class="player-section player-one selection-side">
                 <div class="player-panel-header">
                     <div>
-                        <span class="player-kicker">Player 1</span>
-                        <h3>近戰先鋒配置</h3>
+                        <h3>玩家 1</h3>
                     </div>
                     <button class="slot-toggle-btn" id="player1Toggle" onclick="setActiveSelectionPlayer('player1')">選擇玩家 1</button>
                 </div>
                 <div class="selected-character-display" id="player1Selected">
                     <div class="placeholder">請選擇忍者</div>
                 </div>
-                <div class="panel-tip">紅方面板固定顯示已選角色與關鍵技能。</div>
             </div>
             <div class="selection-roster-panel">
                 <div class="player-panel-header roster-panel-header">
-                    <div>
-                        <span class="player-kicker">Shared Roster</span>
-                        <h3>中央角色池</h3>
+                    <div class="roster-heading">
+                        <h2>角色池</h2>
+                        <span class="selection-count">已選 <strong id="selectionCount">0/2</strong></span>
                     </div>
                     <div class="active-selection-indicator">
                         <span class="active-selection-label">目前操作</span>
                         <strong id="activeSelectionLabel">玩家 1</strong>
                     </div>
                 </div>
-                <div class="panel-tip active-selection-prompt" id="activeSelectionPrompt">先為玩家 1 選擇忍者，完成後會自動切換到玩家 2。</div>
                 <div class="character-grid roster-grid" id="characterRoster"></div>
             </div>
             <div class="player-section player-two selection-side">
                 <div class="player-panel-header">
                     <div>
-                        <span class="player-kicker">Player 2</span>
-                        <h3>反制與爆發配置</h3>
+                        <h3>玩家 2</h3>
                     </div>
                     <button class="slot-toggle-btn" id="player2Toggle" onclick="setActiveSelectionPlayer('player2')">選擇玩家 2</button>
                 </div>
                 <div class="selected-character-display" id="player2Selected">
                     <div class="placeholder">請選擇忍者</div>
                 </div>
-                <div class="panel-tip">藍方面板可隨時切回重新指定，不需要整頁來回捲動。</div>
             </div>
+        </div>
+        <div class="selection-keymap" aria-label="選角快捷鍵">
+            <span><strong>玩家 1</strong> WASD 選角 <kbd>K</kbd> 確認</span>
+            <span><strong>玩家 2</strong> 方向鍵選角 <kbd>Num 5</kbd> 確認</span>
+            <span><kbd>H</kbd> 隨機角色</span>
+            <span><kbd>N</kbd> 開始忍者對戰</span>
         </div>
         
         <div class="screen-controls selection-action-bar">
-            <button class="ninja-btn" onclick="randomSelectBoth()">
-                🎲 隨機選角 🎲
+            <button class="ninja-btn secondary" onclick="randomSelectBoth()">
+                隨機選角
             </button>
-            <button class="ninja-btn secondary" id="cpuModeBtn" onclick="toggleCpuMode()">
-                🤖 Play vs CPU: Off
+            <button class="ninja-btn secondary" id="selectMapBtn" disabled>
+                下一步：選擇戰場
             </button>
-            <button class="ninja-btn" id="selectMapBtn" disabled>
-                🗺️ 下一步：選擇戰場 🗺️
+            <button class="ninja-btn primary-action" id="startGameBtn" disabled>
+                開始忍者決戰
             </button>
-            <button class="ninja-btn" id="startGameBtn" disabled>
-                ⚔️ 開始忍者決戰 ⚔️
-            </button>
-            <button class="ninja-btn tournament-entry" type="button" onclick="startTournament()">
-                🏆 道場鬥技盃 🏆
-            </button>
-        </div>
-        
-        <div class="selection-status">
-            <p>完成兩側選角後可直接開戰，或先前往地圖頁預覽場地。</p>
+            <div class="selection-secondary-actions">
+                <button class="ninja-btn secondary" id="cpuModeBtn" onclick="toggleCpuMode()">CPU 對戰：關</button>
+                <button class="ninja-btn secondary tournament-entry" type="button" onclick="startTournament()">道場鬥技盃</button>
+            </div>
         </div>
     </div>
     
@@ -218,7 +199,6 @@
         <div class="tournament-shell">
             <div class="tournament-topline">
                 <div>
-                    <span class="tournament-eyebrow">DOJO DUEL LEAGUE</span>
                     <h2>🏆 道場鬥技盃</h2>
                 </div>
                 <div id="tournamentScore" class="tournament-score" aria-label="賽事比分">
@@ -254,7 +234,7 @@
             </div>
 
             <div id="tournamentFooter" class="tournament-footer">
-                禁角順序：P1 → P2　｜　選秀順序：P1 ×1 → P2 ×2 → P1 ×2 → P2 ×1　｜　每人第 1／2／3 手就是第 1／2／3 戰出場
+                出場順序依選角順序排列
             </div>
         </div>
     </div>
@@ -636,15 +616,15 @@
             if (state.phase === 'ban') {
                 const player = state.turn === 'player1' ? '玩家 1' : '玩家 2';
                 const confirm = state.turn === 'player1' ? p1Key : p2Key;
-                return { phase: '禁選階段', title: `${player}：禁用一名角色後按 ${confirm} 確認`, hint: `P1：WASD 移動／${p1Key} 確認　・　P2：方向鍵移動／${p2Key} 確認　｜　禁角 ${state.bans.length}/2` };
+                return { phase: '禁選階段', title: `${player}：禁用一名角色 · ${confirm} 確認`, hint: `P1：WASD／${p1Key} 確認　　P2：方向鍵／${p2Key} 確認` };
             }
             if (state.phase === 'draft') {
                 const step = state.draftSteps[state.stepIndex];
                 const player = step.player === 'player1' ? '玩家 1' : '玩家 2';
                 const confirm = step.player === 'player1' ? p1Key : p2Key;
-                return { phase: '蛇形選秀', title: `${player} 選角 ${state.stepPicks + 1}/${step.count}：按 ${confirm} 鎖定`, hint: '選秀順序：P1 ×1 → P2 ×2 → P1 ×2 → P2 ×1（已選與禁用角色不可再選）' };
+                return { phase: '蛇形選秀', title: `${player} 選角 ${state.stepPicks + 1}/${step.count} · ${confirm} 確認`, hint: `P1：WASD／${p1Key} 確認　　P2：方向鍵／${p2Key} 確認` };
             }
-            return { phase: '比賽準備中', title: '選秀順序即為出場順序，道場開門！', hint: '三戰兩勝・固定道場・場內每 20 秒生成一個隨機補給' };
+            return { phase: '比賽準備中', title: '準備開始對戰', hint: `P1：WASD／${p1Key} 確認　　P2：方向鍵／${p2Key} 確認` };
         }
 
         function tournamentProgressMarkup() {
@@ -1172,6 +1152,52 @@
             renderCharacterSelections();
             updateSelectionCount();
         }
+
+        const selectionCursors = { player1: 0, player2: 1 };
+
+        function moveSelectionCursor(playerId, direction) {
+            const roster = document.getElementById('characterRoster');
+            const cards = [...roster.querySelectorAll('.character-card')];
+            if (!cards.length) return;
+            const columns = getComputedStyle(roster).gridTemplateColumns.trim().split(/\s+/).length;
+            const offset = { left: -1, right: 1, up: -columns, down: columns }[direction];
+            selectionCursors[playerId] = (selectionCursors[playerId] + offset + cards.length) % cards.length;
+            setActiveSelectionPlayer(playerId);
+            if (window.innerWidth <= 1080 || window.innerHeight < 600) {
+                cards[selectionCursors[playerId]].scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        document.addEventListener('keydown', event => {
+            if (gameState.currentScreen !== 'characterSelect' || event.altKey || event.ctrlKey || event.metaKey) return;
+            if (event.target.closest('input, textarea, select, [contenteditable]')) return;
+            if (document.getElementById('skillGuideOverlay')?.classList.contains('active') ||
+                document.getElementById('matchReportPanel')?.hidden === false) return;
+
+            const key = event.code === 'Numpad5' ? 'numpad5' : event.key.toLowerCase();
+            const movement = {
+                w: ['player1', 'up'], a: ['player1', 'left'],
+                s: ['player1', 'down'], d: ['player1', 'right'],
+                arrowup: ['player2', 'up'], arrowleft: ['player2', 'left'],
+                arrowdown: ['player2', 'down'], arrowright: ['player2', 'right']
+            }[key];
+            if (movement) {
+                event.preventDefault();
+                moveSelectionCursor(...movement);
+                return;
+            }
+            if (!['k', 'numpad5', 'h', 'n'].includes(key)) return;
+            event.preventDefault();
+            if (event.repeat) return;
+            if (key === 'h') { randomSelectBoth(); return; }
+            if (key === 'n') {
+                if (!document.getElementById('startGameBtn').disabled) startGameDirectly();
+                return;
+            }
+            const playerId = key === 'k' ? 'player1' : 'player2';
+            const card = document.querySelectorAll('#characterRoster .character-card')[selectionCursors[playerId]];
+            if (card) selectCharacter(card.dataset.characterId, playerId, card);
+        });
         
         // 粒子效果系統
         const selectionParticles = [];
@@ -1656,7 +1682,7 @@
                 const isPlayer2 = gameState.selectedCharacters.player2 === characterId;
                 const isActiveSelection = gameState.selectedCharacters[gameState.activeSelectionPlayer] === characterId;
 
-                card.classList.remove('selected', 'selected-p1', 'selected-p2', 'selected-both', 'selected-active');
+                card.classList.remove('selected', 'selected-p1', 'selected-p2', 'selected-both', 'selected-active', 'cursor-p1', 'cursor-p2');
                 card.dataset.slotLabel = '';
 
                 if (isPlayer1 || isPlayer2) {
@@ -1680,9 +1706,13 @@
                     card.classList.add('selected-active');
                 }
             });
+            const cards = document.querySelectorAll('#characterRoster .character-card');
+            cards[selectionCursors.player1]?.classList.add('cursor-p1');
+            cards[selectionCursors.player2]?.classList.add('cursor-p2');
         }
         
         function selectCharacter(characterId, playerId, cardElement) {
+            selectionCursors[playerId] = [...document.querySelectorAll('#characterRoster .character-card')].indexOf(cardElement);
             gameState.selectedCharacters[playerId] = characterId;
             
             // 生成選角特效粒子
@@ -1715,6 +1745,8 @@
             if (targetScreen) {
                 targetScreen.classList.remove('hidden');
                 gameState.currentScreen = screenName;
+                window.scrollTo(0, 0);
+                document.body.scrollTop = 0;
                 
                 // 界面特定初始化
                 switch(screenName) {
@@ -1801,7 +1833,7 @@
             const player2ControlHint = document.getElementById('player2ControlHint');
 
             if (cpuModeBtn) {
-                cpuModeBtn.textContent = gameState.versusCpu ? '🤖 Play vs CPU: On' : '🤖 Play vs CPU: Off';
+                cpuModeBtn.textContent = gameState.versusCpu ? 'CPU 對戰：開' : 'CPU 對戰：關';
                 cpuModeBtn.classList.toggle('active', gameState.versusCpu);
             }
 
