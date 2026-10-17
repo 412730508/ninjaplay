@@ -1183,11 +1183,13 @@
             }[key];
             if (movement) {
                 event.preventDefault();
+                event.stopImmediatePropagation();
                 moveSelectionCursor(...movement);
                 return;
             }
             if (!['k', 'numpad5', 'h', 'n'].includes(key)) return;
             event.preventDefault();
+            event.stopImmediatePropagation();
             if (event.repeat) return;
             if (key === 'h') { randomSelectBoth(); return; }
             if (key === 'n') {
@@ -1197,7 +1199,7 @@
             const playerId = key === 'k' ? 'player1' : 'player2';
             const card = document.querySelectorAll('#characterRoster .character-card')[selectionCursors[playerId]];
             if (card) selectCharacter(card.dataset.characterId, playerId, card);
-        });
+        }, true);
         
         // 粒子效果系統
         const selectionParticles = [];
