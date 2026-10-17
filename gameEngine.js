@@ -12930,7 +12930,8 @@
         // ?? 瘞游??曄???????+ ?儔
         setTimeout(() => {
           // 閮??儔??(60%?脣??瑕拿)
-          const healAmount = (skill.baseHeal || 0) + Math.floor((player.waterShieldStoredDamage || 0) * skill.healPercent);
+          const missingHp = Math.max(0, player.maxHp - player.hp);
+          const healAmount = (skill.baseHeal || 0) + Math.floor(missingHp * skill.healPercent);
           const now2 = Date.now();
           const effectiveHeal = (player.effects.healReduction > now2) ? Math.floor(healAmount * (1 - (player.effects.healReductionPercent || 0))) : healAmount;
           
@@ -17820,7 +17821,7 @@
       ctx.fillText('節拍律動', px, barY - 6);
     } else {
       ctx.fillStyle = 'rgba(255,255,255,0.30)';
-      ctx.fillText('480~520ms', px, barY - 6);
+      ctx.fillText('450~600ms', px, barY - 6);
     }
 
     ctx.restore();

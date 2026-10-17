@@ -1,6 +1,6 @@
 // NinjaPlay balance tuning lives here so it can be adjusted without touching the combat engine.
 // Values are deliberately small and are reviewed as a single balance patch.
-const BALANCE_VERSION = '0.3.3';
+const BALANCE_VERSION = '0.3.4';
 
 const BALANCE_PATCH = {
   fujin: {
@@ -29,7 +29,7 @@ const BALANCE_PATCH = {
   suijin: {
     skills: { normal: { baseHeal: 5, healPercent: 0.6 } }
   },
-  raijin: { moveSpeed: 320 },
+  raijin: { moveSpeed: 320, skills: { ultimate: { range: 230 } } },
   doton: { maxHp: 130, hp: 130 },
   kage: {
     skills: { ultimate: { cloneCount: 6, cloneDamage: 2 } }
