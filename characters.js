@@ -97,7 +97,7 @@ const STEPHEN_STEAK_SKILLS = {
 };
 const STEPHEN_SMOKE_SKILLS = {
   normal: { code: SKILL_CODES.STEPHEN_SMOKE, name: '化煙', type: '無敵／持續傷害', cooldown: 12000, duration: 4000, damagePerTick: 3, tickRate: 1000, radius: 55 },
-  ultimate: { code: SKILL_CODES.STEPHEN_BREATH, name: '迎面煙幕', type: '定向／引導', cooldown: 22000, duration: 3000, range: 300, width: 120, damagePerTick: 10, tickRate: 1000, slowMultiplier: 0.4, slowDuration: 3000 }
+  ultimate: { code: SKILL_CODES.STEPHEN_BREATH, name: '迎面煙幕', type: '定向／引導', cooldown: 22000, duration: 3000, range: 300, width: 120, damagePerTick: 2, tickRate: 200, slowMultiplier: 0.4, slowDuration: 3000 }
 };
 
 const characters = {
