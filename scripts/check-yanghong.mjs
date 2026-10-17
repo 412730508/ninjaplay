@@ -55,6 +55,14 @@ function duel(targetId = 'katon', distance = 100) {
   assert.equal(target.hp, hp - 20);
 }
 {
+  const game = new NinjaGame();
+  game.selectCharacters('yanghong', 'katon', { player1: { secondary: 'yanghong_refill' } });
+  const coffee = game.players.player1.skills.normal;
+  assert.equal(coffee.cooldown, 7000);
+  assert.equal(coffee.maxDuration, 2000);
+  assert.equal(coffee.maxHits, 10);
+}
+{
   const { game, yang, target } = duel();
   game.useSkill('player1', 'normal');
   advance(game, 600);

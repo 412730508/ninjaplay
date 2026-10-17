@@ -9748,7 +9748,7 @@
     if (has('thick_smoke')) player.stephenSmokeAttackSlow = 0.85;
     if (has('yanghong_tip_bonus')) player.passive.hitsPerDrop = Math.max(2, player.passive.hitsPerDrop - 1);
     if (has('yanghong_long_tongue')) ultimate.range = 260;
-    if (has('yanghong_refill')) { normal.maxDuration += normal.tickRate; }
+    if (has('yanghong_refill')) normal.cooldown = Math.max(0, normal.cooldown - 1000);
     if (has('yanghong_quick_pocket')) player.talentYangHongQuickPocket = true;
     if (has('gladiator_blood_frenzy')) player.passive.bonusDamage = 5;
     if (has('gladiator_caesar_stomp')) ultimate.damage = 11;
