@@ -12052,8 +12052,10 @@
       const lastAttackTime = player.effects.roninLastAttackTime;
       if (Number.isFinite(lastAttackTime) && now - lastAttackTime >= player.passive.idleThreshold) {
         // Consume the sheathed state on this normal attack only.
-        player.position.x += player.passive.dashDistance * player.facing;
-        player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x));
+        if (!this.isAdjudicatorMobilityLocked(playerId, now)) {
+          player.position.x += player.passive.dashDistance * player.facing;
+          player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x));
+        }
         damage += player.passive.bonusDamage;
         this.addCombatLog(`${player.name} 納刀術觸發！追加${player.passive.bonusDamage}傷害！`, playerId === 'player1' ? 'player1' : 'player2', 'status');
         this.addVisualEffect(player.position.x, player.position.y, 'iaijutsu', '⚔️');
@@ -12075,7 +12077,7 @@
     // ? 撗拍敹?餌????
     const damageResult = this.dealDamage(opponent, damage, playerId);
 
-    if (damageResult.hit && player.talentFallingPetals) {
+    if (damageResult.hit && player.talentFallingPetals && !this.isAdjudicatorMobilityLocked(playerId, now)) {
       const stepDirection = opponent.position.x >= player.position.x ? 1 : -1;
       player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x + stepDirection * 100));
       this.addVisualEffect(player.position.x, player.position.y, 'falling_petals', '🌸');
@@ -12338,6 +12340,28 @@
     }
   }
 
+  isAdjudicatorMobilityLocked(playerId, now = Date.now()) {
+    const domain = this.gameState.adjudicatorDomain;
+    if (!domain || playerId === domain.ownerId || now >= domain.expiresAt) return false;
+    const owner = this.players[domain.ownerId];
+    const player = this.players[playerId];
+    return !!(owner && owner.hp > 0 && player && player.hp > 0 &&
+      Math.abs(player.position.x - owner.position.x) <= domain.radius);
+  }
+
+  isSelfDisplacementSkill(skill) {
+    if (!skill) return false;
+    if (skill.code === SKILL_CODES.THUNDER_PUNCH) return !!skill.preDash;
+    return [
+      SKILL_CODES.WIND_DASH, SKILL_CODES.FIRE_RUSH, SKILL_CODES.FORGE_FIRE_SPIN,
+      SKILL_CODES.THUNDER_STEP, SKILL_CODES.SHADOW_STRIKE, SKILL_CODES.SAVAGE_SUPLEX,
+      SKILL_CODES.STEALTH_DASH, SKILL_CODES.FLASH_CUT, SKILL_CODES.IAI_FLASH,
+      SKILL_CODES.EXILE_GALE_DASH, SKILL_CODES.STORM_EXECUTION,
+      SKILL_CODES.PHANTOM_SWAP, SKILL_CODES.GRAND_THUNDER_SLASH,
+      SKILL_CODES.GLADIATOR_CAESAR
+    ].includes(skill.code);
+  }
+
   useSkill(playerId, skillType) {
     const now = Date.now();
     const player = this.players[playerId];
@@ -12376,27 +12400,10 @@
       return;
     }
 
-    // ?? 鋆捱????撠??菜雿宏/?祉宏???
-    const domain = this.gameState.adjudicatorDomain;
-    if (domain && playerId !== domain.ownerId) {
-      const inDomain = Math.abs(player.position.x - domain.x) <= domain.radius;
-      const mobilitySkills = [
-        SKILL_CODES.WIND_DASH,
-        SKILL_CODES.FIRE_RUSH,
-        SKILL_CODES.THUNDER_STEP,
-        SKILL_CODES.SHADOW_STRIKE,
-        SKILL_CODES.STEALTH_DASH,
-        SKILL_CODES.FLASH_CUT,
-        SKILL_CODES.IAI_FLASH,
-        SKILL_CODES.EXILE_GALE_DASH,
-        SKILL_CODES.PHANTOM_SWAP
-      ];
-
-      if (inDomain && mobilitySkills.includes(selectedSkill.code)) {
-        this.addCombatLog(`暈眩結束了！`, playerId, 'status');
-        this.addVisualEffect(player.position.x, player.position.y - 30, 'adjudicator_lock', '⚖️');
-        return;
-      }
+    if (this.isSelfDisplacementSkill(selectedSkill) && this.isAdjudicatorMobilityLocked(playerId, now)) {
+      this.addCombatLog('絕對法庭封鎖位移技能！', playerId, 'status');
+      this.addVisualEffect(player.position.x, player.position.y - 30, 'adjudicator_lock', '⚖️');
+      return;
     }
     
     // 嚙?暺?蝒必鈭挾?嚗蔣摮??冽????敶勗?雿蔭
@@ -12515,6 +12522,7 @@
     const player = this.players[playerId];
     const opponent = this.players[playerId === 'player1' ? 'player2' : 'player1'];
     const now = Date.now();
+    if (this.isSelfDisplacementSkill(skill) && this.isAdjudicatorMobilityLocked(playerId, now)) return;
     
     
     // ?剜撠???賢???
@@ -13738,6 +13746,13 @@
     this.dealDamageWithResult(opponent, skill.kunaiDamage || 2, playerSide);
     this.addCombatLog(`命中敵人！`, playerSide, 'damage');
 
+    // The kunai may have been thrown before entering the court. Its hit still
+    // lands, but the later teleport/execution cannot start inside the domain.
+    if (this.isAdjudicatorMobilityLocked(playerId, now)) {
+      this.addVisualEffect(player.position.x, player.position.y - 30, 'adjudicator_lock', '⚖️');
+      return;
+    }
+
     if (skill.windBladeEcho) {
       this.gameState.hazards.push({
         type: 'wind_blade_echo', x: opponent.position.x, y: opponent.position.y,
@@ -14350,7 +14365,7 @@
               particleSystem.createScreenShake(12, 600);
             }
           }
-          if (skill.landingPursuit) {
+          if (skill.landingPursuit && !this.isAdjudicatorMobilityLocked(playerSide)) {
             const pursuitDirection = opponent.position.x >= player.position.x ? 1 : -1;
             player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x + pursuitDirection * skill.landingPursuit));
             this.addVisualEffect(player.position.x, player.position.y, 'landing_pursuit', '💨');
@@ -15913,6 +15928,11 @@
     player.iaiFlashTimer = setTimeout(() => {
       player.iaiFlashTimer = null;
       if (!this.players[playerId] || this.gameState.winner || player.yangSwallowedBy) return;
+      if (this.isAdjudicatorMobilityLocked(playerId)) {
+        player.effects.casting = 0;
+        this.addVisualEffect(player.position.x, player.position.y - 30, 'adjudicator_lock', '⚖️');
+        return;
+      }
 
       // ??蝯?嚗蝘餃撠?甇?餈???
       const preIaiX = player.position.x;
