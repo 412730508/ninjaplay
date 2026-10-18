@@ -97,7 +97,7 @@ try {
     ['fujin', 'attackDamage', 7],
     ['fujin', 'skills.ultimate.cooldown', 11000],
     ['suijin', 'skills.normal.baseHeal', 5],
-    ['suijin', 'skills.normal.healPercent', 0.8],
+    ['suijin', 'skills.normal.healPercent', 0.6],
     ['doton', 'maxHp', 130],
     ['kage', 'skills.ultimate.cloneCount', 6],
     ['kage', 'skills.ultimate.cloneDamage', 2],
@@ -146,7 +146,7 @@ try {
     ['gladiator', 'skills.normal.cooldown', 15000],
     ['gladiator', 'skills.normal.duration', 3000],
     ['gladiator', 'skills.normal.damageReduction', 0.6],
-    ['gladiator', 'skills.ultimate.cooldown', 20000],
+    ['gladiator', 'skills.ultimate.cooldown', 15000],
     ['gladiator', 'skills.ultimate.leapDistance', 150],
     ['gladiator', 'skills.ultimate.leapDuration', 500],
     ['gladiator', 'skills.ultimate.damage', 8],
@@ -527,11 +527,12 @@ try {
   simulatedNow += 18000;
   foe.position.x = 750;
   foe.facing = -1;
+  const hpBeforeBreath = foe.hp;
   duel.useSkill('player1', 'ultimate');
   duel.renderStephenZones();
   duel.updateStephenSystems();
   const facingDamage = foe.hp;
-  if (facingDamage !== 80) throw new Error('Stephen breath did not damage a facing enemy');
+  if (facingDamage !== hpBeforeBreath - stephen.skills.ultimate.damagePerTick) throw new Error('Stephen breath did not damage a facing enemy');
   foe.facing = 1;
   simulatedNow += 1000;
   duel.updateStephenSystems();

@@ -9432,7 +9432,7 @@
     if (target.effects.flameMark > now && target.effects.burning <= now) {
       // ????
       const passive = this.getPlayerPassive(attacker);
-      if (passive && passive.name === '??啗?') {
+      if (attacker.id === 'katon' && passive?.burnDuration > 0 && passive?.burnInterval > 0) {
         target.effects.burning = now + passive.burnDuration;
         target.effects.burnTickTime = now + passive.burnInterval;
         target.effects.flameMark = 0; // 瘨閮?
@@ -16138,21 +16138,19 @@
       }
 
       // ?????瑕拿
-      if (player.effects.burning > now && player.effects.burnTickTime <= now) {
+      while (player.hp > 0 && player.effects.burnTickTime > 0 &&
+             player.effects.burnTickTime <= now && player.effects.burnTickTime <= player.effects.burning) {
         const burnDamage = 1;
+        player.effects.burnTickTime += 1000;
         if (player.id === 'beastmaster' && player.isGolem && player.golemShield > 0) {
           player.golemShield = Math.max(0, player.golemShield - burnDamage);
-          if (player.golemShield <= 0) {
-            this.revertBeastForm(player, playerId, true);
-          }
+          if (player.golemShield <= 0) this.revertBeastForm(player, playerId, true);
         } else {
           player.hp = Math.max(0, player.hp - burnDamage);
         }
-        player.effects.burnTickTime = now + 1000;
 
         this.addDamageNumber(player.position.x, player.position.y, burnDamage);
         this.addVisualEffect(player.position.x, player.position.y, 'burn_tick', '🔥');
-
         this.createBurningEffect(player.position.x, player.position.y);
 
         if (player.hp <= 0) {

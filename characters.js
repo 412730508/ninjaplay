@@ -1098,7 +1098,7 @@ const characters = {
         code: SKILL_CODES.GLADIATOR_CAESAR,
         name: '誰是凱薩',
         type: '前空翻／震擊／角鬥場',
-        cooldown: 20000,
+        cooldown: 15000,
         leapDistance: 150,
         leapDuration: 500,
         leapHeight: 78,

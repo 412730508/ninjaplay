@@ -19,7 +19,7 @@
     -->
     
     <!-- 🔍 SEO元標籤 -->
-    <meta name="description" content="火柴人魔法亂鬥 - 20 名忍者的雙人對戰遊戲，支援一般對戰、CPU 對戰與道場鬥技盃。">
+    <meta name="description" content="火柴人魔法亂鬥 - 23 名忍者的雙人對戰遊戲，支援一般對戰、CPU 對戰與道場鬥技盃。">
     <meta name="keywords" content="火柴人,魔法,亂鬥,忍者,格鬥遊戲,線上遊戲,免費遊戲,雙人對戰,stickman,ninja,battle,game">
     <meta name="author" content="火柴人魔法亂鬥開發團隊">
     <meta name="robots" content="index, follow">
@@ -27,7 +27,7 @@
     
     <!-- 🔍 Open Graph (社群分享) -->
     <meta property="og:title" content="火柴人魔法亂鬥 - 免費線上忍者格鬥遊戲">
-    <meta property="og:description" content="20 名忍者、獨立技能與道場鬥技盃選秀賽制，即開即玩。">
+    <meta property="og:description" content="23 名忍者、獨立技能與道場鬥技盃選秀賽制，即開即玩。">
     <meta property="og:type" content="game">
     <meta property="og:url" content="https://412730508.github.io/ninjaplay/">
     <meta property="og:site_name" content="火柴人魔法亂鬥">
@@ -36,7 +36,7 @@
     <!-- 🔍 Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="火柴人魔法亂鬥 - 免費線上忍者格鬥遊戲">
-    <meta name="twitter:description" content="20 名忍者，各具獨特技能；支援本機雙人與道場鬥技盃。">
+    <meta name="twitter:description" content="23 名忍者，各具獨特技能；支援本機雙人與道場鬥技盃。">
     
     <!-- 🔍 結構化數據 (JSON-LD) -->
     <script type="application/ld+json">
@@ -45,7 +45,7 @@
       "@type": "Game",
       "name": "火柴人魔法亂鬥",
       "alternateName": "Stickman Magic Battle",
-      "description": "免費線上忍者格鬥遊戲，20 名忍者各具獨特技能，支援雙人對戰與錦標賽賽制",
+      "description": "免費線上忍者格鬥遊戲，23 名忍者各具獨特技能，支援雙人對戰與錦標賽賽制",
       "genre": ["格鬥遊戲", "動作遊戲", "忍者遊戲"],
       "gamePlatform": ["網頁瀏覽器", "PC", "手機"],
       "applicationCategory": "Game",
@@ -363,13 +363,13 @@
         <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
     </footer>
 
-    <script src="characters.js?v=yanghong-balance-20261018-1"></script>
+    <script src="characters.js?v=flame-mark-gladiator-20261018-1"></script>
     <script src="balance.js?v=yanghong-balance-20261018-1"></script>
     <script src="talents.js?v=yanghong-balance-20261018-2"></script>
     <script src="particleSystem.js?v=gladiator-beast-vfx-1"></script>
     <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
     <script src="stickmanAnimator.js?v=gladiator-beast-school-1"></script>
-    <script src="gameEngine.js?v=yanghong-balance-20261018-2"></script>
+    <script src="gameEngine.js?v=flame-mark-gladiator-20261018-1"></script>
     <script src="aiController.js"></script>
     <script>
         // 全局遊戲引擎實例
@@ -1655,17 +1655,12 @@
             };
 
             const activeSelectionLabel = document.getElementById('activeSelectionLabel');
-            const activeSelectionPrompt = document.getElementById('activeSelectionPrompt');
             const player1Toggle = document.getElementById('player1Toggle');
             const player2Toggle = document.getElementById('player2Toggle');
             const currentLabel = labelMap[gameState.activeSelectionPlayer];
 
             if (activeSelectionLabel) {
                 activeSelectionLabel.textContent = currentLabel;
-            }
-
-            if (activeSelectionPrompt) {
-                activeSelectionPrompt.textContent = `${currentLabel} 正在等待選角。點擊角色卡即可套用到這一側。`;
             }
 
             if (player1Toggle) {
@@ -2586,7 +2581,7 @@
                 },
                 [SKILL_CODES.GLADIATOR_CAESAR]: {
                     description: '落地命中後展開4秒角鬥場；自身最大生命暫增為敵方最大生命的20%，並立即增加等量生命；移速提升20%，攻擊間隔縮短20%（攻速提高）。',
-                    effects: ['落地傷害8', '角鬥場4秒', '最大生命增加敵方最大生命20%', '立即回復等量生命', '移速+20%', '攻擊間隔−20%（攻速提高）']
+                    effects: ['落地傷害8', '角鬥場4秒', '最大生命增加敵方最大生命20%', '立即回復等量生命', '移速+20%', '攻擊間隔−20%（攻速提高）', '冷卻15秒']
                 },
                 [SKILL_CODES.STACCATO_STRIKE]: {
                     description: '以三味線猛撥弦線，以自身為中心在200px範圍內釋放高頻音波衝擊，命中敵人造成10點傷害並暈眩0.5秒，打斷敵方正在施放的技能。',
