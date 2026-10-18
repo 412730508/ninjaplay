@@ -10235,14 +10235,13 @@
 
       const opponentId = playerId === 'player1' ? 'player2' : 'player1';
       const opponent = this.players[opponentId];
-      const distance = opponent ? Math.hypot(opponent.position.x - leap.endX, opponent.position.y - leap.startY) : Infinity;
       this.gameState.effects.push({
         type: 'gladiator_stomp', x: leap.endX, y: leap.startY,
         startTime: now, duration: 500
       });
       this.addVisualEffect(leap.endX, leap.startY - 20, 'gladiator_stomp', '⚡');
       this.triggerCameraShake(10, 300);
-      if (!opponent || opponent.hp <= 0 || distance > leap.skill.impactRadius) return;
+      if (!this.isTargetInCircularArea(opponent, leap.endX, leap.startY, leap.skill.impactRadius)) return;
 
       const result = this.dealDamageWithResult(opponent, leap.skill.damage, playerId);
       if (!result.hit || result.blocked || result.immune) return;
@@ -11204,6 +11203,12 @@
 
   getCollisionRadius(player, baseRadius = 40) {
     return baseRadius * this.getCollisionScale(player);
+  }
+
+  isTargetInCircularArea(target, centerX, centerY, radius, hitboxRadius = 40) {
+    if (!target || target.hp <= 0) return false;
+    return Math.hypot(target.position.x - centerX, target.position.y - centerY)
+      <= radius + this.getCollisionRadius(target, hitboxRadius);
   }
 
   getMeleeRange(player) {
@@ -13025,8 +13030,7 @@
         this.damageEnemyPuppetInArea(playerId, player.position.x, player.position.y,
           skill.range || 130, skill.damage || 11);
 
-        const distance = Math.abs(player.position.x - opponent.position.x);
-        if (distance <= (skill.range || 130)) {
+        if (this.isTargetInCircularArea(opponent, player.position.x, player.position.y, skill.range || 130)) {
           const hit = this.dealDamage(opponent, skill.damage || 11, playerId);
           if (hit.hit) {
             const knockDirection = Math.sign(opponent.position.x - player.position.x) || player.facing;
@@ -13217,7 +13221,6 @@
       case SKILL_CODES.EARTH_QUAKE:
         // ? ?啗???- 摰撖衣
         
-        const quakeDistance = Math.abs(player.position.x - opponent.position.x);
         const innerRange = skill.innerRange || 100;
         const outerRange = skill.outerRange || 200;
         const enemyPuppet = this.gameState.puppet[playerId === 'player1' ? 'player2' : 'player1'];
@@ -13238,11 +13241,11 @@
         }
         
         // ?文??瑕拿????
-        if (quakeDistance <= outerRange) {
+        if (this.isTargetInCircularArea(opponent, player.position.x, player.position.y, outerRange)) {
           let damage = 0;
           let stunDuration = skill.outerStun || 1000;
           
-          if (quakeDistance <= innerRange) {
+          if (this.isTargetInCircularArea(opponent, player.position.x, player.position.y, innerRange)) {
             // ?批???
             damage = skill.innerDamage || 15;
             stunDuration = skill.innerStun || 1500;
@@ -16569,8 +16572,7 @@
     const needleDmg = skill.needleBurstDamage || 8;
     this.damageEnemyPuppetInArea(playerId, player.position.x, player.position.y,
       burstRadius, needleDmg);
-    const dist = Math.abs(player.position.x - opponent.position.x);
-    if (dist <= burstRadius && opponent.hp > 0) {
+    if (this.isTargetInCircularArea(opponent, player.position.x, player.position.y, burstRadius)) {
       this.dealDamageWithResult(opponent, needleDmg, playerId);
       this.addCombatLog('????澆銝哨?', playerSide, 'damage');
       this.triggerCameraShake(6, 200);
@@ -17692,9 +17694,9 @@
     }
 
     // Hit detection: a circular pulse centered on the player.
-    const dx = opponent.position.x - player.position.x;
-    const dy = opponent.position.y - player.position.y;
-    const inRange = Math.hypot(dx, dy) <= range;
+    const inRange = this.isTargetInCircularArea(
+      opponent, player.position.x, player.position.y, range, skill.hitboxRadius || 40
+    );
 
     if (inRange && opponent.hp > 0) {
       const damageResult = this.dealDamageWithResult(opponent, skill.damage || 10, playerId);
@@ -17777,12 +17779,10 @@
       player.position.x = canon.centerX;
       player.position.y = canon.centerY;
 
-      const dist = Math.abs(opponent.position.x - canon.centerX);
-
       // Wave 1: 0-1000ms, radius grows to 100px
       if (elapsed < 1000) {
         const currentRadius = (elapsed / 1000) * (skill.wave1?.maxRadius || 100);
-        if (!canon.wave1Hit && dist <= currentRadius && opponent.hp > 0) {
+        if (!canon.wave1Hit && this.isTargetInCircularArea(opponent, canon.centerX, canon.centerY, currentRadius)) {
           canon.wave1Hit = true;
           const dmg = skill.wave1?.damage || 5;
           this.dealDamageWithResult(opponent, dmg, pid);
@@ -17798,7 +17798,7 @@
         const minR = skill.wave1?.maxRadius || 100;
         const maxR = skill.wave2?.maxRadius || 200;
         const currentRadius = minR + progress * (maxR - minR);
-        if (!canon.wave2Hit && dist <= currentRadius && opponent.hp > 0) {
+        if (!canon.wave2Hit && this.isTargetInCircularArea(opponent, canon.centerX, canon.centerY, currentRadius)) {
           canon.wave2Hit = true;
           const dmg = skill.wave2?.damage || 10;
           this.dealDamageWithResult(opponent, dmg, pid);
@@ -17815,7 +17815,7 @@
         const minR = skill.wave2?.maxRadius || 200;
         const maxR = skill.wave3?.maxRadius || 800;
         const currentRadius = minR + progress * (maxR - minR);
-        if (!canon.wave3Hit && dist <= currentRadius && opponent.hp > 0) {
+        if (!canon.wave3Hit && this.isTargetInCircularArea(opponent, canon.centerX, canon.centerY, currentRadius)) {
           canon.wave3Hit = true;
           const dmg = skill.wave3?.damage || 15;
           this.dealDamageWithResult(opponent, dmg, pid);
