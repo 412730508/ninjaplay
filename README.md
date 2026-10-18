@@ -2,6 +2,12 @@
 
 一款可直接在瀏覽器遊玩的雙人火柴人忍者格鬥遊戲，不需要安裝依賴或建置。
 
+## 下載 Windows 桌面版
+
+到 [GitHub Releases](https://github.com/412730508/ninjaplay/releases/latest) 下載 `NinjaPlay-0.1.0-Windows-x64.exe`，下載完成後直接開啟即可遊玩，不需要安裝；遊戲內容已包含在執行檔內。桌面版與網頁版使用同一套角色與戰鬥程式碼。
+
+如果要自己封裝，安裝 Node.js 22.12 以上版本後執行 `npm install` 與 `npm run dist:win`。
+
 ## 🎮 特色
 
 ### 二十三名可選忍者

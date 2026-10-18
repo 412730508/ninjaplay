@@ -2,8 +2,39 @@
   "name": "ninjaplay",
   "private": true,
   "version": "0.1.0",
-  "description": "A dependency-free browser fighting game.",
+  "description": "A local two-player ninja fighting game.",
+  "main": "desktop/main.cjs",
   "scripts": {
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "desktop": "electron .",
+    "dist:win": "electron-builder --win portable --x64"
+  },
+  "devDependencies": {
+    "electron": "44.9.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.ninjaplay.desktop",
+    "productName": "火柴人魔法亂鬥",
+    "asar": true,
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "desktop/**/*",
+      "index.html",
+      "*.js",
+      "*.css",
+      "*.png",
+      "*.ico",
+      "*.webmanifest",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "build/icon.svg",
+      "artifactName": "NinjaPlay-${version}-Windows-${arch}.${ext}"
+    }
   }
 }
