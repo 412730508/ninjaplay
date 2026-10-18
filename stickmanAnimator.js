@@ -460,6 +460,29 @@
       rightLeg: { upperRotation: 0, lowerRotation: 5 }
     }));
   }
+
+  // Caesar's stomp uses fixed poses keyed to the leap clock, so the wind-up,
+  // full flip, suspended one-foot pose and landing stay in sync at any FPS.
+  getGladiatorCaesarFrame(phase, progress = 0) {
+    const pose = (body, head, leftArm, rightArm, leftLeg, rightLeg) => ({
+      head: { x: 0, y: 0, rotation: head },
+      body: { rotation: body },
+      leftArm: { upperRotation: leftArm[0], lowerRotation: leftArm[1] },
+      rightArm: { upperRotation: rightArm[0], lowerRotation: rightArm[1] },
+      leftLeg: { upperRotation: leftLeg[0], lowerRotation: leftLeg[1] },
+      rightLeg: { upperRotation: rightLeg[0], lowerRotation: rightLeg[1] }
+    });
+    if (phase === 'step') return pose(12, 7, [-30, -20], [35, 18], [36, -18], [-18, 25]);
+    if (phase === 'flip') {
+      const tuck = Math.sin(Math.PI * Math.min(1, progress));
+      return pose(8, 0, [-35 - 35 * tuck, -25], [35 + 35 * tuck, 25],
+        [28 + 50 * tuck, -30 - 30 * tuck], [-20 - 45 * tuck, 35 + 25 * tuck]);
+    }
+    if (phase === 'hover') return pose(6, 0, [-55, -25], [55, 25], [3, 0], [-65, 85]);
+    if (phase === 'stomp') return pose(14, 5, [-70, -32], [70, 32], [0, 0], [-75, 100]);
+    if (phase === 'impact') return pose(22, 10, [-48, -25], [65, 35], [12, -12], [-80, 105]);
+    return pose(8 * (1 - progress), 0, [-20, -5], [25, 5], [0, 5], [-50 * (1 - progress), 65 * (1 - progress)]);
+  }
   
   // 銵粥?
   createWalkAnimation() {

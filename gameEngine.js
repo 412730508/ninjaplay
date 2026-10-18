@@ -1454,12 +1454,18 @@
           }
           if (player.gladiatorLeap) {
             const leap = player.gladiatorLeap;
-            const progress = Math.max(0, Math.min(1, (Date.now() - leap.startedAt) / leap.skill.leapDuration));
+            const motion = this.getGladiatorLeapMotion(leap, Date.now());
             this.ctx.save();
-            this.ctx.translate(player.position.x, player.position.y - 24);
-            this.ctx.rotate(leap.facing * progress * Math.PI * 2);
-            stickmanAnimator.drawStickman(this.ctx, 0, 24, currentFrame, player.id, player.facing);
+            this.ctx.translate(player.position.x, player.position.y - 8);
+            if (motion.phase === 'flip') this.ctx.rotate(leap.facing * motion.phaseProgress * Math.PI * 2);
+            stickmanAnimator.drawStickman(this.ctx, 0, 8,
+              stickmanAnimator.getGladiatorCaesarFrame(motion.phase, motion.phaseProgress), player.id, player.facing);
             this.ctx.restore();
+          } else if (player.gladiatorLandingUntil > now) {
+            const recovery = Math.max(0, Math.min(1, 1 - (player.gladiatorLandingUntil - now) / 140));
+            stickmanAnimator.drawStickman(this.ctx, player.position.x, player.position.y + (1 - recovery) * 7,
+              stickmanAnimator.getGladiatorCaesarFrame(recovery < 0.4 ? 'impact' : 'recover', recovery),
+              player.id, player.facing);
           } else {
             stickmanAnimator.drawStickman(
               this.ctx,
@@ -10088,11 +10094,47 @@
     }
   }
 
+  clearGladiatorArenaBuff(player) {
+    if (!player || !player.gladiatorArenaBuffUntil) return;
+    player.maxHp = player.gladiatorArenaBaseMaxHp || player.maxHp;
+    player.hp = Math.min(player.hp, player.maxHp);
+    player.gladiatorArenaBaseMaxHp = 0;
+    player.gladiatorArenaBuffUntil = 0;
+    player.gladiatorArenaMoveSpeedMultiplier = 1;
+    player.gladiatorArenaAttackSpeedMultiplier = 1;
+  }
+
+  getGladiatorLeapMotion(leap, now) {
+    const progress = Math.max(0, Math.min(1, (now - leap.startedAt) / leap.skill.leapDuration));
+    const distance = leap.endX - leap.startX;
+    const height = leap.skill.leapHeight;
+    if (progress < 0.12) {
+      const t = progress / 0.12;
+      return { phase: 'step', phaseProgress: t, x: leap.startX + distance * 0.12 * t,
+        y: leap.startY - 2 * t };
+    }
+    if (progress < 0.76) {
+      const t = (progress - 0.12) / 0.64;
+      return { phase: 'flip', phaseProgress: t, x: leap.startX + distance * (0.12 + 0.8 * t),
+        y: leap.startY - 2 - (height - 2) * (2 * t - t * t) };
+    }
+    if (progress < 0.84) {
+      const t = (progress - 0.76) / 0.08;
+      return { phase: 'hover', phaseProgress: t, x: leap.startX + distance * (0.92 + 0.08 * t),
+        y: leap.startY - height };
+    }
+    const t = (progress - 0.84) / 0.16;
+    return { phase: 'stomp', phaseProgress: t, x: leap.endX,
+      y: leap.startY - height * (1 - t * t) };
+  }
+
   updateGladiatorSystems() {
     const now = Date.now();
     const arena = this.gameState.gladiatorArena;
     if (arena) {
-      if (now >= arena.expiresAt || !this.players[arena.targetId] || this.players[arena.targetId].hp <= 0) {
+      if (now >= arena.expiresAt || !this.players[arena.ownerId] || this.players[arena.ownerId].hp <= 0 ||
+          !this.players[arena.targetId] || this.players[arena.targetId].hp <= 0) {
+        this.clearGladiatorArenaBuff(this.players[arena.ownerId]);
         this.gameState.gladiatorArena = null;
       } else {
         const target = this.players[arena.targetId];
@@ -10111,11 +10153,9 @@
       const player = this.players[playerId];
       if (!player || player.id !== 'gladiator') return;
 
-      if (player.gladiatorArenaBuffUntil && now >= player.gladiatorArenaBuffUntil) {
-        player.maxHp = player.gladiatorArenaBaseMaxHp || player.maxHp;
-        player.hp = Math.min(player.hp, player.maxHp);
-        player.gladiatorArenaBaseMaxHp = 0;
-        player.gladiatorArenaBuffUntil = 0;
+      if (player.gladiatorArenaBuffUntil && (now >= player.gladiatorArenaBuffUntil || player.hp <= 0 || player.yangSwallowedBy)) {
+        this.clearGladiatorArenaBuff(player);
+        if (this.gameState.gladiatorArena?.ownerId === playerId) this.gameState.gladiatorArena = null;
       }
 
       if (player.gladiatorBerserkUntil > now) {
@@ -10131,15 +10171,24 @@
 
       const leap = player.gladiatorLeap;
       if (!leap) return;
-      const progress = Math.max(0, Math.min(1, (now - leap.startedAt) / leap.skill.leapDuration));
-      player.position.x = leap.startX + (leap.endX - leap.startX) * progress;
-      player.position.y = leap.startY - Math.sin(progress * Math.PI) * leap.skill.leapHeight;
-      if (progress < 1) return;
+      if (player.hp <= 0 || player.yangSwallowedBy || player.effects.stunned > now) {
+        player.position.y = leap.startY;
+        player.effects.invulnerable = Math.max(leap.previousInvulnerable, now);
+        player.gladiatorLeap = null;
+        if (player.animation?.current === 'gladiatorFlip') this.playAnimation(player, 'idle');
+        return;
+      }
+      const motion = this.getGladiatorLeapMotion(leap, now);
+      player.position.x = motion.x;
+      player.position.y = motion.y;
+      if (now < leap.endsAt) return;
 
       player.position.x = leap.endX;
       player.position.y = leap.startY;
       player.effects.invulnerable = Math.max(leap.previousInvulnerable, now);
       player.gladiatorLeap = null;
+      player.gladiatorLandingUntil = now + 140;
+      if (player.animation?.current === 'gladiatorFlip') this.playAnimation(player, 'idle');
 
       const opponentId = playerId === 'player1' ? 'player2' : 'player1';
       const opponent = this.players[opponentId];
@@ -10162,9 +10211,9 @@
         radius: leap.skill.arenaRadius,
         expiresAt: now + leap.skill.arenaDuration
       };
-        const hpBonus = Math.round(opponent.maxHp * (leap.skill.arenaHpBonusPercent || 0.2));
-        player.gladiatorArenaBaseMaxHp = player.maxHp;
-        player.maxHp += hpBonus;
+      const hpBonus = Math.round(opponent.maxHp * (leap.skill.arenaHpBonusPercent || 0.2));
+      player.gladiatorArenaBaseMaxHp = player.maxHp;
+      player.maxHp += hpBonus;
       player.hp = Math.min(player.maxHp, player.hp + hpBonus);
       player.gladiatorArenaBuffUntil = now + leap.skill.arenaDuration;
       player.gladiatorArenaMoveSpeedMultiplier = leap.skill.arenaMoveSpeedMultiplier || 1.2;
@@ -10207,6 +10256,27 @@
     ['player1', 'player2'].forEach(playerId => {
       const player = this.players[playerId];
       if (!player || player.id !== 'gladiator' || player.hp <= 0) return;
+      if (player.gladiatorLeap) {
+        const motion = this.getGladiatorLeapMotion(player.gladiatorLeap, now);
+        const groundY = player.gladiatorLeap.startY + 52;
+        ctx.save();
+        ctx.globalAlpha = motion.phase === 'hover' ? 0.72 : 0.35;
+        ctx.strokeStyle = '#F3B94F';
+        ctx.lineWidth = motion.phase === 'stomp' ? 3 : 2;
+        ctx.beginPath();
+        ctx.ellipse(player.gladiatorLeap.endX, groundY, 25 + motion.phaseProgress * 20, 8, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        if (motion.phase === 'stomp') {
+          ctx.globalAlpha = 0.4 + motion.phaseProgress * 0.5;
+          for (const offset of [-13, 13]) {
+            ctx.beginPath();
+            ctx.moveTo(player.position.x + offset, player.position.y - 55);
+            ctx.lineTo(player.position.x + offset * 1.5, player.position.y - 5);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
       const remaining = (player.effects.gladiatorWillUntil || 0) - now;
       if (remaining <= 0) return;
 
@@ -10515,6 +10585,7 @@
 
     const gladiatorArena = this.gameState.gladiatorArena;
     if (gladiatorArena && (gladiatorArena.ownerId === targetSide || gladiatorArena.targetId === targetSide)) {
+      this.clearGladiatorArenaBuff(this.players[gladiatorArena.ownerId]);
       this.gameState.gladiatorArena = null;
       this.addVisualEffect(gladiatorArena.x, gladiatorArena.y - 20, 'gladiator_chain_break', '⛓️');
       this.addCombatLog('楊紘吞入對手，角鬥場鍊縛被打斷！', targetSide, 'status');
@@ -16585,6 +16656,26 @@
     const effects = this.gameState.effects || [];
 
     effects.forEach(effect => {
+      if (effect.type === 'gladiator_stomp') {
+        const progress = Math.max(0, Math.min(1, (now - effect.startTime) / effect.duration));
+        ctx.save();
+        ctx.globalAlpha = (1 - progress) * 0.85;
+        ctx.strokeStyle = '#F6C05B';
+        ctx.shadowColor = '#FF8B32';
+        ctx.shadowBlur = 12;
+        ctx.lineWidth = 5 * (1 - progress) + 1;
+        ctx.beginPath();
+        ctx.ellipse(effect.x, effect.y + 52, 20 + progress * 130, 7 + progress * 28, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        for (const side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(effect.x + side * (12 + progress * 45), effect.y + 52);
+          ctx.lineTo(effect.x + side * (32 + progress * 105), effect.y + 47 - progress * 14);
+          ctx.stroke();
+        }
+        ctx.restore();
+        return;
+      }
       if (effect.type === 'judgment_indicator') {
         // 頝?賣???蝵殷????典祕???脣漲?游撐
         const caster = effect.casterKey ? this.players[effect.casterKey] : null;

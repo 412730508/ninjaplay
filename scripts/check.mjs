@@ -366,7 +366,8 @@ try {
   }
   simulatedNow += 250;
   leapGame.updateGladiatorSystems();
-  if (Math.abs(leaper.position.x - 375) > 0.1 || leaper.position.y >= 300) {
+  if (leapGame.getGladiatorLeapMotion(leaper.gladiatorLeap, simulatedNow).phase !== 'flip' ||
+      leaper.position.x <= 375 || leaper.position.y >= 300) {
     throw new Error('Gladiator did not travel forward and rise during the front flip');
   }
   simulatedNow += 250;
