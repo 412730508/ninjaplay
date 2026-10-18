@@ -6764,6 +6764,22 @@
     });
   }
 
+  damageEnemyMinionsInArea(attackerId, x, y, radius, damage, hitSet = null) {
+    if (!Number.isFinite(damage) || damage <= 0) return 0;
+    let hits = 0;
+    for (const minion of this.gameState.minions || []) {
+      if (minion.ownerSide === attackerId || minion.hp <= 0 || hitSet?.has(minion)) continue;
+      if (Math.hypot(minion.x - x, minion.y - y) > radius) continue;
+      if (hitSet) hitSet.add(minion);
+      minion.hp = Math.max(0, minion.hp - damage);
+      this.addDamageNumber(minion.x, minion.y - 50, damage, 'skill');
+      this.addVisualEffect(minion.x, minion.y - 30, 'hit', '💥');
+      if (minion.hp === 0) this.addCombatLog('僕從被擊殺！', attackerId, 'damage');
+      hits++;
+    }
+    return hits;
+  }
+
   // ?? Check if a projectile hits any enemy minions
   checkProjectileHitMinions(projectile) {
     if (!this.gameState.minions || this.gameState.minions.length === 0) return false;
@@ -6804,12 +6820,15 @@
     return true;
   }
 
-  damageEnemyPuppetInArea(sourceSide, x, y, radius, damage, verticalRange = 55) {
+  damageEnemyPuppetInArea(sourceSide, x, y, radius, damage, verticalRange = 55, hitSet = null) {
     if (sourceSide !== 'player1' && sourceSide !== 'player2') return false;
     const enemySide = sourceSide === 'player1' ? 'player2' : 'player1';
     const puppet = this.gameState.puppet?.[enemySide];
-    if (!puppet?.active || Math.abs(puppet.x - x) > radius || Math.abs(puppet.y - y) > verticalRange) return false;
-    return this.damagePuppet(enemySide, damage, sourceSide);
+    if (!puppet?.active || hitSet?.has(puppet) ||
+        Math.abs(puppet.x - x) > radius || Math.abs(puppet.y - y) > verticalRange) return false;
+    const hit = this.damagePuppet(enemySide, damage, sourceSide);
+    if (hit && hitSet) hitSet.add(puppet);
+    return hit;
   }
 
   checkProjectileHitPuppet(projectile) {
@@ -6878,6 +6897,8 @@
         if (now - hazard.lastTickTime >= hazard.tickRate) {
           hazard.lastTickTime = now;
           const hazardSide = target === this.players.player1 ? 'player2' : 'player1';
+          this.damageEnemyMinionsInArea(hazardSide, hazard.x, target.position.y,
+            hazard.width / 2, hazard.damagePerTick);
           this.damageEnemyPuppetInArea(hazardSide, hazard.x, target.position.y,
             hazard.width / 2, hazard.damagePerTick);
           if (inRange) {
@@ -10235,13 +10256,16 @@
 
       const opponentId = playerId === 'player1' ? 'player2' : 'player1';
       const opponent = this.players[opponentId];
+      const distance = opponent ? Math.hypot(opponent.position.x - leap.endX, opponent.position.y - leap.startY) : Infinity;
       this.gameState.effects.push({
         type: 'gladiator_stomp', x: leap.endX, y: leap.startY,
         startTime: now, duration: 500
       });
       this.addVisualEffect(leap.endX, leap.startY - 20, 'gladiator_stomp', '⚡');
       this.triggerCameraShake(10, 300);
-      if (!this.isTargetInCircularArea(opponent, leap.endX, leap.startY, leap.skill.impactRadius)) return;
+      this.damageEnemyMinionsInArea(playerId, leap.endX, leap.startY,
+        leap.skill.impactRadius, leap.skill.damage);
+      if (!opponent || opponent.hp <= 0 || distance > leap.skill.impactRadius) return;
 
       const result = this.dealDamageWithResult(opponent, leap.skill.damage, playerId);
       if (!result.hit || result.blocked || result.immune) return;
@@ -11205,12 +11229,6 @@
     return baseRadius * this.getCollisionScale(player);
   }
 
-  isTargetInCircularArea(target, centerX, centerY, radius, hitboxRadius = 40) {
-    if (!target || target.hp <= 0) return false;
-    return Math.hypot(target.position.x - centerX, target.position.y - centerY)
-      <= radius + this.getCollisionRadius(target, hitboxRadius);
-  }
-
   getMeleeRange(player) {
     const now = Date.now();
     let range = 75;
@@ -11923,6 +11941,8 @@
 
       // AoE: 200px 範圍音波傷害
       const dist = Math.abs(player.position.x - opponent.position.x);
+      this.damageEnemyMinionsInArea(playerId, player.position.x, player.position.y,
+        player.attackRange || 200, noteDamage);
       this.damageEnemyPuppetInArea(playerId, player.position.x, player.position.y,
         player.attackRange || 200, noteDamage);
       if (dist <= (player.attackRange || 200)) {
@@ -13029,8 +13049,11 @@
 
         this.damageEnemyPuppetInArea(playerId, player.position.x, player.position.y,
           skill.range || 130, skill.damage || 11);
+        this.damageEnemyMinionsInArea(playerId, player.position.x, player.position.y,
+          skill.range || 130, skill.damage || 11);
 
-        if (this.isTargetInCircularArea(opponent, player.position.x, player.position.y, skill.range || 130)) {
+        const distance = Math.abs(player.position.x - opponent.position.x);
+        if (distance <= (skill.range || 130)) {
           const hit = this.dealDamage(opponent, skill.damage || 11, playerId);
           if (hit.hit) {
             const knockDirection = Math.sign(opponent.position.x - player.position.x) || player.facing;
@@ -13221,8 +13244,14 @@
       case SKILL_CODES.EARTH_QUAKE:
         // ? ?啗???- 摰撖衣
         
+        const quakeDistance = Math.abs(player.position.x - opponent.position.x);
         const innerRange = skill.innerRange || 100;
         const outerRange = skill.outerRange || 200;
+        const quakeMinionHits = new Set();
+        this.damageEnemyMinionsInArea(playerId, player.position.x, player.position.y,
+          innerRange, skill.innerDamage || 15, quakeMinionHits);
+        this.damageEnemyMinionsInArea(playerId, player.position.x, player.position.y,
+          outerRange, skill.outerDamage || 0, quakeMinionHits);
         const enemyPuppet = this.gameState.puppet[playerId === 'player1' ? 'player2' : 'player1'];
         if (enemyPuppet?.active) {
           const puppetDistance = Math.abs(player.position.x - enemyPuppet.x);
@@ -13241,11 +13270,11 @@
         }
         
         // ?文??瑕拿????
-        if (this.isTargetInCircularArea(opponent, player.position.x, player.position.y, outerRange)) {
+        if (quakeDistance <= outerRange) {
           let damage = 0;
           let stunDuration = skill.outerStun || 1000;
           
-          if (this.isTargetInCircularArea(opponent, player.position.x, player.position.y, innerRange)) {
+          if (quakeDistance <= innerRange) {
             // ?批???
             damage = skill.innerDamage || 15;
             stunDuration = skill.innerStun || 1500;
@@ -16437,6 +16466,8 @@
         });
         this.damageEnemyPuppetInArea(smoke.ownerSide, smoke.x, smoke.y,
           smoke.radius, smoke.damagePerTick);
+        this.damageEnemyMinionsInArea(smoke.ownerSide, smoke.x, smoke.y,
+          smoke.radius, smoke.damagePerTick);
       }
       return true;
     });
@@ -16572,7 +16603,10 @@
     const needleDmg = skill.needleBurstDamage || 8;
     this.damageEnemyPuppetInArea(playerId, player.position.x, player.position.y,
       burstRadius, needleDmg);
-    if (this.isTargetInCircularArea(opponent, player.position.x, player.position.y, burstRadius)) {
+    this.damageEnemyMinionsInArea(playerId, player.position.x, player.position.y,
+      burstRadius, needleDmg);
+    const dist = Math.abs(player.position.x - opponent.position.x);
+    if (dist <= burstRadius && opponent.hp > 0) {
       this.dealDamageWithResult(opponent, needleDmg, playerId);
       this.addCombatLog('????澆銝哨?', playerSide, 'damage');
       this.triggerCameraShake(6, 200);
@@ -17423,6 +17457,9 @@
           this.damageEnemyPuppetInArea(strike.ownerSide, strike.x,
             this.players[strike.ownerSide]?.position.y ?? 300,
             halfW + 20, strike.damage);
+          this.damageEnemyMinionsInArea(strike.ownerSide, strike.x,
+            this.players[strike.ownerSide === 'player1' ? 'player2' : 'player1']?.position.y ?? 300,
+            halfW + 20, strike.damage);
         }
         if (strikeElapsed >= (strike.strikeDuration || 200)) {
           return false; // Remove strike
@@ -17694,8 +17731,14 @@
     }
 
     // Hit detection: a circular pulse centered on the player.
-    const inRange = this.isTargetInCircularArea(
-      opponent, player.position.x, player.position.y, range, skill.hitboxRadius || 40
+    const dx = opponent.position.x - player.position.x;
+    const dy = opponent.position.y - player.position.y;
+    const inRange = Math.hypot(dx, dy) <= range;
+    const minionHits = this.damageEnemyMinionsInArea(
+      playerId, player.position.x, player.position.y, range, skill.damage || 10
+    );
+    const puppetHit = this.damageEnemyPuppetInArea(
+      playerId, player.position.x, player.position.y, range, skill.damage || 10
     );
 
     if (inRange && opponent.hp > 0) {
@@ -17708,7 +17751,7 @@
         this.addCombatLog(player.name + ' 撥弦・破音命中！敵人被打斷！', playerSide, 'damage');
         this.triggerCameraShake(5, 200);
       }
-    } else {
+    } else if (minionHits === 0 && !puppetHit) {
       this.addCombatLog('撥弦・破音未命中', playerSide, 'status');
     }
   }
@@ -17735,6 +17778,9 @@
       wave1Hit: false,
       wave2Hit: false,
       wave3Hit: false,
+      wave1MinionHits: new Set(),
+      wave2MinionHits: new Set(),
+      wave3MinionHits: new Set(),
       lastVfxAt: now,
       skill: skill
     };
@@ -17779,10 +17825,16 @@
       player.position.x = canon.centerX;
       player.position.y = canon.centerY;
 
+      const dist = Math.abs(opponent.position.x - canon.centerX);
+
       // Wave 1: 0-1000ms, radius grows to 100px
       if (elapsed < 1000) {
         const currentRadius = (elapsed / 1000) * (skill.wave1?.maxRadius || 100);
-        if (!canon.wave1Hit && this.isTargetInCircularArea(opponent, canon.centerX, canon.centerY, currentRadius)) {
+        this.damageEnemyMinionsInArea(pid, canon.centerX, canon.centerY,
+          currentRadius, skill.wave1?.damage || 5, canon.wave1MinionHits);
+        this.damageEnemyPuppetInArea(pid, canon.centerX, canon.centerY,
+          currentRadius, skill.wave1?.damage || 5, 55, canon.wave1MinionHits);
+        if (!canon.wave1Hit && dist <= currentRadius && opponent.hp > 0) {
           canon.wave1Hit = true;
           const dmg = skill.wave1?.damage || 5;
           this.dealDamageWithResult(opponent, dmg, pid);
@@ -17798,7 +17850,11 @@
         const minR = skill.wave1?.maxRadius || 100;
         const maxR = skill.wave2?.maxRadius || 200;
         const currentRadius = minR + progress * (maxR - minR);
-        if (!canon.wave2Hit && this.isTargetInCircularArea(opponent, canon.centerX, canon.centerY, currentRadius)) {
+        this.damageEnemyMinionsInArea(pid, canon.centerX, canon.centerY,
+          currentRadius, skill.wave2?.damage || 10, canon.wave2MinionHits);
+        this.damageEnemyPuppetInArea(pid, canon.centerX, canon.centerY,
+          currentRadius, skill.wave2?.damage || 10, 55, canon.wave2MinionHits);
+        if (!canon.wave2Hit && dist <= currentRadius && opponent.hp > 0) {
           canon.wave2Hit = true;
           const dmg = skill.wave2?.damage || 10;
           this.dealDamageWithResult(opponent, dmg, pid);
@@ -17815,7 +17871,11 @@
         const minR = skill.wave2?.maxRadius || 200;
         const maxR = skill.wave3?.maxRadius || 800;
         const currentRadius = minR + progress * (maxR - minR);
-        if (!canon.wave3Hit && this.isTargetInCircularArea(opponent, canon.centerX, canon.centerY, currentRadius)) {
+        this.damageEnemyMinionsInArea(pid, canon.centerX, canon.centerY,
+          currentRadius, skill.wave3?.damage || 15, canon.wave3MinionHits);
+        this.damageEnemyPuppetInArea(pid, canon.centerX, canon.centerY,
+          currentRadius, skill.wave3?.damage || 15, 55, canon.wave3MinionHits);
+        if (!canon.wave3Hit && dist <= currentRadius && opponent.hp > 0) {
           canon.wave3Hit = true;
           const dmg = skill.wave3?.damage || 15;
           this.dealDamageWithResult(opponent, dmg, pid);
