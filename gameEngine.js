@@ -6743,8 +6743,11 @@
   // ====================================================================
   // ?? Check if a melee attack hits any enemy minions in range
   checkMeleeHitMinions(attacker, attackerId, damage) {
-    if (!this.gameState.minions || this.gameState.minions.length === 0) return;
     const meleeRange = this.getMeleeRange(attacker);
+
+    // The puppet is a separate, damageable summon, like the other minions.
+    this.damageEnemyPuppetInArea(attackerId, attacker.position.x, attacker.position.y, meleeRange, damage);
+    if (!this.gameState.minions || this.gameState.minions.length === 0) return;
 
     this.gameState.minions.forEach(minion => {
       // Only hit enemy minions (not your own)
@@ -6783,6 +6786,41 @@
       }
     }
     return false;
+  }
+
+  damagePuppet(ownerSide, damage, sourceSide) {
+    if (ownerSide === sourceSide || !Number.isFinite(damage) || damage <= 0) return false;
+    const puppet = this.gameState.puppet?.[ownerSide];
+    if (!puppet?.active || puppet.hp <= 0) return false;
+    puppet.hp = Math.max(0, puppet.hp - damage);
+    this.addDamageNumber(puppet.x, puppet.y - 50, damage, 'skill');
+    this.addVisualEffect(puppet.x, puppet.y - 30, 'hit', '💥');
+    if (puppet.hp === 0) {
+      puppet.active = false;
+      puppet.storedDamage = 0;
+      this.addVisualEffect(puppet.x, puppet.y - 20, 'puppet_recall', '💨');
+      this.addCombatLog('傀儡被擊毀！', sourceSide, 'damage');
+    }
+    return true;
+  }
+
+  damageEnemyPuppetInArea(sourceSide, x, y, radius, damage, verticalRange = 55) {
+    if (sourceSide !== 'player1' && sourceSide !== 'player2') return false;
+    const enemySide = sourceSide === 'player1' ? 'player2' : 'player1';
+    const puppet = this.gameState.puppet?.[enemySide];
+    if (!puppet?.active || Math.abs(puppet.x - x) > radius || Math.abs(puppet.y - y) > verticalRange) return false;
+    return this.damagePuppet(enemySide, damage, sourceSide);
+  }
+
+  checkProjectileHitPuppet(projectile) {
+    const sourceSide = projectile.owner === this.players.player1 ? 'player1'
+      : projectile.owner === this.players.player2 ? 'player2' : null;
+    if (!sourceSide || !Number.isFinite(projectile.damage) || projectile.damage <= 0) return false;
+    const enemySide = sourceSide === 'player1' ? 'player2' : 'player1';
+    const puppet = this.gameState.puppet?.[enemySide];
+    if (!puppet?.active || Math.abs(projectile.x - puppet.x) > 24 ||
+        Math.abs(projectile.y - (puppet.y - 20)) > 42) return false;
+    return this.damagePuppet(enemySide, projectile.damage, sourceSide);
   }
 
   updateScorpionSystems(deltaTime) {
@@ -6837,20 +6875,25 @@
           target.effects.slowed = Math.max(target.effects.slowed || 0, now + (hazard.slowDuration || 800));
           target.effects.slowMultiplier = hazard.slowMultiplier;
         }
-        if (inRange && now - hazard.lastTickTime >= hazard.tickRate) {
+        if (now - hazard.lastTickTime >= hazard.tickRate) {
           hazard.lastTickTime = now;
-          target.hp = Math.max(0, target.hp - hazard.damagePerTick);
-          this.addDamageNumber(target.position.x, target.position.y - 10, hazard.damagePerTick, 'skill');
-          this.addVisualEffect(
-            target.position.x,
-            target.position.y,
-            hazard.type === 'fire_trail' ? 'burning_trail' : 'poison',
-            hazard.type === 'fire_trail' ? '🔥' : '☠️'
-          );
-          if (target.hp <= 0) {
-            const winnerId = target === this.players.player1 ? 'player2' : 'player1';
-            this.gameState.winner = winnerId;
-            this.addVisualEffect(target.position.x, target.position.y, 'death', '💀');
+          const hazardSide = target === this.players.player1 ? 'player2' : 'player1';
+          this.damageEnemyPuppetInArea(hazardSide, hazard.x, target.position.y,
+            hazard.width / 2, hazard.damagePerTick);
+          if (inRange) {
+            target.hp = Math.max(0, target.hp - hazard.damagePerTick);
+            this.addDamageNumber(target.position.x, target.position.y - 10, hazard.damagePerTick, 'skill');
+            this.addVisualEffect(
+              target.position.x,
+              target.position.y,
+              hazard.type === 'fire_trail' ? 'burning_trail' : 'poison',
+              hazard.type === 'fire_trail' ? '🔥' : '☠️'
+            );
+            if (target.hp <= 0) {
+              const winnerId = target === this.players.player1 ? 'player2' : 'player1';
+              this.gameState.winner = winnerId;
+              this.addVisualEffect(target.position.x, target.position.y, 'death', '💀');
+            }
           }
         }
         return true;
@@ -11875,6 +11918,8 @@
 
       // AoE: 200px 範圍音波傷害
       const dist = Math.abs(player.position.x - opponent.position.x);
+      this.damageEnemyPuppetInArea(playerId, player.position.x, player.position.y,
+        player.attackRange || 200, noteDamage);
       if (dist <= (player.attackRange || 200)) {
         const damageResult = this.dealDamage(opponent, noteDamage, playerId);
         if (damageResult && damageResult.hit) {
@@ -12977,6 +13022,9 @@
         player.position.x += (skill.distance || 60) * player.facing;
         player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, player.position.x));
 
+        this.damageEnemyPuppetInArea(playerId, player.position.x, player.position.y,
+          skill.range || 130, skill.damage || 11);
+
         const distance = Math.abs(player.position.x - opponent.position.x);
         if (distance <= (skill.range || 130)) {
           const hit = this.dealDamage(opponent, skill.damage || 11, playerId);
@@ -13172,6 +13220,17 @@
         const quakeDistance = Math.abs(player.position.x - opponent.position.x);
         const innerRange = skill.innerRange || 100;
         const outerRange = skill.outerRange || 200;
+        const enemyPuppet = this.gameState.puppet[playerId === 'player1' ? 'player2' : 'player1'];
+        if (enemyPuppet?.active) {
+          const puppetDistance = Math.abs(player.position.x - enemyPuppet.x);
+          if (puppetDistance <= innerRange) {
+            this.damageEnemyPuppetInArea(playerId, player.position.x, player.position.y,
+              innerRange, skill.innerDamage || 15);
+          } else if (puppetDistance <= outerRange && (skill.outerDamage || 0) > 0) {
+            this.damageEnemyPuppetInArea(playerId, player.position.x, player.position.y,
+              outerRange, skill.outerDamage);
+          }
+        }
         
         // 蝡?萄遣摰?寞?
         if (typeof particleSystem !== 'undefined' && particleSystem) {
@@ -14839,6 +14898,10 @@
         return false;
       }
 
+      if (this.checkProjectileHitPuppet(projectile)) {
+        return false;
+      }
+
       // 瑼Ｘ蝣唳?
       const target = projectile.owner === this.players.player1 ? this.players.player2 : this.players.player1;
       const distance = Math.abs(projectile.x - target.position.x);
@@ -16369,6 +16432,8 @@
             target.effects.slowPercent = smoke.slow;
           }
         });
+        this.damageEnemyPuppetInArea(smoke.ownerSide, smoke.x, smoke.y,
+          smoke.radius, smoke.damagePerTick);
       }
       return true;
     });
@@ -16426,8 +16491,8 @@
         x: spawnX,
         y: player.position.y,
         facing: enemyDirection,
-        hp: skill.puppetHp || 30,
-        maxHp: skill.puppetHp || 30,
+        hp: skill.puppetHp ?? 20,
+        maxHp: skill.puppetHp ?? 20,
         storedDamage: 0,
         spawnTime: now
       };
@@ -16502,6 +16567,8 @@
     // Needle burst at player's NEW position (where puppet WAS)
     const burstRadius = skill.needleBurstRadius || 120;
     const needleDmg = skill.needleBurstDamage || 8;
+    this.damageEnemyPuppetInArea(playerId, player.position.x, player.position.y,
+      burstRadius, needleDmg);
     const dist = Math.abs(player.position.x - opponent.position.x);
     if (dist <= burstRadius && opponent.hp > 0) {
       this.dealDamageWithResult(opponent, needleDmg, playerId);
@@ -17351,6 +17418,9 @@
               }
             }
           });
+          this.damageEnemyPuppetInArea(strike.ownerSide, strike.x,
+            this.players[strike.ownerSide]?.position.y ?? 300,
+            halfW + 20, strike.damage);
         }
         if (strikeElapsed >= (strike.strikeDuration || 200)) {
           return false; // Remove strike
@@ -17388,7 +17458,6 @@
           damageDealt: false,
           isUltStrike: true
         });
-
         ult.strikesSpawned++;
         ult.nextStrikeTime = now + ult.strikeInterval;
       }

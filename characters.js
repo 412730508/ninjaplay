@@ -881,7 +881,7 @@ const characters = {
         name: '傀儡・召喚/收回',
         type: '切換/召喚',
         cooldown: 4000,
-        puppetHp: 30,
+        puppetHp: 20,
         // 顯示速度 24（引擎內速度單位為 240）。傀儡只會朝敵人推進。
         puppetSpeed: 240,
         puppetSpawnDistance: 150,
@@ -956,7 +956,7 @@ const characters = {
     maxHp: 80,
     hp: 80,
     attackDamage: 3,
-    attackSpeed: 600,
+    attackSpeed: 500,
     attackRange: 200,
     moveSpeed: 280,
     position: { x: 100, y: 300 },

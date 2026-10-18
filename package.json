@@ -1,7 +1,7 @@
 {
   "name": "ninjaplay",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A local two-player ninja fighting game.",
   "main": "desktop/main.cjs",
   "scripts": {
