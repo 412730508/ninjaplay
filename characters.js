@@ -109,6 +109,7 @@ const characters = {
     hp: 100,
     attackDamage: 6,
     attackSpeed: 800,
+    basicAttack: { type: 'windBlade', range: 300, speed: 680 },
     moveSpeed: 280,
     position: { x: 100, y: 300 },
     facing: 1,
@@ -145,6 +146,7 @@ const characters = {
     hp: 95,
     attackDamage: 7,
     attackSpeed: 700,
+    basicAttack: { type: 'flamePalm', range: 72 },
     moveSpeed: 260,
     position: { x: 600, y: 300 },
     facing: -1,
@@ -237,6 +239,7 @@ const characters = {
     hp: 105,
     attackDamage: 5,
     attackSpeed: 900,
+    basicAttack: { type: 'waterWave', range: 190, speed: 500, slowMultiplier: 0.86, slowDuration: 650 },
     moveSpeed: 250, // 240 → 250 (小幅提升)
     position: { x: 100, y: 300 },
     facing: 1,

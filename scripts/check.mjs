@@ -311,6 +311,43 @@ try {
   engineContext.setTimeout = originalSetTimeout;
   if (waterUser.hp !== 73) throw new Error(`Water Shield settlement expected 73 HP, received ${waterUser.hp} from stored ${waterUser.waterShieldStoredDamage} damage`);
 
+  // The opening trio now use three distinct normal attack types and preserve
+  // their configured damage, reach, cooldown, and Water's brief slow on hit.
+  const windAttackGame = new NinjaGame();
+  windAttackGame.selectCharacters('fujin', 'katon');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish']) windAttackGame[method] = () => {};
+  windAttackGame.players.player1.position.x = 300;
+  windAttackGame.players.player2.position.x = 520;
+  const windTargetHp = windAttackGame.players.player2.hp;
+  windAttackGame.attack('player1');
+  const windBlade = windAttackGame.gameState.projectiles[0];
+  if (windBlade?.type !== 'windBlade' || windBlade.damage !== 6 || windBlade.maxRange !== 300) throw new Error('Fujin basic attack did not create its configured wind blade');
+  windBlade.x = windAttackGame.players.player2.position.x - 8;
+  windAttackGame.updateProjectiles();
+  if (windAttackGame.players.player2.hp !== windTargetHp - 6) throw new Error('Fujin wind blade did not deal its basic-attack damage on hit');
+
+  const flameAttackGame = new NinjaGame();
+  flameAttackGame.selectCharacters('fujin', 'katon');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish']) flameAttackGame[method] = () => {};
+  flameAttackGame.players.player1.position.x = 350;
+  flameAttackGame.players.player2.position.x = 420;
+  const flameTargetHp = flameAttackGame.players.player1.hp;
+  flameAttackGame.attack('player2');
+  if (flameAttackGame.gameState.projectiles.length || flameAttackGame.players.player1.hp !== flameTargetHp - 7) throw new Error('Katon basic attack should be a 72px close-range flame strike');
+
+  const waterAttackGame = new NinjaGame();
+  waterAttackGame.selectCharacters('suijin', 'katon');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish']) waterAttackGame[method] = () => {};
+  waterAttackGame.players.player1.position.x = 300;
+  waterAttackGame.players.player2.position.x = 440;
+  const waterTargetHp = waterAttackGame.players.player2.hp;
+  waterAttackGame.attack('player1');
+  const waterWave = waterAttackGame.gameState.projectiles[0];
+  if (waterWave?.type !== 'waterWave' || waterWave.damage !== 5 || waterWave.maxRange !== 190) throw new Error('Suijin basic attack did not create its configured water wave');
+  waterWave.x = waterAttackGame.players.player2.position.x - 8;
+  waterAttackGame.updateProjectiles();
+  if (waterAttackGame.players.player2.hp !== waterTargetHp - 5 || waterAttackGame.players.player2.effects.slowMultiplier !== 0.86) throw new Error('Suijin water wave did not damage and briefly slow its target');
+
   // All fighters share the 0.5-second perfect-defense timing threshold.
   const defenseGame = new NinjaGame();
   defenseGame.selectCharacters('fujin', 'katon');
