@@ -363,13 +363,13 @@
         <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
     </footer>
 
-    <script src="characters.js?v=flame-mark-gladiator-20261018-1"></script>
-    <script src="balance.js?v=yanghong-balance-20261018-1"></script>
+    <script src="characters.js?v=oct-27-balance-1"></script>
+    <script src="balance.js?v=oct-27-balance-1"></script>
     <script src="talents.js?v=yanghong-balance-20261018-2"></script>
     <script src="particleSystem.js?v=gladiator-beast-vfx-1"></script>
     <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
     <script src="stickmanAnimator.js?v=caesar-stomp-20261018-1"></script>
-    <script src="gameEngine.js?v=adjudicator-mobility-20261018-1"></script>
+    <script src="gameEngine.js?v=oct-27-balance-1"></script>
     <script src="aiController.js"></script>
     <script>
         // 全局遊戲引擎實例
@@ -2286,20 +2286,20 @@
                     effects: ['蓄力0.7秒', '距離400px', '傷害22', '擊退150px', '燃燒路徑3秒', '每秒傷害2', '冷卻18秒']
                 },
                 [SKILL_CODES.STEPHEN_STEAK]: {
-                    description: '短按吃牛排，1秒後恢復生命；長按0.3至4秒改為蓄力投擲，蓄力越久傷害和緩速越強。',
-                    effects: ['短按回復7 HP', '投擲7～15傷害', '緩速50%～99%／2秒', '射程無限（不受最大距離限制）', '冷卻8秒']
+                    description: '短按吃牛排，1秒後恢復生命；長按蓄力投擲，蓄力超過3秒命中可無視防禦並暈眩2秒。',
+                    effects: ['短按回復7 HP', '投擲7～15傷害', '蓄力超過3秒：無視防禦、暈眩2秒', '射程無限（不受最大距離限制）', '冷卻8秒']
                 },
                 [SKILL_CODES.STEPHEN_GRILL]: {
                     description: '以自己為中心展開炙烤鐵板，範圍會跟著小周移動。效果結束後切換為菸鬼周。',
                     effects: ['半徑140px', '持續5秒', '每秒5傷害', '範圍內緩速30%', '冷卻22秒']
                 },
                 [SKILL_CODES.STEPHEN_SMOKE]: {
-                    description: '化為可移動的煙霧，免疫傷害，但仍會被控制；受控制後立即解除煙霧。',
-                    effects: ['持續4秒', '接觸每秒3傷害', '冷卻12秒']
+                    description: '化為可移動的煙霧，啟動後完全隱形2秒並免疫傷害；仍會被控制，受控制後立即解除煙霧。',
+                    effects: ['持續4秒', '完全隱形2秒', '接觸每秒3傷害', '冷卻8秒']
                 },
                 [SKILL_CODES.STEPHEN_BREATH]: {
-                    description: '固定面向噴出煙幕，期間不能移動；煙內敵人緩速，面向小周時額外受到持續傷害。效果結束後切換為牛排周。',
-                    effects: ['距離300px', '持續3秒', '緩速60%／3秒', '面向小周時每0.2秒2傷害', '冷卻22秒']
+                    description: '固定面向噴出煙幕，期間不能移動；煙內敵人緩速。面向小周時每段3傷害，背向時每段2傷害。效果結束後切換為牛排周。',
+                    effects: ['距離300px', '持續3秒', '緩速60%／3秒', '正面每0.2秒3傷害、背面每0.2秒2傷害', '冷卻22秒']
                 },
                 [SKILL_CODES.YANGHONG_COFFEE]: {
                     description: '按住紙杯持續潑出熱咖啡，奶泡流沿前方掃過；按越久越多段，受控或放開按鍵就會停止。',
@@ -2310,8 +2310,8 @@
                     effects: ['包圍半徑200px', '0.3秒後吞入', '最低花費20元', '每秒20元／7傷害', '最多吞噬2秒', '吐出400px／緩速60%持續2秒', '10護盾持續3秒，剩餘轉為治療', '奧義冷卻10秒', '吐出後咖啡拉花重置']
                 },
                 [SKILL_CODES.WATER_SHIELD]: {
-                    description: '水之護盾環繞身體，3秒內減少50%受到的傷害，並獲得移速加成。護盾結束後回復5 HP，再加上已損生命的60%。',
-                    effects: ['減傷50%', '持續3秒', '移速+25', '結束回復5 HP + 已損生命60%', '冷卻8秒']
+                    description: '水之護盾環繞身體，3秒內減少50%受到的傷害並提高移速；結束後回復5 HP，再回復護盾期間實際承受傷害的60%。',
+                    effects: ['減傷50%', '持續3秒', '移速+25', '結束回復5 HP + 受傷量60%', '冷卻8秒']
                 },
                 [SKILL_CODES.WATER_DRAGON]: {
                     description: '召喚水龍攻擊，命中敵人造成傷害並擊退，隨後冰凍1秒，解凍後緩速30%持續2秒。',
@@ -2379,7 +2379,7 @@
                     ]
                 },
                 [SKILL_CODES.ELF_TALISMAN]: {
-                    description: '【三色輪轉守護符】按一下啟動輪轉，按兩下確認。🔥紅色=恐懼火焰區域 ⚡紫色=雷電守護反傷 ❄️藍色=雪球附魔追傷。',
+                    description: '【三色輪轉守護符】按一下啟動輪轉，按兩下確認。順序為⚡紫色雷電守護、🔥紅色恐懼火焰、❄️藍色雪球附魔。',
                     effects: [
                         '🔥火焰區域5秒',
                         '⚡反傷3+暈0.4秒+減傷2',
@@ -2685,7 +2685,7 @@
                             </div>
                         </div>
                         ${id === 'stephen' ? `
-                        <div class="skill-item"><div class="skill-header"><div class="skill-icon-mini">💨</div><div class="skill-name-type"><h4>菸鬼周｜化煙</h4><p class="skill-type">無敵／持續傷害</p></div><div class="skill-cooldown">12秒</div></div><div class="skill-description">${skillDescriptions[SKILL_CODES.STEPHEN_SMOKE].description}</div><div class="skill-effects">${skillDescriptions[SKILL_CODES.STEPHEN_SMOKE].effects.map(effect => `<span class="skill-effect-tag">${effect}</span>`).join('')}</div></div>
+                        <div class="skill-item"><div class="skill-header"><div class="skill-icon-mini">💨</div><div class="skill-name-type"><h4>菸鬼周｜化煙</h4><p class="skill-type">無敵／持續傷害</p></div><div class="skill-cooldown">8秒</div></div><div class="skill-description">${skillDescriptions[SKILL_CODES.STEPHEN_SMOKE].description}</div><div class="skill-effects">${skillDescriptions[SKILL_CODES.STEPHEN_SMOKE].effects.map(effect => `<span class="skill-effect-tag">${effect}</span>`).join('')}</div></div>
                         <div class="skill-item ultimate"><div class="skill-header"><div class="skill-icon-mini">🚬</div><div class="skill-name-type"><h4>菸鬼周｜迎面煙幕</h4><p class="skill-type">定向／引導</p></div><div class="skill-cooldown">22秒</div></div><div class="skill-description">${skillDescriptions[SKILL_CODES.STEPHEN_BREATH].description}</div><div class="skill-effects">${skillDescriptions[SKILL_CODES.STEPHEN_BREATH].effects.map(effect => `<span class="skill-effect-tag">${effect}</span>`).join('')}</div></div>
                         ` : ''}
                     </div>

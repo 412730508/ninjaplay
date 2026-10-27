@@ -101,7 +101,7 @@ try {
     ['doton', 'maxHp', 130],
     ['kage', 'skills.ultimate.cloneCount', 6],
     ['kage', 'skills.ultimate.cloneDamage', 2],
-    ['rei', 'skills.ultimate.range', 400],
+    ['rei', 'skills.ultimate.range', 350],
     ['taijutsu', 'skills.normal.cooldown', 8000],
     ['taijutsu', 'skills.ultimate.damage', 17],
     ['ranger', 'skills.normal.cooldown', 9000],
@@ -109,8 +109,8 @@ try {
     ['warlock', 'attackDamage', 4],
     ['warlock', 'attackSpeed', 700],
     ['warlock', 'attackHeal', 2],
-    ['beastmaster', 'skills.ultimate.minStacksToCast', 3],
-    ['beastmaster', 'skills.ultimate.golemShield', 20],
+    ['beastmaster', 'skills.ultimate.minStacksToCast', 5],
+    ['beastmaster', 'skills.ultimate.golemShield', 10],
     ['beastmaster', 'skills.ultimate.transformRootRange', 200],
     ['beastmaster', 'skills.ultimate.golemSkillDelay', 300],
     ['beastmaster', 'skills.ultimate.revertCooldown', 3000],
@@ -135,7 +135,6 @@ try {
     ['forgefire', 'skills.normal.stun', 500],
     ['forgefire', 'skills.ultimate.chargeTime', 700],
     ['forgefire', 'skills.ultimate.trailDuration', 3000],
-    ['stephen', 'attackDamage', 7],
     ['yanghong', 'passive.hitsPerDrop', 3],
     ['yanghong', 'passive.coinsPerDrop', 7],
     ['yanghong', 'skills.ultimate.cooldown', 10000],
@@ -292,6 +291,44 @@ try {
   // Exercise both Stephen forms, including the moving grill and key-release charge.
   let simulatedNow = 100000;
   engineContext.Date = class extends Date { static now() { return simulatedNow; } };
+
+  // Water Shield refunds 60% of damage actually received during its three-second window.
+  const waterGame = new NinjaGame();
+  waterGame.selectCharacters('suijin', 'katon');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog']) waterGame[method] = () => {};
+  const pendingTimers = [];
+  const originalSetTimeout = engineContext.setTimeout;
+  engineContext.setTimeout = (callback, delay) => { pendingTimers.push({ callback, delay }); return pendingTimers.length; };
+  const waterUser = waterGame.players.player1;
+  waterUser.hp = 70;
+  waterUser.skills.normal.baseHeal = 5;
+  waterGame.useSkill('player1', 'normal');
+  waterGame.dealDamage(waterUser, 10, 'player2');
+  if (waterUser.hp !== 65 || waterUser.waterShieldStoredDamage !== 5) throw new Error('Water Shield did not store damage after its 50% mitigation');
+  const shieldSettlement = pendingTimers.find(timer => timer.delay === 3000);
+  if (!shieldSettlement) throw new Error('Water Shield did not schedule its three-second healing settlement');
+  shieldSettlement.callback();
+  engineContext.setTimeout = originalSetTimeout;
+  if (waterUser.hp !== 73) throw new Error(`Water Shield settlement expected 73 HP, received ${waterUser.hp} from stored ${waterUser.waterShieldStoredDamage} damage`);
+
+  // All fighters share the 0.5-second perfect-defense timing threshold.
+  const defenseGame = new NinjaGame();
+  defenseGame.selectCharacters('fujin', 'katon');
+  defenseGame.gameState.defending.player2 = { active: true, startTime: simulatedNow, direction: -1, cooldownUntil: 0 };
+  defenseGame.players.player1.position.x = 400;
+  defenseGame.players.player2.position.x = 450;
+  simulatedNow += 500;
+  if (defenseGame.isAttackBlocked('player1', 'player2') !== 'perfect') throw new Error('Perfect defense should last through 0.5 seconds');
+  simulatedNow += 1;
+  if (defenseGame.isAttackBlocked('player1', 'player2') !== 'weakened') throw new Error('Perfect defense remained active after 0.5 seconds');
+
+  // Ranger talisman starts at purple, then red, then blue.
+  const talismanGame = new NinjaGame();
+  talismanGame.selectCharacters('ranger', 'katon');
+  talismanGame.useSkill('player1', 'normal');
+  if (talismanGame.players.player1.effects.talismanState?.colors.join(',') !== 'purple,red,blue') {
+    throw new Error('Ranger talisman order is not purple, red, blue');
+  }
 
   // Exercise the gladiator's hit-count passive, one-stack-per-attack energy,
   // Will cooldown reduction/mitigation, leap immunity, stomp, and cage bounds.
@@ -520,7 +557,7 @@ try {
   if (stephen.stephenForm !== 'smoke' || duel.cooldowns.player1.normal !== 0) throw new Error('Stephen did not switch to smoke with a ready skill');
   duel.useSkill('player1', 'normal');
   duel.renderStephenZones();
-  if (stephen.stephenSmokeUntil <= simulatedNow || duel.dealDamage(stephen, 5, 'player2').immune !== true) throw new Error('Stephen smoke did not prevent damage');
+  if (stephen.stephenSmokeUntil <= simulatedNow || stephen.stephenSmokeInvisibleUntil !== simulatedNow + 2000 || stephen.skills.normal.cooldown !== 8000 || duel.dealDamage(stephen, 5, 'player2').immune !== true) throw new Error('Stephen smoke did not apply invisibility, the eight-second cooldown, or damage immunity');
   stephen.effects.stunned = simulatedNow + 500;
   duel.updateStephenSystems();
   if (stephen.stephenSmokeUntil !== 0) throw new Error('Control did not cancel Stephen smoke');
@@ -533,11 +570,11 @@ try {
   duel.renderStephenZones();
   duel.updateStephenSystems();
   const facingDamage = foe.hp;
-  if (facingDamage !== hpBeforeBreath - stephen.skills.ultimate.damagePerTick) throw new Error('Stephen breath did not damage a facing enemy');
+  if (facingDamage !== hpBeforeBreath - stephen.skills.ultimate.frontDamagePerTick) throw new Error('Stephen breath did not deal three damage per tick to an enemy facing him');
   foe.facing = 1;
   simulatedNow += 1000;
   duel.updateStephenSystems();
-  if (foe.hp !== facingDamage) throw new Error('Stephen breath damaged an enemy facing away');
+  if (foe.hp !== facingDamage - 2) throw new Error('Stephen breath did not deal two damage per tick to an enemy facing away');
   simulatedNow += 2000;
   duel.updateStephenSystems();
   if (stephen.stephenForm !== 'steak') throw new Error('Stephen did not return to steak form');
@@ -556,11 +593,14 @@ try {
   simulatedNow += 4000;
   duel.releaseStephenCharge('player1');
   duel.renderStephenCombatCues();
-  if (foe.hp !== facingDamage || duel.gameState.projectiles.filter(projectile => projectile.type === 'stephenSteak').length !== 1) {
+  duel.gameState.defending.player2 = { active: true, startTime: simulatedNow, direction: -1, cooldownUntil: 0 };
+  if (foe.hp !== facingDamage - 2 || duel.gameState.projectiles.filter(projectile => projectile.type === 'stephenSteak').length !== 1) {
     throw new Error('Stephen charged steak did not launch a projectile before dealing damage');
   }
   for (let frame = 0; frame < 30 && duel.gameState.projectiles.length; frame++) duel.updateProjectiles();
-  if (foe.hp !== facingDamage - 15 || foe.effects.slowMultiplier > 0.02) throw new Error('Stephen flying steak did not apply full damage and slow on impact');
+  if (foe.hp !== facingDamage - 2 - 15 || foe.effects.slowMultiplier > 0.02 || foe.effects.stunned !== simulatedNow + 2000 || duel.gameState.defending.player2.active !== true) {
+    throw new Error('A steak charged over three seconds failed to bypass defense, deal damage, slow, and stun for two seconds');
+  }
 
   // Exercise Yang Hong's complete ultimate lifecycle against live target states.
   const startYangCapture = (targetId, configure = () => {}) => {
@@ -694,7 +734,23 @@ try {
     if (attacker.yangUltimate || game.cooldowns.player1.ultimate !== 0) throw new Error('Yang Hong started the ultimate without the minimum 20 coins');
   }
   {
-    const { attacker, target } = startYangCapture('katon', (_game, _yang, foe) => { foe.position.x = 900; });
+    const game = new NinjaGame();
+    game.selectCharacters('yanghong', 'katon');
+    game.addVisualEffect = () => {};
+    game.addDamageNumber = () => {};
+    game.addCombatLog = () => {};
+    const attacker = game.players.player1;
+    const target = game.players.player2;
+    attacker.position.x = 350;
+    attacker.position.y = 400;
+    attacker.facing = 1;
+    attacker.yangWallet = 40;
+    target.position.x = 470;
+    target.position.y = 400;
+    game.useSkill('player1', 'ultimate');
+    target.position.x = 900;
+    simulatedNow += attacker.skills.ultimate.windup;
+    game.updateYangHongSystems();
     if (attacker.yangUltimate?.phase !== 'swallow' || target.yangSwallowedBy !== 'player1') throw new Error('Tongue did not retain the target captured at cast time');
   }
   {
@@ -781,7 +837,8 @@ try {
       throw new Error('Coffee Art multi-hit stream did not complete at its configured hit cap');
     }
     engineContext.Math.random = originalRandom;
-    if (attacker.yangCoinDamageCount !== 1 || game.gameState.yangHongCoins.length !== 21) throw new Error(`Coffee Art damage ticks did not count individually: counter=${attacker.yangCoinDamageCount}, wallet=${attacker.yangWallet}, coins=${game.gameState.yangHongCoins.length}`);
+    const coffeeCoinValue = attacker.yangWallet + game.gameState.yangHongCoins.length;
+    if (attacker.yangCoinDamageCount !== 1 || coffeeCoinValue !== 21) throw new Error(`Coffee Art damage ticks did not count individually: counter=${attacker.yangCoinDamageCount}, wallet=${attacker.yangWallet}, coins=${game.gameState.yangHongCoins.length}`);
     if (!emittedYangHongEffects.some(([code]) => code === 'YH_001')) throw new Error('Coffee Art did not dispatch its authored particles in a real skill activation');
     attacker.yangWallet = 40;
     game.useSkill('player1', 'ultimate');

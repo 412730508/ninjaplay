@@ -63,7 +63,7 @@ const BALANCE_PATCH = {
   shamisen: { attackDamage: 5, passive: { perfectWindow: [450, 600] }, skills: { normal: { range: 200 } } },
   scorpion: { passive: { hazardWidth: 130 } },
   puppeteer: { passive: { storedDamageRatio: 0.5 } },
-  stephen: { skills: { normal: { unlimitedRange: true, chargeCooldownThreshold: 3000, chargeCooldownReduction: 3000 } } },
+  stephen: { attackDamage: 7, skills: { normal: { unlimitedRange: true, chargeCooldownThreshold: 3000, chargeCooldownReduction: 3000 } } },
   forgefire: {
     maxHp: 110,
     hp: 110,

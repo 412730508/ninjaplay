@@ -1307,6 +1307,7 @@
   renderPlayers() {
     Object.values(this.players).forEach((player, index) => {
       if (!player || player.yangSwallowedBy) return;
+      if (player.id === 'stephen' && player.stephenSmokeInvisibleUntil > Date.now()) return;
       
       this.ctx.save();
       
@@ -1686,7 +1687,7 @@
       const y = player.position.y;
       const direction = defendState.direction;
       const duration = now - defendState.startTime;
-      const isPerfect = duration <= 2000;
+      const isPerfect = duration <= 500;
       
       this.ctx.save();
       
@@ -1730,9 +1731,9 @@
       const barHeight = 6;
       const barX = x - barWidth / 2;
       const barY = y + 45;
-      const perfectThreshold = 2000;
+      const perfectThreshold = 500;
       const maxDisplayTime = 5000;
-      const dividerX = barX + barWidth * (perfectThreshold / maxDisplayTime); // 2s??蝺?= 40%??
+      const dividerX = barX + barWidth * (perfectThreshold / maxDisplayTime);
       
       // ?璇?
       this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
@@ -1768,7 +1769,7 @@
         
         // ?‵?摹?畾蛛?蝝瞍豢楛嚗?
         const weakDuration = duration - perfectThreshold;
-        const weakMax = maxDisplayTime - perfectThreshold; // 3000ms
+        const weakMax = maxDisplayTime - perfectThreshold;
         const weakProgress = Math.min(weakDuration / weakMax, 1);
         const weakWidth = (barWidth - perfectWidth) * weakProgress;
         const grad2 = this.ctx.createLinearGradient(dividerX, barY, dividerX + weakWidth, barY);
@@ -10007,6 +10008,7 @@
     player.stephenChargeStart = 0;
     player.stephenEatingUntil = 0;
     player.stephenSmokeUntil = 0;
+    player.stephenSmokeInvisibleUntil = 0;
     player.stephenUltimate = null;
     player.stephenSwitchAt = 0;
     player.stephenAttackAt = 0;
@@ -10070,6 +10072,7 @@
         const controlled = player.effects.stunned > now || player.effects.rooted > now || player.effects.feared > now || player.effects.chainDisabled > now;
         if (controlled || now >= player.stephenSmokeUntil || player.hp <= 0) {
           player.stephenSmokeUntil = 0;
+          player.stephenSmokeInvisibleUntil = 0;
           player.effects.invulnerable = 0;
         } else if (opponent?.hp > 0 && now >= player.stephenSmokeNextTick) {
           player.stephenSmokeNextTick = now + player.skills.normal.tickRate;
@@ -10110,7 +10113,12 @@
         if (inside) this.applyStephenSlow(opponent, ultimate.skill.slowMultiplier, ultimate.skill.slowDuration, now);
         if (now >= ultimate.nextTick) {
           ultimate.nextTick = now + ultimate.skill.tickRate;
-          if (inside && opponent.facing === -ultimate.facing) this.dealDamage(opponent, ultimate.skill.damagePerTick, playerId, { isDamageOverTime: true });
+          if (inside) {
+            const damage = opponent.facing === -ultimate.facing
+              ? ultimate.skill.frontDamagePerTick
+              : ultimate.skill.damagePerTick;
+            this.dealDamage(opponent, damage, playerId, { isDamageOverTime: true });
+          }
         }
       }
     }
@@ -10957,7 +10965,7 @@
         }
         ctx.restore();
       }
-      if (player.stephenSmokeUntil > now) {
+      if (player.stephenSmokeUntil > now && player.stephenSmokeInvisibleUntil <= now) {
         ctx.save();
         const x = player.position.x;
         const y = player.position.y - 38;
@@ -12403,7 +12411,7 @@
     
     // ??蝘?蝢蝳佗??⊥+?嚗?銋??脣?摹?脩戌嚗摰單???嚗鋡急?嗥閫??
     const defendDuration = Date.now() - defendState.startTime;
-    if (defendDuration <= 2000) {
+    if (defendDuration <= 500) {
       return 'perfect';
     } else {
       return 'weakened';
@@ -12669,6 +12677,8 @@
             type: 'stephenSteak', owner: player, x: startX + player.facing * 35, y: player.position.y - 25,
             startX, direction: player.facing, speed: 520, maxRange: skill.unlimitedRange ? null : skill.range,
             damage, slowMultiplier: 1 - slow, slowDuration: skill.slowDuration,
+            stunDuration: charge > skill.stunChargeThreshold ? skill.stunDuration : 0,
+            ignoreDefense: charge > skill.stunChargeThreshold,
             createdAt: now
           });
         }
@@ -12684,6 +12694,7 @@
       }
       case SKILL_CODES.STEPHEN_SMOKE:
         player.stephenSmokeUntil = now + skill.duration;
+        player.stephenSmokeInvisibleUntil = now + skill.invisibleDuration;
         player.stephenSmokeNextTick = now;
         player.effects.invulnerable = player.stephenSmokeUntil;
         this.addCombatLog(`${player.name} 化為煙霧！`, playerId, 'skill');
@@ -13133,8 +13144,8 @@
         // ?? 瘞游??曄???????+ ?儔
         setTimeout(() => {
           // 閮??儔??(60%?脣??瑕拿)
-          const missingHp = Math.max(0, player.maxHp - player.hp);
-          const healAmount = (skill.baseHeal || 0) + Math.floor(missingHp * skill.healPercent);
+          const damageReceived = player.waterShieldStoredDamage || 0;
+          const healAmount = (skill.baseHeal || 0) + Math.floor(damageReceived * skill.healPercent);
           const now2 = Date.now();
           const effectiveHeal = (player.effects.healReduction > now2) ? Math.floor(healAmount * (1 - (player.effects.healReductionPercent || 0))) : healAmount;
           
@@ -14944,8 +14955,15 @@
         const ownerSide = projectile.owner === this.players.player1 ? 'player1' : 'player2';
 
         if (projectile.type === 'stephenSteak') {
-          const hit = this.dealDamage(target, projectile.damage, ownerSide);
-          if (hit.hit) this.applyStephenSlow(target, projectile.slowMultiplier, projectile.slowDuration, now);
+          const hit = this.dealDamage(target, projectile.damage, ownerSide, { ignoreDefense: projectile.ignoreDefense });
+          if (hit.hit) {
+            this.applyStephenSlow(target, projectile.slowMultiplier, projectile.slowDuration, now);
+            if (projectile.stunDuration) {
+              target.effects.stunned = Math.max(target.effects.stunned || 0, now + projectile.stunDuration);
+              this.playAnimation(target, 'stun');
+              this.addVisualEffect(target.position.x, target.position.y - 25, 'stun', '💫');
+            }
+          }
           projectile.owner.stephenImpact = { x: projectile.x, y: projectile.y, startedAt: now };
           return false;
         }
@@ -15347,7 +15365,7 @@
     const targetId = target === this.players.player1 ? 'player1' : 'player2';
     const attackerId = target === this.players.player1 ? 'player2' : 'player1';
     
-    const blockResult = options.isDamageOverTime ? null : this.isAttackBlocked(attackerId, targetId);
+    const blockResult = options.isDamageOverTime || options.ignoreDefense ? null : this.isAttackBlocked(attackerId, targetId);
     
     if (blockResult === 'perfect') {
       // ??蝘?摰??脩戌嚗??典??怠摰喳??批

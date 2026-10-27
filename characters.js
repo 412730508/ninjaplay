@@ -92,12 +92,12 @@ const SKILL_CODES = {
 };
 
 const STEPHEN_STEAK_SKILLS = {
-  normal: { code: SKILL_CODES.STEPHEN_STEAK, name: '大口牛排', type: '回復／蓄力投擲', cooldown: 8000, heal: 7, eatDuration: 1000, chargeThreshold: 300, maxCharge: 4000, minDamage: 7, maxDamage: 15, minSlow: 0.5, maxSlow: 0.99, slowDuration: 2000, range: 250 },
+  normal: { code: SKILL_CODES.STEPHEN_STEAK, name: '大口牛排', type: '回復／蓄力投擲', cooldown: 8000, heal: 7, eatDuration: 1000, chargeThreshold: 300, maxCharge: 4000, minDamage: 7, maxDamage: 15, minSlow: 0.5, maxSlow: 0.99, slowDuration: 2000, stunChargeThreshold: 3000, stunDuration: 2000, range: 250 },
   ultimate: { code: SKILL_CODES.STEPHEN_GRILL, name: '炙烤鐵板', type: '跟隨／範圍', cooldown: 22000, radius: 140, damagePerTick: 5, tickRate: 1000, slowMultiplier: 0.7, duration: 5000 }
 };
 const STEPHEN_SMOKE_SKILLS = {
-  normal: { code: SKILL_CODES.STEPHEN_SMOKE, name: '化煙', type: '無敵／持續傷害', cooldown: 12000, duration: 4000, damagePerTick: 3, tickRate: 1000, radius: 55 },
-  ultimate: { code: SKILL_CODES.STEPHEN_BREATH, name: '迎面煙幕', type: '定向／引導', cooldown: 22000, duration: 3000, range: 300, width: 120, damagePerTick: 2, tickRate: 200, slowMultiplier: 0.4, slowDuration: 3000 }
+  normal: { code: SKILL_CODES.STEPHEN_SMOKE, name: '化煙', type: '無敵／持續傷害', cooldown: 8000, duration: 4000, invisibleDuration: 2000, damagePerTick: 3, tickRate: 1000, radius: 55 },
+  ultimate: { code: SKILL_CODES.STEPHEN_BREATH, name: '迎面煙幕', type: '定向／引導', cooldown: 22000, duration: 3000, range: 300, width: 120, damagePerTick: 2, frontDamagePerTick: 3, tickRate: 200, slowMultiplier: 0.4, slowDuration: 3000 }
 };
 
 const characters = {
@@ -249,7 +249,7 @@ const characters = {
         duration: 3000,
         damageReduction: 0.5, // 減傷50%
         speedBoost: 25, // 護盾期間移速加成
-        healPercent: 0.8 // 結束後回復80%實際承受傷害
+        healPercent: 0.6 // 結束後回復已承受傷害的60%
       },
       ultimate: {
         code: SKILL_CODES.WATER_DRAGON,
@@ -539,7 +539,7 @@ const characters = {
         type: '三色輪轉',
         cooldown: 11000,
         cycleInterval: 400,
-        talismanColors: ['red', 'purple', 'blue'],
+        talismanColors: ['purple', 'red', 'blue'],
         red: {
           name: '恐懼火焰',
           zoneRadius: 30,
