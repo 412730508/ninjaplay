@@ -272,6 +272,51 @@ try {
   vm.runInContext(readFileSync(resolve(root, 'characters.js'), 'utf8'), engineContext);
   vm.runInContext(engineSource, engineContext);
   const NinjaGame = vm.runInContext('NinjaGame', engineContext);
+
+  const aiContext = vm.createContext({ window: {}, Math, Date });
+  vm.runInContext(readFileSync(resolve(root, 'aiController.js'), 'utf8'), aiContext);
+  const AIController = vm.runInContext('AIController', aiContext);
+  const cpuActions = [];
+  const cpuNow = Date.now();
+  const cpuKage = {
+    id: 'kage', position: { x: 300 }, facing: 1, hp: 90, moveSpeed: 290,
+    attackSpeed: 700, effects: { stunned: 0, casting: 0, rooted: 0, silenced: 0 },
+    skills: { normal: { cooldown: 10000, dashDistance: 300 }, ultimate: { cooldown: 12000 } }
+  };
+  const cpuTarget = { id: 'fujin', position: { x: 520 }, facing: -1, hp: 100, effects: {}, skills: { normal: {}, ultimate: {} } };
+  const cpuGame = {
+    players: { player1: cpuTarget, player2: cpuKage },
+    cooldowns: { player1: {}, player2: { attack: cpuNow - 1000, normal: cpuNow - 20000, ultimate: cpuNow - 20000 } },
+    gameState: { shadowMimic: { player1: null, player2: null }, paused: false },
+    isPlayerDefending: () => false,
+    useSkill: (playerId, skillType) => cpuActions.push(`skill:${skillType}`),
+    attack: () => cpuActions.push('attack'),
+    movePlayer: () => {},
+    startDefend: () => {},
+    endDefend: () => {},
+    updateDefendDirection: () => {}
+  };
+  const kageCpu = new AIController(cpuGame, { aiPlayerId: 'player2' });
+  const kageThinkFrames = kageCpu.getRandomThinkFrames();
+  if (kageThinkFrames < 5 || kageThinkFrames > 9) throw new Error('Shadow CPU does not use its faster decision interval');
+  kageCpu.makeDecision();
+  if (cpuActions.at(-1) !== 'skill:ultimate') throw new Error('Shadow CPU did not deploy clones while the opponent was in pressure range');
+  cpuGame.cooldowns.player2.ultimate = cpuNow;
+  kageCpu.makeDecision();
+  if (cpuActions.at(-1) !== 'skill:normal') throw new Error('Shadow CPU did not dash through a target within Black Blade range');
+  cpuKage.position.x = 600;
+  cpuTarget.position.x = 310;
+  cpuGame.gameState.shadowMimic.player2 = { x: 300, expiresAt: cpuNow + 1500 };
+  cpuGame.cooldowns.player2.normal = cpuNow;
+  kageCpu.makeDecision();
+  if (cpuActions.at(-1) !== 'skill:normal') throw new Error('Shadow CPU did not use the available shadow return recast when it improved position');
+  cpuGame.gameState.shadowMimic.player2 = null;
+  cpuKage.position.x = 300;
+  cpuTarget.position.x = 350;
+  cpuGame.cooldowns.player2.attack = cpuNow - 1000;
+  kageCpu.makeDecision();
+  if (cpuActions.at(-1) !== 'attack') throw new Error('Shadow CPU did not use a basic attack at close range');
+
   const animatorContext = vm.createContext({ document: { addEventListener() {} }, console });
   vm.runInContext(readFileSync(resolve(root, 'stickmanAnimator.js'), 'utf8'), animatorContext);
   const stephenAnimator = vm.runInContext('new StickmanAnimator()', animatorContext);

@@ -5,7 +5,6 @@ class AIController {
     this.targetPlayerId = options.targetPlayerId || 'player1';
     this.enabled = options.enabled !== false;
     this.frameAccumulator = 0;
-    this.nextThinkFrames = this.getRandomThinkFrames();
     this.currentMoveDirection = 0;
     this.longRange = options.longRange || 200;
     this.meleeRange = options.meleeRange || 80;
@@ -29,9 +28,13 @@ class AIController {
       ultimate: 0
     };
     this.syncCharacters();
+    this.nextThinkFrames = this.getRandomThinkFrames();
   }
 
   getRandomThinkFrames() {
+    if (this.aiCharacter?.id === 'kage') {
+      return 5 + Math.floor(Math.random() * 5);
+    }
     return 15 + Math.floor(Math.random() * 16);
   }
 
@@ -171,6 +174,11 @@ class AIController {
       return;
     }
 
+    if (this.aiCharacter.id === 'kage') {
+      this.makeKageDecision(dx, absDistance, now);
+      return;
+    }
+
     if (this.arePrimarySkillsCoolingDown()) {
       this.executeBackstepPlan(dx, absDistance, now);
       return;
@@ -196,6 +204,72 @@ class AIController {
       } else {
         this.walkTowardTarget(dx);
       }
+      return;
+    }
+
+    this.releaseGuard();
+    this.stopMoving();
+    this.attack();
+  }
+
+  makeKageDecision(dx, absDistance, now) {
+    const mimic = this.game.gameState?.shadowMimic?.[this.aiPlayerId];
+    const liveMimic = mimic && now < mimic.expiresAt;
+
+    // Return when the shadow is a clearly better angle or it is about to fade.
+    // Black Blade's return recast is available even while its normal cooldown runs.
+    if (liveMimic) {
+      const targetToShadow = Math.abs(this.targetCharacter.position.x - mimic.x);
+      const returnReady = targetToShadow + 55 < absDistance || now >= mimic.expiresAt - 350;
+      if (returnReady && this.canUseSkills()) {
+        this.faceTarget();
+        this.releaseGuard();
+        this.stopMoving();
+        this.game.useSkill(this.aiPlayerId, 'normal');
+        return;
+      }
+    }
+
+    // Place the clones while the opponent is close enough for them to attack
+    // throughout their short lifetime.
+    if (this.isSkillReady('ultimate') && absDistance <= 420) {
+      this.faceTarget();
+      this.releaseGuard();
+      this.stopMoving();
+      this.useUltimate();
+      return;
+    }
+
+    const dashRange = this.aiCharacter.skills?.normal?.dashDistance || 300;
+    const closeRange = this.aiCharacter.attackRange || this.meleeRange;
+
+    // The dash hits along its whole path. Avoid firing it when the opponent is
+    // already almost beside the ninja, where it would overshoot without value.
+    if (this.isSkillReady('normal') && absDistance > closeRange + 20 && absDistance <= dashRange - 15) {
+      this.faceTarget();
+      this.releaseGuard();
+      this.stopMoving();
+      this.useSkill1();
+      return;
+    }
+
+    if (absDistance <= closeRange + 15) {
+      this.faceTarget();
+      this.releaseGuard();
+      this.stopMoving();
+      this.attack();
+      return;
+    }
+
+    // Keep pressure while skills recover instead of backing away and giving up
+    // the initiative. Close to dash range and strike as soon as it is ready.
+    if (absDistance > dashRange - 15 && this.isSkillReady('normal')) {
+      this.walkTowardTarget(dx);
+      return;
+    }
+
+    if (absDistance > this.longRange || absDistance > closeRange + 15) {
+      this.walkTowardTarget(dx);
       return;
     }
 
