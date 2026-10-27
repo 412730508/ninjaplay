@@ -2676,42 +2676,6 @@
         ctx.ellipse(-4, -1, 3, 2, -0.3, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
-      } else if (projectile.type === 'windBlade') {
-        const ctx = this.ctx;
-        ctx.save();
-        ctx.translate(projectile.x, projectile.y);
-        ctx.shadowColor = '#8AF4FF';
-        ctx.shadowBlur = 14;
-        ctx.strokeStyle = '#E6FFFF';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(-projectile.direction * 12, 5);
-        ctx.quadraticCurveTo(0, -13, projectile.direction * 15, -2);
-        ctx.stroke();
-        ctx.strokeStyle = 'rgba(81, 220, 245, 0.8)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-projectile.direction * 8, 10);
-        ctx.quadraticCurveTo(projectile.direction * 2, -4, projectile.direction * 11, 2);
-        ctx.stroke();
-        ctx.restore();
-      } else if (projectile.type === 'waterWave') {
-        const ctx = this.ctx;
-        ctx.save();
-        ctx.translate(projectile.x, projectile.y);
-        const pulse = 0.75 + Math.sin(Date.now() * 0.018) * 0.2;
-        ctx.shadowColor = '#40CFFF';
-        ctx.shadowBlur = 13;
-        ctx.fillStyle = `rgba(64, 207, 255, ${pulse})`;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 13, 7, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#D9FBFF';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(-projectile.direction * 4, 0, 10, -Math.PI * 0.8, Math.PI * 0.8);
-        ctx.stroke();
-        ctx.restore();
       } else if (projectile.type === 'venomdart') {
         // 瘥?寞?皜脫? - 撠憌敶Ｙ?
         this.ctx.save();
@@ -11276,7 +11240,6 @@
   getMeleeRange(player) {
     const now = Date.now();
     let range = 75;
-    if (player?.basicAttack?.type === 'flamePalm') range = player.basicAttack.range;
     if (player?.id === 'stephen') range = player.attackRange || 55;
     if (player?.effects?.talentAttackRangeUntil > Date.now()) {
       range += player.effects.talentAttackRangeBonus || 0;
@@ -11804,13 +11767,19 @@
     // ?剜?餅??嚗?瘙箄蝙?典?撅祆?瑽????恬?
     this.playAnimation(
       player,
-      player.id === 'adjudicator'
-        ? 'gavelSmash'
-        : player.id === 'forgefire'
-          ? 'forgefireSlash'
-          : player.id === 'gladiator'
-            ? 'gladiatorAttack'
-          : 'attack'
+      player.id === 'fujin'
+        ? 'fujinBasicAttack'
+        : player.id === 'katon'
+          ? 'katonBasicAttack'
+          : player.id === 'suijin'
+            ? 'suijinBasicAttack'
+            : player.id === 'adjudicator'
+              ? 'gavelSmash'
+              : player.id === 'forgefire'
+                ? 'forgefireSlash'
+                : player.id === 'gladiator'
+                  ? 'gladiatorAttack'
+                  : 'attack'
     );
     if (player.id !== 'stephen') this.spawnCombatFlourish('swing', player, opponent, player.id === 'forgefire' || player.id === 'adjudicator' ? 1.35 : 1);
     if (player.id === 'stephen') {
@@ -11824,29 +11793,8 @@
         player.position.x,
         player.position.y,
         player.facing,
-        player.basicAttack?.type === 'flamePalm' ? player.basicAttack.range : this.getMeleeRange(player)
+        this.getMeleeRange(player)
       );
-    }
-
-    const basicAttack = player.basicAttack;
-    if (basicAttack?.type === 'windBlade' || basicAttack?.type === 'waterWave') {
-      const startX = player.position.x + player.facing * 30;
-      this.gameState.projectiles.push({
-        x: startX,
-        y: player.position.y - 20,
-        startX,
-        maxRange: basicAttack.range,
-        direction: player.facing,
-        speed: basicAttack.speed,
-        damage: player.attackDamage,
-        type: basicAttack.type,
-        skill: {},
-        owner: player,
-        startTime: now,
-        slowMultiplier: basicAttack.slowMultiplier || 1,
-        slowDuration: basicAttack.slowDuration || 0
-      });
-      return;
     }
 
     // ? ???餅?嚗撠?撠
@@ -15026,17 +14974,6 @@
           return false;
         }
 
-        if (projectile.type === 'windBlade' || projectile.type === 'waterWave') {
-          const hit = this.dealDamage(target, projectile.damage, ownerSide);
-          if (hit.hit && projectile.slowDuration > 0) {
-            target.effects.slowMultiplier = Math.min(target.effects.slowMultiplier || 1, projectile.slowMultiplier);
-            target.effects.slowed = Math.max(target.effects.slowed || 0, now + projectile.slowDuration);
-            this.addVisualEffect(target.position.x, target.position.y - 22, 'slow', '💧');
-          }
-          this.addVisualEffect(projectile.x, projectile.y, 'hit', projectile.type === 'waterWave' ? '💦' : '✦');
-          return false;
-        }
-        
         // 嚙踢???怎???寞?
         if (projectile.type === 'fireball' && typeof particleSystem !== 'undefined' && particleSystem) {
           particleSystem.createFireballExplosionEffect(projectile.x, projectile.y);

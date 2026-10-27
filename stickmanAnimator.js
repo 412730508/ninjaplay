@@ -351,6 +351,9 @@
       idle: this.createIdleAnimation(),
       walk: this.createWalkAnimation(),
       attack: this.createAttackAnimation(),
+      fujinBasicAttack: this.createFujinBasicAttackAnimation(),
+      katonBasicAttack: this.createKatonBasicAttackAnimation(),
+      suijinBasicAttack: this.createSuijinBasicAttackAnimation(),
       stephenCharge: this.createStephenChargeAnimation(),
       stephenThrow: this.createStephenThrowAnimation(),
       stephenEat: this.createStephenEatAnimation(),
@@ -535,6 +538,46 @@
       { head: {x:0,y:0,rotation:0}, body: {rotation:5}, leftArm: {upperRotation:-15,lowerRotation:0}, rightArm: {upperRotation:15,lowerRotation:5}, leftLeg: {upperRotation:0,lowerRotation:5}, rightLeg: {upperRotation:5,lowerRotation:5} },
       { head: {x:0,y:0,rotation:0}, body: {rotation:0}, leftArm: {upperRotation:-10,lowerRotation:0}, rightArm: {upperRotation:10,lowerRotation:0}, leftLeg: {upperRotation:0,lowerRotation:5}, rightLeg: {upperRotation:0,lowerRotation:5} }
     ];
+  }
+
+  // These are presentation-only variants of the normal melee swing.
+  createFujinBasicAttackAnimation() {
+    const arms = [-35, -58, -92, -125, -150, -118, -72, -35, -8, 8, 14, 10];
+    return arms.map((swing, i) => ({
+      head: { x: i >= 3 && i <= 5 ? 3 : 0, y: i < 3 ? -1 : 0, rotation: i < 3 ? -8 : i < 7 ? 12 : 0 },
+      body: { rotation: i < 3 ? -9 : i < 7 ? 13 : 0 },
+      leftArm: { upperRotation: i < 4 ? -35 : 18, lowerRotation: i < 4 ? -18 : 12 },
+      rightArm: { upperRotation: swing, lowerRotation: i < 3 ? -18 : i < 7 ? 24 : 4 },
+      leftLeg: { upperRotation: i < 4 ? -8 : 7, lowerRotation: i < 4 ? 10 : 4 },
+      rightLeg: { upperRotation: i < 4 ? 13 : -6, lowerRotation: i < 4 ? 7 : 4 },
+      weaponRotation: (i < 3 ? -0.6 : i < 7 ? 0.45 : 0) * (i < 3 ? 1 : -1)
+    }));
+  }
+
+  createKatonBasicAttackAnimation() {
+    const drive = [0, 0.18, 0.42, 0.72, 1, 0.92, 0.65, 0.32, 0.12, 0, 0, 0];
+    return drive.map((power, i) => ({
+      head: { x: 3 * power, y: -2 * power, rotation: 5 * power },
+      body: { rotation: 9 * power },
+      leftArm: { upperRotation: -22 - 22 * power, lowerRotation: -8 - 18 * power },
+      rightArm: { upperRotation: -18 + 95 * power, lowerRotation: -8 + 34 * power },
+      leftLeg: { upperRotation: -5 - 8 * power, lowerRotation: 8 + 5 * power },
+      rightLeg: { upperRotation: 6 + 13 * power, lowerRotation: 5 + 5 * power },
+      weaponRotation: 0
+    }));
+  }
+
+  createSuijinBasicAttackAnimation() {
+    const sweep = [0, -12, -28, -48, -66, -54, -34, -12, 8, 12, 6, 0];
+    return sweep.map((angle, i) => ({
+      head: { x: i >= 3 && i <= 6 ? 2 : 0, y: i < 3 ? -1 : 1, rotation: angle * 0.18 },
+      body: { rotation: angle * 0.42 },
+      leftArm: { upperRotation: -28 - angle * 0.45, lowerRotation: -18 - angle * 0.3 },
+      rightArm: { upperRotation: -20 + angle * 1.25, lowerRotation: 8 + angle * 0.55 },
+      leftLeg: { upperRotation: -6 + angle * 0.12, lowerRotation: 8 },
+      rightLeg: { upperRotation: 8 - angle * 0.18, lowerRotation: 6 },
+      weaponRotation: angle * Math.PI / 180
+    }));
   }
 
   createStephenChargeAnimation() {
@@ -3022,7 +3065,7 @@
       'fireRush', 'fireBall', 'windDash', 'windSlash', 
       'waterShield', 'waterDragon', 'thunderStep', 'thunderPunch',
       'rockGuard', 'earthQuake', 'shadowStrike', 'shadowClone',  // ? 蝣箔??啗???”銝?
-      'spiritBomb', 'spiritJudgment', 'attack', 'gavelSmash',
+      'spiritBomb', 'spiritJudgment', 'attack', 'fujinBasicAttack', 'katonBasicAttack', 'suijinBasicAttack', 'gavelSmash',
       'forgefireSlash', 'forgefireSpin', 'flameGodBlade',
       'elfTalisman', 'stealthDash',
       'bloodShackles', 'bloodDevour',

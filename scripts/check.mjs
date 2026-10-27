@@ -323,6 +323,12 @@ try {
   for (const name of ['stephenCharge', 'stephenThrow', 'stephenEat', 'stephenGrill', 'stephenBreath']) {
     if (stephenAnimator.animations[name]?.length !== 12) throw new Error(`Stephen animation is missing: ${name}`);
   }
+  for (const [characterId, animationName] of [['fujin', 'fujinBasicAttack'], ['katon', 'katonBasicAttack'], ['suijin', 'suijinBasicAttack']]) {
+    const frames = stephenAnimator.animations[animationName];
+    if (frames?.length !== 12 || JSON.stringify(frames[4]) === JSON.stringify(stephenAnimator.animations.attack[4])) {
+      throw new Error(`${characterId} is missing its distinct visual-only basic attack animation`);
+    }
+  }
   for (const elementalId of ['fujin', 'katon', 'suijin', 'raijin', 'doton', 'kage', 'rei', 'dokusei', 'taijutsu', 'ranger', 'warlock', 'ronin', 'beastmaster', 'scorpion', 'adjudicator', 'exileblade', 'forgefire', 'puppeteer', 'azure_disciple', 'shamisen', 'gladiator']) {
     for (const kind of ['swing', 'impact']) {
       const rendered = NinjaGame.prototype.renderElementalCombatFlourish.call({}, renderContext, {
@@ -356,42 +362,28 @@ try {
   engineContext.setTimeout = originalSetTimeout;
   if (waterUser.hp !== 73) throw new Error(`Water Shield settlement expected 73 HP, received ${waterUser.hp} from stored ${waterUser.waterShieldStoredDamage} damage`);
 
-  // The opening trio now use three distinct normal attack types and preserve
-  // their configured damage, reach, cooldown, and Water's brief slow on hit.
-  const windAttackGame = new NinjaGame();
-  windAttackGame.selectCharacters('fujin', 'katon');
-  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish']) windAttackGame[method] = () => {};
-  windAttackGame.players.player1.position.x = 300;
-  windAttackGame.players.player2.position.x = 520;
-  const windTargetHp = windAttackGame.players.player2.hp;
-  windAttackGame.attack('player1');
-  const windBlade = windAttackGame.gameState.projectiles[0];
-  if (windBlade?.type !== 'windBlade' || windBlade.damage !== 6 || windBlade.maxRange !== 300) throw new Error('Fujin basic attack did not create its configured wind blade');
-  windBlade.x = windAttackGame.players.player2.position.x - 8;
-  windAttackGame.updateProjectiles();
-  if (windAttackGame.players.player2.hp !== windTargetHp - 6) throw new Error('Fujin wind blade did not deal its basic-attack damage on hit');
-
-  const flameAttackGame = new NinjaGame();
-  flameAttackGame.selectCharacters('fujin', 'katon');
-  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish']) flameAttackGame[method] = () => {};
-  flameAttackGame.players.player1.position.x = 350;
-  flameAttackGame.players.player2.position.x = 420;
-  const flameTargetHp = flameAttackGame.players.player1.hp;
-  flameAttackGame.attack('player2');
-  if (flameAttackGame.gameState.projectiles.length || flameAttackGame.players.player1.hp !== flameTargetHp - 7) throw new Error('Katon basic attack should be a 72px close-range flame strike');
-
-  const waterAttackGame = new NinjaGame();
-  waterAttackGame.selectCharacters('suijin', 'katon');
-  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish']) waterAttackGame[method] = () => {};
-  waterAttackGame.players.player1.position.x = 300;
-  waterAttackGame.players.player2.position.x = 440;
-  const waterTargetHp = waterAttackGame.players.player2.hp;
-  waterAttackGame.attack('player1');
-  const waterWave = waterAttackGame.gameState.projectiles[0];
-  if (waterWave?.type !== 'waterWave' || waterWave.damage !== 5 || waterWave.maxRange !== 190) throw new Error('Suijin basic attack did not create its configured water wave');
-  waterWave.x = waterAttackGame.players.player2.position.x - 8;
-  waterAttackGame.updateProjectiles();
-  if (waterAttackGame.players.player2.hp !== waterTargetHp - 5 || waterAttackGame.players.player2.effects.slowMultiplier !== 0.86) throw new Error('Suijin water wave did not damage and briefly slow its target');
+  // The first three basic attacks keep the original melee rules and stats;
+  // only their animation and elemental flourish differ.
+  for (const [characterId, animationName, expectedDamage, expectedAttackSpeed] of [
+    ['fujin', 'fujinBasicAttack', 6, 800], ['katon', 'katonBasicAttack', 7, 700], ['suijin', 'suijinBasicAttack', 5, 900]
+  ]) {
+    const attackGame = new NinjaGame();
+    attackGame.selectCharacters(characterId, 'katon');
+    for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish']) attackGame[method] = () => {};
+    const attacker = attackGame.players.player1;
+    const target = attackGame.players.player2;
+    attacker.position.x = 300;
+    target.position.x = 350;
+    if (attacker.attackDamage !== expectedDamage || attacker.attackSpeed !== expectedAttackSpeed || attackGame.getMeleeRange(attacker) !== 75) {
+      throw new Error(`${characterId} no longer uses its original normal-attack damage, speed, and melee range`);
+    }
+    const targetHp = target.hp;
+    attackGame.attack('player1');
+    if (attacker.animation.current !== animationName) throw new Error(`${characterId} did not play its attack-only animation`);
+    if (attackGame.gameState.projectiles.length || target.hp !== targetHp - expectedDamage || (target.effects.slowMultiplier !== undefined && target.effects.slowMultiplier !== 1)) {
+      throw new Error(`${characterId} basic attack expected ${expectedDamage} damage without projectile/slow, got ${targetHp - target.hp}, projectiles=${attackGame.gameState.projectiles.length}, slow=${target.effects.slowMultiplier}`);
+    }
+  }
 
   // All fighters share the 0.5-second perfect-defense timing threshold.
   const defenseGame = new NinjaGame();
