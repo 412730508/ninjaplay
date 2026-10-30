@@ -15389,17 +15389,13 @@
     }
     
     if (blockResult === 'weakened') {
-      // 2蝘?嚗?撘梢蝳佗??瑕拿皜1嚗???批
+      // 完美防禦窗口結束後，這次傷害保留三分之一，四捨五入且至少造成 1 點。
       this.addVisualEffect(target.position.x, target.position.y, 'defend_block', '🛡️');
-      
-      // 撠摰唾??1
-      damage = 1;
+
+      damage = Math.max(1, Math.round(damage / 3));
       
       const playerSide = targetId;
-      this.addCombatLog(`${target.name} 弱化格擋！僅受1HP！`, playerSide, 'status');
-      
-      // 銝?return ??蝜潛?敺銝粥嚗??瑕拿=1憟?蚜P
-      // ?批??銋?甇?虜??嚗??賡?頛臬 dealDamageWithResult 銋??賢?嚗?
+      this.addCombatLog(`${target.name} 弱化格擋！傷害降低約 66.7%！`, playerSide, 'status');
     }
     
     // ?⊥??炎??

@@ -395,6 +395,15 @@ try {
   if (defenseGame.isAttackBlocked('player1', 'player2') !== 'perfect') throw new Error('Perfect defense should last through 0.5 seconds');
   simulatedNow += 1;
   if (defenseGame.isAttackBlocked('player1', 'player2') !== 'weakened') throw new Error('Perfect defense remained active after 0.5 seconds');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog']) defenseGame[method] = () => {};
+  const weakenedTarget = defenseGame.players.player2;
+  const weakenedStartHp = weakenedTarget.hp;
+  defenseGame.dealDamageWithResult(weakenedTarget, 10, 'player1');
+  if (weakenedTarget.hp !== weakenedStartHp - 3) throw new Error('Post-perfect defense did not round 10 damage down to one third (3)');
+  defenseGame.dealDamageWithResult(weakenedTarget, 5, 'player1');
+  if (weakenedTarget.hp !== weakenedStartHp - 5) throw new Error('Post-perfect defense did not round 5 damage to one third (2)');
+  defenseGame.dealDamageWithResult(weakenedTarget, 1, 'player1');
+  if (weakenedTarget.hp !== weakenedStartHp - 6) throw new Error('Post-perfect defense must preserve a minimum of 1 damage');
 
   // Ranger talisman starts at purple, then red, then blue.
   const talismanGame = new NinjaGame();
