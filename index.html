@@ -474,10 +474,10 @@
                 lastRecordedMatchWinner = winnerId;
                 matchReportEntries.unshift({
                     date: new Date().toLocaleString('zh-TW', { hour12: false }),
-                    player1: characters[game.players.player1?.id]?.name || game.players.player1?.id || '玩家1',
-                    player2: characters[game.players.player2?.id]?.name || game.players.player2?.id || '玩家2',
-                    winner: characters[winner.id]?.name || winner.id || (winnerId === 'player1' ? '玩家1' : '玩家2'),
-                    loser: characters[loser.id]?.name || loser.id || (loserId === 'player1' ? '玩家1' : '玩家2')
+                    player1: characters[game.players.player1?.originalCharacterId || game.players.player1?.id]?.name || game.players.player1?.originalCharacterId || game.players.player1?.id || '玩家1',
+                    player2: characters[game.players.player2?.originalCharacterId || game.players.player2?.id]?.name || game.players.player2?.originalCharacterId || game.players.player2?.id || '玩家2',
+                    winner: characters[winner.originalCharacterId || winner.id]?.name || winner.originalCharacterId || winner.id || (winnerId === 'player1' ? '玩家1' : '玩家2'),
+                    loser: characters[loser.originalCharacterId || loser.id]?.name || loser.originalCharacterId || loser.id || (loserId === 'player1' ? '玩家1' : '玩家2')
                 });
                 matchReportEntries = matchReportEntries.slice(0, 300);
                 try { localStorage.setItem(MATCH_REPORT_STORAGE_KEY, JSON.stringify(matchReportEntries)); } catch (error) { /* keep this match available in memory */ }
@@ -1035,7 +1035,8 @@
             shamisen: '🎸',
             stephen: '🥩',
             yanghong: '☕',
-            gladiator: '🏛️'
+            gladiator: '🏛️',
+            fanxiangyu: '⚖️'
         };
 
         // Player-supplied pixel portraits for the first ten roster slots.
@@ -1088,7 +1089,8 @@
             shamisen: { primary: '遠距控場', secondary: '節奏消耗' },
             stephen: { primary: '坦克控場', secondary: '雙型態續戰' },
             yanghong: { primary: '資源滾雪球', secondary: '抓取壓制' },
-            gladiator: { primary: '狂戰爆發', secondary: '領域封鎖' }
+            gladiator: { primary: '狂戰爆發', secondary: '領域封鎖' },
+            fanxiangyu: { primary: '隨機變身', secondary: '反制續戰' }
         };
 
         function formatCooldown(ms) {

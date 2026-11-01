@@ -88,7 +88,9 @@ const SKILL_CODES = {
   YANGHONG_COFFEE: 'YH_001',
   YANGHONG_TONGUE: 'YH_002',
   GLADIATOR_WILL: 'GLD_001',
-  GLADIATOR_CAESAR: 'GLD_002'
+  GLADIATOR_CAESAR: 'GLD_002',
+  FAN_XIANGYU_NORMAL: 'FXY_001',
+  FAN_XIANGYU_ULTIMATE: 'FXY_002'
 };
 
 const STEPHEN_STEAK_SKILLS = {
@@ -1109,6 +1111,61 @@ const characters = {
         arenaHpBonusPercent: 0.2,
         arenaMoveSpeedMultiplier: 1.2,
         arenaAttackSpeedMultiplier: 0.8
+      }
+    }
+  },
+
+  fanxiangyu: {
+    id: 'fanxiangyu',
+    name: '范翔宇',
+    organization: '融會貫通',
+    maxHp: 100,
+    hp: 100,
+    attackDamage: 5,
+    attackSpeed: 650,
+    moveSpeed: 260,
+    position: { x: 100, y: 300 },
+    facing: 1,
+    passive: {
+      name: '融會貫通',
+      description: '據理力爭命中獲洞察；每層使下次變身延長0.5秒。變身結束時依有效傷害回復生命，最多10點。'
+    },
+    skills: {
+      normal: {
+        code: SKILL_CODES.FAN_XIANGYU_NORMAL,
+        name: '據理力爭',
+        type: '短距衝擊波／命中增益',
+        cooldown: 7000,
+        damage: 5,
+        range: 130,
+        speed: 460,
+        damageReduction: 0.2,
+        damageReductionDuration: 3000,
+        insightOnHit: 1,
+        insightOnInterrupt: 1,
+        maxInsight: 3
+      },
+      ultimate: {
+        code: SKILL_CODES.FAN_XIANGYU_ULTIMATE,
+        name: '五相輪轉',
+        type: '隨機五選一／限時變身',
+        cooldown: 13000,
+        candidateCount: 5,
+        rotateInterval: 400,
+        selectionDuration: 3000,
+        ascendDuration: 500,
+        descendDuration: 400,
+        landingDuration: 200,
+        baseDuration: 10000,
+        insightDurationPerStack: 500,
+        formHealthPercent: 0.2,
+        damageHealPercent: 0.15,
+        maxDamageHeal: 10,
+        naturalEnergyPerSecond: 10,
+        hitEnergy: 10,
+        damageEnergyThreshold: 5,
+        damageEnergyPerThreshold: 5,
+        maxEnergy: 150
       }
     }
   }

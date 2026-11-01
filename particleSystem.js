@@ -165,6 +165,10 @@
       case 'GLD_002':
         this.createGladiatorStompEffect(x + facing * 150, y);
         break;
+      case 'FXY_001':
+      case 'FXY_002':
+        this.createFanXiangyuEffect(x, y, facing);
+        break;
       default:
         console.warn('未處理的技能特效代碼：', skillCode);
     }
@@ -184,6 +188,14 @@
     for (let shard = 0; shard < 8; shard++) {
       const side = shard % 2 ? 1 : -1;
       this.particles.push({ x: x + side * 8, y: y + 18, endX: x + side * (26 + shard * 3), endY: y + 8 - (shard % 3) * 5, color: shard % 2 ? '#E8C477' : '#FFF0C1', width: 2.5, life: 250 + (shard % 3) * 30, maxLife: 310, alpha: 0.9, type: 'impact_fist_line' });
+    }
+  }
+
+  createFanXiangyuEffect(x, y, facing = 1) {
+    this.particles.push({ x: x + facing * 28, y: y - 28, radius: 8, maxRadius: 42, color: '#F2D995', life: 320, maxLife: 320, alpha: 0.72, type: 'ring' });
+    for (let i = 0; i < 7; i++) {
+      const angle = (Math.PI * 2 * i) / 7;
+      this.particles.push({ x: x + facing * 28, y: y - 28, vx: Math.cos(angle) * 38, vy: Math.sin(angle) * 38, size: 2 + (i % 2), color: i % 2 ? '#F5E8C5' : '#D9B55A', life: 260, maxLife: 260, alpha: 0.85, type: 'spark' });
     }
   }
 

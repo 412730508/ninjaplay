@@ -320,6 +320,7 @@ try {
   const animatorContext = vm.createContext({ document: { addEventListener() {} }, console });
   vm.runInContext(readFileSync(resolve(root, 'stickmanAnimator.js'), 'utf8'), animatorContext);
   const stephenAnimator = vm.runInContext('new StickmanAnimator()', animatorContext);
+  engineContext.stickmanAnimator = stephenAnimator;
   for (const name of ['stephenCharge', 'stephenThrow', 'stephenEat', 'stephenGrill', 'stephenBreath']) {
     if (stephenAnimator.animations[name]?.length !== 12) throw new Error(`Stephen animation is missing: ${name}`);
   }
@@ -342,6 +343,141 @@ try {
   // Exercise both Stephen forms, including the moving grill and key-release charge.
   let simulatedNow = 100000;
   engineContext.Date = class extends Date { static now() { return simulatedNow; } };
+  engineContext.requestAnimationFrame = () => 0;
+
+  // Fan Xiangyu: hit-confirm insight, unique five-card selection, staged form,
+  // form HP/energy, one copied ultimate, preserved base HP/CD, and break return.
+  if (roster.fanxiangyu?.maxHp !== 100 || roster.fanxiangyu?.attackDamage !== 5 || roster.fanxiangyu?.attackSpeed !== 650 || roster.fanxiangyu?.skills.normal.cooldown !== 7000) {
+    throw new Error('Fan Xiangyu roster stats do not match V1');
+  }
+  const fanGame = new NinjaGame();
+  fanGame.selectCharacters('fanxiangyu', 'katon');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish', 'triggerCameraShake']) fanGame[method] = () => {};
+  const fan = fanGame.players.player1, fanTarget = fanGame.players.player2;
+  fan.hp = 45;
+  fan.position = { x: 300, y: 300 }; fanTarget.position = { x: 350, y: 300 };
+  const fanTargetInitialHp = fanTarget.hp;
+  fanGame.useSkill('player1', 'normal');
+  if (fanTarget.hp !== fanTargetInitialHp - 5 || fan.fanInsight !== 1 || fan.effects.fanDamageReductionUntil !== simulatedNow + 3000) {
+    throw new Error(`Fan Xiangyu Argument skill missed its hit damage reduction or insight reward (hp=${fanTarget.hp}, initial=${fanTargetInitialHp}, insight=${fan.fanInsight}, dr=${fan.effects.fanDamageReductionUntil}, expected=${simulatedNow + 3000})`);
+  }
+  const hpBeforeFanGuard = fan.hp;
+  fanGame.dealDamage(fan, 10, 'player2');
+  if (fan.hp !== hpBeforeFanGuard - 8) throw new Error('Fan Xiangyu hit-confirm damage reduction was not 20 percent');
+  fan.hp = 45;
+  fanGame.cooldowns.player1.normal = simulatedNow - 7000;
+  fanTarget.effects.casting = simulatedNow + 1000;
+  fanGame.useSkill('player1', 'normal');
+  if (fan.fanInsight !== 3) throw new Error('Fan Xiangyu skill hit during an enemy cast did not grant the interrupt insight stack');
+  fanTarget.position.x = 800;
+  fanGame.cooldowns.player1.normal = simulatedNow - 7000;
+  fanGame.useSkill('player1', 'normal');
+  if (fan.fanInsight !== 3) throw new Error('Fan Xiangyu missed skill granted insight');
+
+  fanGame.useSkill('player1', 'ultimate');
+  const rolling = fan.fanForm;
+  if (rolling?.phase !== 'selecting' || rolling.candidates.length !== 5 || new Set(rolling.candidates).size !== 5 || rolling.candidates.includes('fanxiangyu')) {
+    throw new Error('Fan Xiangyu selection did not draw five unique playable roles');
+  }
+  rolling.candidates = ['katon', 'fujin', 'suijin', 'raijin', 'doton'];
+  fanGame.updateFanXiangyuForms(400);
+  if (rolling.index !== 1) throw new Error('Fan Xiangyu roulette did not advance at the 400ms interval');
+  fanGame.useSkill('player1', 'ultimate');
+  if (fan.id !== 'fujin' || fan.hp !== Math.ceil(roster.fujin.maxHp * 0.2) || fan.fanForm.insightConsumed !== 3 || fan.fanForm.duration !== 11500 || fan.fanForm.requiredEnergy !== 120) {
+    throw new Error('Fan Xiangyu confirmation did not start the selected role form with correct independent HP and insight duration');
+  }
+  fanGame.ctx = renderContext;
+  fanGame.renderFanXiangyuTransitions(); fanGame.renderFanXiangyuHud();
+  simulatedNow += 500; fanGame.updateFanXiangyuForms(0);
+  simulatedNow += 400; fanGame.updateFanXiangyuForms(0);
+  simulatedNow += 200; fanGame.updateFanXiangyuForms(0);
+  if (fan.fanForm.phase !== 'transformed' || fan.fanForm.startedAt !== simulatedNow) throw new Error('Fan Xiangyu transformation phases did not finish in 1.1 seconds');
+  fanGame.renderFanXiangyuHud();
+  fanGame.updateFanXiangyuForms(1000);
+  if (fan.fanForm.energy !== 10) throw new Error('Fan Xiangyu copied-form natural energy is not 10 points per second');
+  fanTarget.position.x = fan.position.x + 45;
+  fanGame.attack('player1');
+  const chargedAfterAttack = fan.fanForm.energy;
+  if (chargedAfterAttack !== 25) throw new Error('Fan Xiangyu copied basic hit did not add both 10 hit energy and damage energy');
+  fanGame.dealDamage(fanTarget, 34, 'player1');
+  if (fan.fanForm.damageDealt !== 40 || fan.fanForm.damageRemainder !== 0 || fan.fanForm.energy !== 60) {
+    throw new Error('Fan Xiangyu effective damage did not count for healing and 5-damage energy milestones');
+  }
+  fan.fanForm.energy = fan.fanForm.requiredEnergy;
+  fanGame.useSkill('player1', 'ultimate');
+  if (!fan.fanForm.ultimateUsed || fan.fanForm.energy !== 0) throw new Error(`Fan Xiangyu copied ultimate did not consume its one-use energy (used=${fan.fanForm.ultimateUsed}, energy=${fan.fanForm.energy}, required=${fan.fanForm.requiredEnergy}, phase=${fan.fanForm.phase}, cd=${fanGame.cooldowns.player1.ultimate})`);
+  fanGame.useSkill('player1', 'ultimate');
+  if (fan.windSlashRecastUntil) throw new Error('Fan Xiangyu Wind Slash recast follow-up was not allowed after spending its ultimate');
+  if (!fan.fanForm.ultimateUsed) throw new Error('Fan Xiangyu allowed a second copied ultimate in one form');
+  const baseSkillCooldown = fan.fanForm.baseCooldowns.normal;
+  fan.fanForm.endsAt = simulatedNow;
+  fanGame.updateFanXiangyuForms(0);
+  if (fan.id !== 'fanxiangyu' || fan.hp !== 51 || fanGame.cooldowns.player1.normal !== baseSkillCooldown || fan.fanInsight !== 0) {
+    throw new Error(`Fan Xiangyu timeout did not return base HP + 15% healing while restoring base cooldowns (id=${fan.id}, hp=${fan.hp}, cd=${fanGame.cooldowns.player1.normal}, expectedCd=${baseSkillCooldown}, insight=${fan.fanInsight}, damage=${fan.fanForm?.damageDealt})`);
+  }
+
+  const brokenFormGame = new NinjaGame();
+  brokenFormGame.selectCharacters('fanxiangyu', 'katon');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish', 'triggerCameraShake']) brokenFormGame[method] = () => {};
+  const fragile = brokenFormGame.players.player1;
+  fragile.hp = 67;
+  brokenFormGame.useSkill('player1', 'ultimate');
+  fragile.fanForm.candidates = ['katon', 'fujin', 'suijin', 'raijin', 'doton'];
+  brokenFormGame.lockFanXiangyuForm('player1', 'katon');
+  simulatedNow += 1100;
+  brokenFormGame.updateFanXiangyuForms(0);
+  const brokenHp = fragile.hp;
+  const brokenHit = brokenFormGame.dealDamageWithResult(fragile, 999, 'player2');
+  if (!brokenHit.formBroken || fragile.id !== 'fanxiangyu' || fragile.hp !== 67 || brokenFormGame.gameState.winner) {
+    throw new Error(`Fan Xiangyu form break incorrectly ended the round or damaged base HP (pre=${brokenHp}, now=${fragile.hp})`);
+  }
+
+  const legacyBreakGame = new NinjaGame();
+  legacyBreakGame.selectCharacters('fanxiangyu', 'katon');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish', 'triggerCameraShake']) legacyBreakGame[method] = () => {};
+  const legacyFragile = legacyBreakGame.players.player1;
+  legacyBreakGame.updateCooldownUI = () => {};
+  legacyFragile.hp = 67;
+  legacyBreakGame.useSkill('player1', 'ultimate');
+  legacyFragile.fanForm.candidates = ['katon', 'fujin', 'suijin', 'raijin', 'doton'];
+  legacyBreakGame.lockFanXiangyuForm('player1', 'katon');
+  legacyFragile.hp = 0;
+  legacyBreakGame.gameState.winner = 'player2';
+  legacyBreakGame.update(16);
+  if (legacyFragile.id !== 'fanxiangyu' || legacyFragile.hp !== 67 || legacyBreakGame.gameState.winner) {
+    throw new Error('Legacy direct-HP damage path treated copied-form break as a round loss');
+  }
+
+  const dualFanGame = new NinjaGame();
+  dualFanGame.selectCharacters('fanxiangyu', 'fanxiangyu');
+  dualFanGame.useSkill('player1', 'ultimate'); dualFanGame.useSkill('player2', 'ultimate');
+  if (dualFanGame.players.player1.fanForm.candidates === dualFanGame.players.player2.fanForm.candidates ||
+      new Set(dualFanGame.players.player1.fanForm.candidates).size !== 5 || new Set(dualFanGame.players.player2.fanForm.candidates).size !== 5) {
+    throw new Error('Two Fan Xiangyu players share selection state or draw duplicate roles');
+  }
+  dualFanGame.resetGame();
+  if (dualFanGame.players.player1.fanForm || dualFanGame.players.player2.fanForm) throw new Error('Reset left Fan Xiangyu selection state active');
+
+  const holdFanGame = new NinjaGame();
+  holdFanGame.selectCharacters('fanxiangyu', 'katon');
+  holdFanGame.keys.k = true;
+  holdFanGame.handleInput(); holdFanGame.handleInput();
+  if (holdFanGame.players.player1.fanForm?.phase !== 'selecting') throw new Error('Holding the ultimate key confirmed Fan Xiangyu selection without a fresh key press');
+  holdFanGame.keys.k = false;
+  holdFanGame.skillPressed.player1.ultimate = false;
+  holdFanGame.keys.k = true;
+  holdFanGame.handleInput();
+  if (holdFanGame.players.player1.fanForm?.phase !== 'ascending') throw new Error('A new ultimate key press did not confirm Fan Xiangyu selection');
+  holdFanGame.resetGame();
+
+  const timeoutFanGame = new NinjaGame();
+  timeoutFanGame.selectCharacters('fanxiangyu', 'katon');
+  timeoutFanGame.useSkill('player1', 'ultimate');
+  timeoutFanGame.updateFanXiangyuForms(3000);
+  if (timeoutFanGame.players.player1.fanForm?.phase !== 'ascending' || timeoutFanGame.players.player1.id === 'fanxiangyu') {
+    throw new Error('Fan Xiangyu selection did not auto-lock after three seconds');
+  }
+  timeoutFanGame.resetGame();
 
   // Water Shield refunds 60% of damage actually received during its three-second window.
   const waterGame = new NinjaGame();
