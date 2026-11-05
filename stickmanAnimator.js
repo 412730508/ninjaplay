@@ -6,6 +6,12 @@
     if (this.stephenHeadImage) this.stephenHeadImage.src = 'assets/portraits/stephen.png';
     this.yangHongHeadImage = typeof Image === 'undefined' ? null : new Image();
     if (this.yangHongHeadImage) this.yangHongHeadImage.src = 'assets/portraits/yanghong.png';
+    this.fanHeadImage = typeof Image === 'undefined' ? null : new Image();
+    if (this.fanHeadImage) {
+      this.fanHeadImage.onload = () => { this.fanHeadReady = true; };
+      this.fanHeadImage.onerror = () => { this.fanHeadReady = false; };
+      this.fanHeadImage.src = 'assets/portraits/fanxiangyu.png';
+    }
     
     // ?急鈭粹爸撉潛?瑽?(?箇???
     this.skeleton = {
@@ -1687,10 +1693,11 @@
     // ?? 蝜芾ˊ?剝
     if (schoolId === 'stephen') this.drawStephenHead(ctx, frame, colors, equipment);
     else if (schoolId === 'yanghong') this.drawYangHongHead(ctx, frame, colors, equipment);
+    else if (schoolId === 'fanxiangyu') this.drawFanXiangyuHead(ctx, frame, colors, equipment);
     else this.drawHead(ctx, frame, colors, equipment);
     
     // ?? 蝜芾ˊ?剖葆
-    if (!['stephen', 'yanghong'].includes(schoolId)) this.drawHeadband(ctx, frame, equipment.headband);
+    if (!['stephen', 'yanghong', 'fanxiangyu'].includes(schoolId)) this.drawHeadband(ctx, frame, equipment.headband);
     
     // ??蝜芾ˊ?寞???蝎?
     this.drawSpecialEffects(ctx, frame, equipment, x, y);
@@ -1723,6 +1730,21 @@
     ctx.scale(-1, 1);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(this.yangHongHeadImage, -22, -24, 44, 44);
+    ctx.restore();
+  }
+
+  drawFanXiangyuHead(ctx, frame, colors, equipment) {
+    if (!this.fanHeadReady || !this.fanHeadImage?.naturalWidth) {
+      this.drawHead(ctx, frame, colors, equipment);
+      return;
+    }
+    ctx.save();
+    ctx.translate(frame.head.x, frame.head.y - 65);
+    ctx.rotate((frame.head.rotation || 0) * Math.PI / 180);
+    // drawStickman already mirrors the whole body for facing=-1. The asset faces left.
+    ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this.fanHeadImage, -21, -22, 42, 42);
     ctx.restore();
   }
 

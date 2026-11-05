@@ -107,7 +107,7 @@ try {
     ['kage', 'skills.ultimate.cloneCount', 6],
     ['kage', 'skills.ultimate.cloneDamage', 2],
     ['rei', 'skills.ultimate.range', 360],
-    ['ronin', 'attackDamage', 9],
+    ['ronin', 'attackDamage', 6],
     ['ronin', 'attackSpeed', 700],
     ['scorpion', 'attackDamage', 4],
     ['adjudicator', 'attackDamage', 11],
@@ -478,8 +478,8 @@ try {
 
   // Fan Xiangyu: hit-confirm insight, unique five-card selection, staged form,
   // form HP/energy, one copied ultimate, preserved base HP/CD, and break return.
-  if (roster.fanxiangyu?.maxHp !== 100 || roster.fanxiangyu?.attackDamage !== 5 || roster.fanxiangyu?.attackSpeed !== 650 || roster.fanxiangyu?.skills.normal.cooldown !== 7000) {
-    throw new Error('Fan Xiangyu roster stats do not match V1');
+  if (roster.fanxiangyu?.maxHp !== 100 || roster.fanxiangyu?.attackDamage !== 5 || roster.fanxiangyu?.attackSpeed !== 650 || roster.fanxiangyu?.skills.normal.cooldown !== 6000 || roster.fanxiangyu?.skills.ultimate.cooldown !== 9000) {
+    throw new Error('Fan Xiangyu roster stats do not match November balance');
   }
   const fanGame = new NinjaGame();
   fanGame.selectCharacters('fanxiangyu', 'katon');
@@ -489,21 +489,54 @@ try {
   fan.position = { x: 300, y: 300 }; fanTarget.position = { x: 350, y: 300 };
   const fanTargetInitialHp = fanTarget.hp;
   fanGame.useSkill('player1', 'normal');
-  if (fanTarget.hp !== fanTargetInitialHp - 5 || fan.fanInsight !== 1 || fan.effects.fanDamageReductionUntil !== simulatedNow + 3000) {
-    throw new Error(`Fan Xiangyu Argument skill missed its hit damage reduction or insight reward (hp=${fanTarget.hp}, initial=${fanTargetInitialHp}, insight=${fan.fanInsight}, dr=${fan.effects.fanDamageReductionUntil}, expected=${simulatedNow + 3000})`);
+  if (fanTarget.hp !== fanTargetInitialHp - 4 || fanTarget.position.x !== 550 || fan.fanInsight !== 1 || fan.fanNormalRecast?.expiresAt !== simulatedNow + 2000) {
+    throw new Error('Fan Xiangyu first hit missed its damage, knockback, insight, or recast window');
   }
-  const hpBeforeFanGuard = fan.hp;
-  fanGame.dealDamage(fan, 10, 'player2');
-  if (fan.hp !== hpBeforeFanGuard - 8) throw new Error('Fan Xiangyu hit-confirm damage reduction was not 20 percent');
-  fan.hp = 45;
-  fanGame.cooldowns.player1.normal = simulatedNow - 7000;
+  simulatedNow += 1200;
+  fanGame.useSkill('player1', 'normal');
+  if (fan.position.x !== 140 || fan.fanNormalRecast || fanGame.cooldowns.player1.normal !== simulatedNow || fan.fanNormalCooldown !== 8000) throw new Error('Fan Xiangyu recast retreat or eight-second cooldown failed');
+  fanGame.useSkill('player1', 'normal');
+  if (fan.position.x !== 140) throw new Error('Fan Xiangyu recast repeated without a new first hit');
+  simulatedNow += 8000;
+  fanTarget.position.x = 190;
   fanTarget.effects.casting = simulatedNow + 1000;
   fanGame.useSkill('player1', 'normal');
   if (fan.fanInsight !== 3) throw new Error('Fan Xiangyu skill hit during an enemy cast did not grant the interrupt insight stack');
   fanTarget.position.x = 800;
-  fanGame.cooldowns.player1.normal = simulatedNow - 7000;
+  simulatedNow += 6000;
   fanGame.useSkill('player1', 'normal');
-  if (fan.fanInsight !== 3) throw new Error('Fan Xiangyu missed skill granted insight');
+  if (fan.fanInsight !== 3 || fan.fanNormalRecast) throw new Error('Fan Xiangyu missed skill granted insight or recast');
+
+  const fanEdgeGame = new NinjaGame();
+  fanEdgeGame.selectCharacters('fanxiangyu', 'katon');
+  for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'spawnCombatFlourish', 'triggerCameraShake']) fanEdgeGame[method] = () => {};
+  const edgeFan = fanEdgeGame.players.player1, edgeTarget = fanEdgeGame.players.player2;
+  edgeFan.position.x = 500; edgeTarget.position.x = 450; edgeFan.facing = -1;
+  fanEdgeGame.useSkill('player1', 'normal');
+  if (edgeTarget.position.x !== 250 || !edgeFan.fanNormalRecast) throw new Error('Fan Xiangyu left-facing knockback missed');
+  edgeFan.facing = 1;
+  fanEdgeGame.useSkill('player1', 'normal');
+  if (edgeFan.position.x !== 660 || edgeFan.fanNormalRecast) throw new Error('Fan Xiangyu retreat followed changed facing or recast twice');
+  simulatedNow += 8000;
+  edgeTarget.position.x = 700;
+  edgeFan.facing = -1;
+  fanEdgeGame.useSkill('player1', 'normal');
+  if (edgeFan.fanNormalRecast) throw new Error('Fan Xiangyu hit a target behind the caster');
+  simulatedNow += 6000;
+  edgeTarget.position.x = 600; edgeTarget.effects.superArmor = simulatedNow + 1000;
+  fanEdgeGame.useSkill('player1', 'normal');
+  if (edgeFan.fanNormalRecast) throw new Error('Knockback-immune target opened Fan Xiangyu recast');
+  edgeTarget.effects.superArmor = 0;
+  simulatedNow += 6000;
+  edgeFan.position.x = 120; edgeFan.facing = 1; edgeTarget.position.x = 170;
+  fanEdgeGame.useSkill('player1', 'normal');
+  if (edgeTarget.position.x !== 370) throw new Error('Fan Xiangyu first cast did not knock back 200px');
+  simulatedNow += 2001;
+  fanEdgeGame.useSkill('player1', 'normal');
+  if (edgeFan.position.x !== 120 || edgeFan.fanNormalRecast) throw new Error('Fan Xiangyu recast remained available after two seconds');
+  simulatedNow += 3999;
+  fanEdgeGame.useSkill('player1', 'normal');
+  if (fanEdgeGame.cooldowns.player1.normal !== simulatedNow) throw new Error('Fan Xiangyu missed recast did not keep six-second cooldown');
 
   fanGame.useSkill('player1', 'ultimate');
   const rolling = fan.fanForm;
@@ -525,13 +558,18 @@ try {
   if (fan.fanForm.phase !== 'transformed' || fan.fanForm.startedAt !== simulatedNow) throw new Error('Fan Xiangyu transformation phases did not finish in 1.1 seconds');
   fanGame.renderFanXiangyuHud();
   fanGame.updateFanXiangyuForms(1000);
-  if (fan.fanForm.energy !== 10) throw new Error('Fan Xiangyu copied-form natural energy is not 10 points per second');
+  if (fan.fanForm.energy !== 15) throw new Error('Fan Xiangyu copied-form natural energy is not 15 points per second');
+  fanGame.updateFanXiangyuForms(3000);
+  if (fan.fanForm.energy !== 60) throw new Error('Fan Xiangyu natural energy after four seconds was not 60');
+  fanGame.updateFanXiangyuForms(2000);
+  if (fan.fanForm.energy !== 90) throw new Error('Fan Xiangyu natural energy after six seconds was not 90');
+  fan.fanForm.energy = 15;
   fanTarget.position.x = fan.position.x + 45;
   fanGame.attack('player1');
   const chargedAfterAttack = fan.fanForm.energy;
-  if (chargedAfterAttack !== 25) throw new Error('Fan Xiangyu copied basic hit did not add both 10 hit energy and damage energy');
+  if (chargedAfterAttack !== 30) throw new Error('Fan Xiangyu copied basic hit did not add both 10 hit energy and damage energy');
   fanGame.dealDamage(fanTarget, 34, 'player1');
-  if (fan.fanForm.damageDealt !== 40 || fan.fanForm.damageRemainder !== 0 || fan.fanForm.energy !== 60) {
+  if (fan.fanForm.damageDealt !== 40 || fan.fanForm.damageRemainder !== 0 || fan.fanForm.energy !== 65) {
     throw new Error('Fan Xiangyu effective damage did not count for healing and 5-damage energy milestones');
   }
   fan.fanForm.energy = fan.fanForm.requiredEnergy;
@@ -543,9 +581,14 @@ try {
   const baseSkillCooldown = fan.fanForm.baseCooldowns.normal;
   fan.fanForm.endsAt = simulatedNow;
   fanGame.updateFanXiangyuForms(0);
-  if (fan.id !== 'fanxiangyu' || fan.hp !== 51 || fanGame.cooldowns.player1.normal !== baseSkillCooldown || fan.fanInsight !== 0) {
+  if (fan.id !== 'fanxiangyu' || fan.hp !== 51 || fanGame.cooldowns.player1.normal !== baseSkillCooldown || fanGame.cooldowns.player1.ultimate !== simulatedNow || fan.fanInsight !== 0) {
     throw new Error(`Fan Xiangyu timeout did not return base HP + 15% healing while restoring base cooldowns (id=${fan.id}, hp=${fan.hp}, cd=${fanGame.cooldowns.player1.normal}, expectedCd=${baseSkillCooldown}, insight=${fan.fanInsight}, damage=${fan.fanForm?.damageDealt})`);
   }
+  fanGame.useSkill('player1', 'ultimate');
+  if (fan.fanForm) throw new Error('Fan Xiangyu base ultimate cooldown started before returning');
+  simulatedNow += 9000;
+  fanGame.useSkill('player1', 'ultimate');
+  if (fan.fanForm?.phase !== 'selecting') throw new Error('Fan Xiangyu base ultimate was not ready nine seconds after return');
 
   const brokenFormGame = new NinjaGame();
   brokenFormGame.selectCharacters('fanxiangyu', 'katon');

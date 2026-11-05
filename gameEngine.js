@@ -1699,7 +1699,7 @@
         this.addVisualEffect(player.position.x, player.position.y, 'transform_impact', '✦');
         this.triggerCameraShake(3, 140);
       } else if ((state.phase === 'transformed' || state.phase === 'finishing') && state.startedAt) {
-        if (!state.ultimateUsed) state.energy = Math.min(state.requiredEnergy, state.energy + Math.max(0, deltaTime || 0) * 0.01);
+        if (state.phase === 'transformed' && !state.ultimateUsed) state.energy = Math.min(state.requiredEnergy, state.energy + Math.max(0, deltaTime || 0) * characters.fanxiangyu.skills.ultimate.naturalEnergyPerSecond / 1000);
         if (now >= state.endsAt) {
           if (state.ultimateUsed && this.isFanXiangyuCasting(player) && player.hp > 0) {
             state.phase = 'finishing';
@@ -1721,6 +1721,7 @@
     }
     const candidates = shuffled.slice(0, Math.min(5, shuffled.length));
     if (!candidates.length) return false;
+    delete player.fanNormalRecast;
     player.fanForm = { phase: 'selecting', candidates, index: 0, elapsed: 0 };
     this.addCombatLog(`${player.name} 啟動五相輪轉！`, playerId, 'skill');
     return true;
@@ -1748,13 +1749,13 @@
     state.phase = 'ascending';
     state.phaseEndsAt = Date.now() + 500;
     player.fanInsight = 0;
-    this.cooldowns[playerId].ultimate = Date.now();
     this.clearSkillReady(playerId, 'ultimate');
     const position = { ...player.position }, facing = player.facing, effects = player.effects, animation = player.animation;
     const persistentState = state;
     Object.assign(player, JSON.parse(JSON.stringify(template)));
     player.position = position; player.facing = facing; player.effects = effects; player.animation = animation;
     player.fanForm = persistentState; player.originalCharacterId = 'fanxiangyu';
+    delete player.fanNormalCooldown;
     player.hp = Math.max(1, Math.ceil(template.maxHp * 0.2));
     player.maxHp = Math.max(1, Math.ceil(template.maxHp * 0.2));
     player.effects.invulnerable = Date.now() + 1100;
@@ -1781,10 +1782,12 @@
     Object.assign(player, JSON.parse(JSON.stringify(snapshot)));
     player.position = position; player.facing = facing;
     if (state.baseCooldowns) this.cooldowns[playerId] = { ...state.baseCooldowns };
+    this.cooldowns[playerId].ultimate = Date.now();
     player.hp = Math.min(player.maxHp, savedHp + earnedHeal);
     player.fanInsight = snapshot.fanInsight || 0;
     delete player.fanForm;
     delete player.originalCharacterId;
+    delete player.fanNormalRecast;
     if (reason === 'broken') this.addVisualEffect(position.x, position.y, 'transform_break', '✧');
     else this.addVisualEffect(position.x, position.y, 'transform_return', '✦');
     if (earnedHeal) this.addCombatLog(`范翔宇回復${earnedHeal}點生命。`, playerId, 'status');
@@ -9220,23 +9223,44 @@
     };
     
     // 瑼Ｘ?拙振1???
-    checkAndMarkReady('player1', 'normal', this.cooldowns.player1.normal, this.players.player1?.skills.normal.cooldown || 1000);
-    checkAndMarkReady('player1', 'ultimate', this.cooldowns.player1.ultimate, this.players.player1?.skills.ultimate.cooldown || 1000);
+    checkAndMarkReady('player1', 'normal', this.cooldowns.player1.normal, (this.players.player1?.id === 'fanxiangyu' && this.players.player1?.fanNormalCooldown) || this.players.player1?.skills.normal.cooldown || 1000);
+    if (!this.players.player1?.fanForm) checkAndMarkReady('player1', 'ultimate', this.cooldowns.player1.ultimate, this.players.player1?.skills.ultimate.cooldown || 1000);
     
     // 瑼Ｘ?拙振2???
-    checkAndMarkReady('player2', 'normal', this.cooldowns.player2.normal, this.players.player2?.skills.normal.cooldown || 1000);
-    checkAndMarkReady('player2', 'ultimate', this.cooldowns.player2.ultimate, this.players.player2?.skills.ultimate.cooldown || 1000);
+    checkAndMarkReady('player2', 'normal', this.cooldowns.player2.normal, (this.players.player2?.id === 'fanxiangyu' && this.players.player2?.fanNormalCooldown) || this.players.player2?.skills.normal.cooldown || 1000);
+    if (!this.players.player2?.fanForm) checkAndMarkReady('player2', 'ultimate', this.cooldowns.player2.ultimate, this.players.player2?.skills.ultimate.cooldown || 1000);
     
     // ? 靽桀儔嚗溶?蝳血?餅??＊蝷?
     this.updateSkillCooldown('p1Attack', this.cooldowns.player1.attack, this.players.player1?.attackSpeed || 1000, now);
-    this.updateSkillCooldown('p1Normal', this.cooldowns.player1.normal, this.players.player1?.skills.normal.cooldown || 1000, now);
+    this.updateSkillCooldown('p1Normal', this.cooldowns.player1.normal, (this.players.player1?.id === 'fanxiangyu' && this.players.player1?.fanNormalCooldown) || this.players.player1?.skills.normal.cooldown || 1000, now);
     this.updateSkillCooldown('p1Ultimate', this.cooldowns.player1.ultimate, this.players.player1?.skills.ultimate.cooldown || 1000, now);
     this.updateSkillCooldown('p1Defend', this.cooldowns.player1.defend, 2000, now); // ?儭??脩戌2蝘D
     
     this.updateSkillCooldown('p2Attack', this.cooldowns.player2.attack, this.players.player2?.attackSpeed || 1000, now);
-    this.updateSkillCooldown('p2Normal', this.cooldowns.player2.normal, this.players.player2?.skills.normal.cooldown || 1000, now);
+    this.updateSkillCooldown('p2Normal', this.cooldowns.player2.normal, (this.players.player2?.id === 'fanxiangyu' && this.players.player2?.fanNormalCooldown) || this.players.player2?.skills.normal.cooldown || 1000, now);
     this.updateSkillCooldown('p2Ultimate', this.cooldowns.player2.ultimate, this.players.player2?.skills.ultimate.cooldown || 1000, now);
     this.updateSkillCooldown('p2Defend', this.cooldowns.player2.defend, 2000, now); // ?儭??脩戌2蝘D
+    for (const [side, prefix] of [['player1', 'p1'], ['player2', 'p2']]) {
+      const player = this.players[side];
+      if (player?.id === 'fanxiangyu' && player.fanNormalRecast?.expiresAt >= now) this.showFanSkillStatus(`${prefix}Normal`, '二段');
+      if (player?.fanForm) {
+        const form = player.fanForm;
+        const label = form.phase === 'selecting' ? '選角' : form.phase === 'transformed' ? (form.ultimateUsed ? '已用' : `${Math.floor(form.energy)}/${form.requiredEnergy}`) : '變身中';
+        this.showFanSkillStatus(`${prefix}Ultimate`, label);
+      }
+    }
+  }
+
+  showFanSkillStatus(elementId, label) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    element.classList.toggle('ready', label === '二段');
+    element.classList.toggle('on-cooldown', label !== '二段');
+    const time = element.querySelector('.cooldown-time') || document.createElement('div');
+    time.className = 'cooldown-time';
+    time.textContent = label;
+    time.style.display = 'block';
+    if (!time.parentNode) element.appendChild(time);
   }
 
   updateSkillCooldown(elementId, lastUsed, cooldownTime, now) {
@@ -11601,7 +11625,7 @@
       const player = this.players[side];
       if (player?.fanForm?.baseSnapshot) this.endFanXiangyuForm(side, 'reset');
       else if (player?.fanForm) delete player.fanForm;
-      if (player?.id === 'fanxiangyu') player.fanInsight = 0;
+      if (player?.id === 'fanxiangyu') { player.fanInsight = 0; delete player.fanNormalRecast; delete player.fanNormalCooldown; }
     });
     // ?蔭????
     this.gameState.winner = null;
@@ -12699,7 +12723,7 @@
     const player = this.players[playerId];
     
     // 瑼Ｘ??賣?暺???
-    if (!player || player.yangSwallowedBy || player.yangUltimate || player.effects.stunned > now || player.effects.silenced > now || player.effects.chainDisabled > now || this.isPlayerDefending(playerId)) return;
+    if (!player || player.hp <= 0 || player.yangSwallowedBy || player.yangUltimate || player.effects.stunned > now || player.effects.silenced > now || player.effects.chainDisabled > now || this.isPlayerDefending(playerId)) return;
     if (player.fanForm && ['ascending', 'descending', 'landing'].includes(player.fanForm.phase)) return;
     if (player.fanForm?.phase === 'finishing' && !(skillType === 'ultimate' && player.id === 'fujin' && player.windSlashRecastUntil > now)) return;
     if (player.id === 'fanxiangyu' && skillType === 'ultimate') {
@@ -12708,10 +12732,24 @@
       return;
     }
     if (player.fanForm?.phase === 'selecting' && skillType === 'normal') return;
-    if (player.id === 'stephen' && (player.stephenChargeStart || player.stephenEatingUntil > now || player.stephenSmokeUntil > now || player.stephenUltimate?.form === 'smoke')) return;
-
-    // ?儭?Exile Blade: block skill usage during execution
     if (player.isExecuting) return;
+    if (player.id === 'fanxiangyu' && skillType === 'normal' && player.fanNormalRecast) {
+      const recast = player.fanNormalRecast;
+      if (now <= recast.expiresAt) {
+        if (this.isAdjudicatorMobilityLocked(playerId, now)) return;
+        const x = player.position.x - recast.facing * player.skills.normal.retreatDistance;
+        player.position.x = Math.max(80, Math.min(this.canvasWidth - 80, x));
+        delete player.fanNormalRecast;
+        this.cooldowns[playerId].normal = now;
+        player.fanNormalCooldown = player.skills.normal.recastCooldown;
+        this.clearSkillReady(playerId, 'normal');
+        this.playAnimation(player, 'dash');
+        this.addVisualEffect(player.position.x, player.position.y - 28, 'fan_retreat', '✦');
+        return;
+      }
+      delete player.fanNormalRecast;
+    }
+    if (player.id === 'stephen' && (player.stephenChargeStart || player.stephenEatingUntil > now || player.stephenSmokeUntil > now || player.stephenUltimate?.form === 'smoke')) return;
 
     // ? 擃?敹?撠???蝛箔葉??銝?交?
     const opponentId = playerId === 'player1' ? 'player2' : 'player1';
@@ -12844,7 +12882,8 @@
       player.forgeBonusChargeAt = 0;
       player.forgeBonusChargeExpiresAt = 0;
     }
-    if (!consumedForgeBonusCharge && now - this.cooldowns[playerId][skillType] < selectedSkill.cooldown) return;
+    const effectiveCooldown = player.id === 'fanxiangyu' && skillType === 'normal' ? (player.fanNormalCooldown || selectedSkill.cooldown) : selectedSkill.cooldown;
+    if (!consumedForgeBonusCharge && now - this.cooldowns[playerId][skillType] < effectiveCooldown) return;
 
     if (selectedSkill.code === SKILL_CODES.YANGHONG_TONGUE && (player.yangWallet || 0) < selectedSkill.costPerSecond) {
       this.addCombatLog('零錢不足！至少需要20元才能啟動奧義。', playerId, 'status');
@@ -12859,6 +12898,7 @@
     }
     
     this.cooldowns[playerId][skillType] = now;
+    if (player.id === 'fanxiangyu' && skillType === 'normal') player.fanNormalCooldown = selectedSkill.cooldown;
     if (skillType === 'normal' && selectedSkill.code === SKILL_CODES.FORGE_FIRE_SPIN && selectedSkill.doubleCharge && !consumedForgeBonusCharge) {
       player.forgeBonusChargeAt = now + 1000;
       player.forgeBonusChargeExpiresAt = now + selectedSkill.cooldown;
@@ -12902,15 +12942,18 @@
     switch (skill.code) {
       case SKILL_CODES.FAN_XIANGYU_NORMAL: {
         this.playAnimation(player, 'attack');
-        const distance = opponent ? Math.abs(opponent.position.x - player.position.x) : Infinity;
-        const aligned = opponent && Math.abs(opponent.position.y - player.position.y) <= 48 && Math.sign(opponent.position.x - player.position.x) === player.facing;
+        const dx = opponent ? opponent.position.x - player.position.x : Infinity;
+        const aligned = opponent && opponent.hp > 0 && Math.abs(opponent.position.y - player.position.y) <= 48 && dx * player.facing >= -20 && dx * player.facing <= skill.range + 20;
         this.gameState.effects.push({ type: 'fan_argument_wave', x: player.position.x + player.facing * 32, y: player.position.y - 26, direction: player.facing, startTime: now, duration: 260 });
-        if (aligned && distance <= skill.range) {
+        if (aligned) {
           const wasCasting = this.isFanXiangyuCasting(opponent);
           const hit = this.dealDamageWithResult(opponent, skill.damage, playerId);
           if (hit.hit && !hit.blocked && !hit.immune) {
-            player.effects.fanDamageReductionUntil = now + skill.damageReductionDuration;
             player.fanInsight = Math.min(skill.maxInsight, (player.fanInsight || 0) + skill.insightOnHit + (wasCasting ? skill.insightOnInterrupt : 0));
+            if ((opponent.effects?.superArmor || 0) <= now && opponent.hp > 0) {
+              opponent.position.x = Math.max(80, Math.min(this.canvasWidth - 80, opponent.position.x + player.facing * skill.knockback));
+              player.fanNormalRecast = { facing: player.facing, expiresAt: now + skill.recastWindow };
+            }
             this.addVisualEffect(player.position.x, player.position.y - 28, 'fan_insight', '✦');
           }
         }

@@ -40,7 +40,7 @@ const BALANCE_PATCH = {
   ranger: { attackSpeed: 350, skills: { normal: { cooldown: 9000 } }
   },
   warlock: { maxHp: 95, hp: 95, attackDamage: 4, attackSpeed: 700, attackHeal: 2, skills: { ultimate: { damagePerTick: 12, healPerTick: 7 } } },
-  ronin: { attackDamage: 9, attackSpeed: 700 },
+  ronin: { attackDamage: 6, attackSpeed: 700 },
   beastmaster: {
     skills: {
       normal: { damage: 3 },

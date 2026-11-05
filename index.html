@@ -363,13 +363,13 @@
         <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
     </footer>
 
-    <script src="characters.js?v=nov-05-balance-035-1"></script>
-    <script src="balance.js?v=nov-05-balance-035-1"></script>
+    <script src="characters.js?v=nov-06-fan-update-1"></script>
+    <script src="balance.js?v=nov-06-fan-update-1"></script>
     <script src="talents.js?v=nov-05-balance-035-1"></script>
     <script src="particleSystem.js?v=gladiator-beast-vfx-1"></script>
     <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
-    <script src="stickmanAnimator.js?v=oct-27-basic-attack-vfx-1"></script>
-    <script src="gameEngine.js?v=nov-05-balance-035-1"></script>
+    <script src="stickmanAnimator.js?v=nov-06-fan-update-1"></script>
+    <script src="gameEngine.js?v=nov-06-fan-update-1"></script>
     <script src="aiController.js?v=oct-27-kage-cpu-1"></script>
     <script>
         // 全局遊戲引擎實例
@@ -1054,6 +1054,7 @@
             ranger: 'assets/portraits/ranger.png',
             warlock: 'assets/portraits/blood_pact.png',
             ronin: 'assets/portraits/ronin.png',
+            fanxiangyu: 'assets/portraits/fanxiangyu.png',
             beastmaster: 'assets/portraits/beastmaster.png',
             scorpion: 'assets/portraits/scorpion.png',
             adjudicator: 'assets/portraits/adjudicator.png',
@@ -2584,6 +2585,14 @@
                 [SKILL_CODES.GLADIATOR_CAESAR]: {
                     description: '落地命中後展開4秒角鬥場；自身最大生命暫增為敵方最大生命的20%，並立即增加等量生命；移速提升20%，攻擊間隔縮短20%（攻速提高）。',
                     effects: ['落地傷害8', '角鬥場4秒', '最大生命增加敵方最大生命20%', '立即回復等量生命', '移速+20%', '攻擊間隔−20%（攻速提高）', '冷卻15秒']
+                },
+                [SKILL_CODES.FAN_XIANGYU_NORMAL]: {
+                    description: '向前方100px內的敵人造成4點傷害並擊退200px。成功擊退後2秒內可再次施放，向原施放方向的身後後撤160px。使用二段後從後撤時起算8秒冷卻。',
+                    effects: ['傷害4', '前方100px', '擊退200px', '二段視窗2秒', '後撤160px', '二段後冷卻8秒']
+                },
+                [SKILL_CODES.FAN_XIANGYU_ULTIMATE]: {
+                    description: '從五名隨機角色中選一名短暫變身。落地後每秒自然獲得15點奧義能量；回復本體後才開始9秒冷卻。',
+                    effects: ['五選一變身', '落地後自然充能15點/秒', '本體回復後開始冷卻']
                 },
                 [SKILL_CODES.STACCATO_STRIKE]: {
                     description: '以三味線猛撥弦線，以自身為中心在200px範圍內釋放高頻音波衝擊，命中敵人造成10點傷害並暈眩0.5秒，打斷敵方正在施放的技能。',
