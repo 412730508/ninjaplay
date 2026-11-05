@@ -2346,7 +2346,7 @@
       if (player.isGolem) {
         this.ctx.font = 'bold 12px Arial';
         this.ctx.fillStyle = '#B0BEC5';
-        this.ctx.fillText("岩甲護盾: ${{Math.max(0, Math.round(player.golemShield || 0))}}", x, y - 76);
+        this.ctx.fillText(`巨獸減傷：${Math.round((player.skills.ultimate.golemDamageReduction || 0.4) * 100)}%`, x, y - 76);
       }
       this.ctx.restore();
     }
@@ -7096,7 +7096,12 @@
             minion.lastAttackTime = now;
             minion.isAttacking = true;
             minion.attackAnimStart = now;
-            const result = this.dealDamage(target, minion.damage, minion.ownerSide);
+            const chain = this.gameState.chainOfPain;
+            const dealingTrueDamage = chain?.scorpion === minion.owner &&
+              chain.enemy === target && now < chain.endTime && minion.owner?.hp > 0 &&
+              !minion.owner.yangSwallowedBy && !chain.enemy?.yangSwallowedBy;
+            const result = this.dealDamage(target, minion.damage, minion.ownerSide,
+              dealingTrueDamage ? { trueDamage: true } : {});
             if (result.hit) {
               const side = minion.ownerSide;
               this.addCombatLog(`僕從命中敵人！造成${minion.damage}傷害`, side, 'damage');
@@ -7129,8 +7134,11 @@
           this.damageEnemyPuppetInArea(hazardSide, hazard.x, target.position.y,
             hazard.width / 2, hazard.damagePerTick);
           if (inRange) {
-            target.hp = Math.max(0, target.hp - hazard.damagePerTick);
-            this.addDamageNumber(target.position.x, target.position.y - 10, hazard.damagePerTick, 'skill');
+            const hazardDamage = target.id === 'beastmaster' && target.isGolem
+              ? Math.max(1, Math.round(hazard.damagePerTick * (1 - (target.skills.ultimate.golemDamageReduction ?? 0.4))))
+              : hazard.damagePerTick;
+            target.hp = Math.max(0, target.hp - hazardDamage);
+            this.addDamageNumber(target.position.x, target.position.y - 10, hazardDamage, 'skill');
             this.addVisualEffect(
               target.position.x,
               target.position.y,
@@ -7151,7 +7159,8 @@
     // --- Update Chain of Pain ---
     if (this.gameState.chainOfPain) {
       const chain = this.gameState.chainOfPain;
-      if (now >= chain.endTime) {
+      if (now >= chain.endTime || chain.scorpion?.hp <= 0 || chain.enemy?.hp <= 0 ||
+          chain.scorpion?.yangSwallowedBy || chain.enemy?.yangSwallowedBy) {
         // Release both players
         if (chain.scorpion && chain.scorpion.effects) {
           chain.scorpion.effects.rooted = 0;
@@ -10013,7 +10022,7 @@
     if (has('zanshin')) player.talentZanshin = true;
     if (has('follow_cut')) normal.slowDuration = 1200;
     if (has('hunting_tentacle')) { normal.range = 340; normal.damage += 2; }
-    if (has('thick_hide')) ultimate.golemShield = 30;
+    if (has('thick_hide')) ultimate.golemDamageReduction = 0.5;
     if (has('beast_roar')) ultimate.postRootSlow = { multiplier: 0.85, duration: 800 };
     if (has('feral_remnant')) player.talentFeralRemnant = true;
     if (has('skirmish_puppets')) normal.minionCount += 1;
@@ -10212,6 +10221,8 @@
     this.players.player2.hitFlash = 0;
     this.players.player1.windSlashRecastUntil = 0;
     this.players.player2.windSlashRecastUntil = 0;
+    this.players.player1.windSlashRecastTarget = null;
+    this.players.player2.windSlashRecastTarget = null;
 
     this.initializeBeastmasterState(this.players.player1);
     this.initializeBeastmasterState(this.players.player2);
@@ -11315,7 +11326,6 @@
     player.isGolem = false;
     player.golemTransforming = null;
     player.beastStacks = player.passive?.initialStacks || 0;
-    player.golemShield = 0;
     player.golemScale = 1;
     player.golemDrainInterval = 0;
     player.nextBeastDrainTime = 0;
@@ -11350,7 +11360,6 @@
 
     player.isGolem = true;
     player.golemScale = ultimate.golemScale || 1.25;
-    player.golemShield = ultimate.golemShield || 100;
     player.golemDrainInterval = ultimate.stackDrainInterval || 5000;
     player.nextBeastDrainTime = Date.now() + player.golemDrainInterval;
 
@@ -11372,7 +11381,7 @@
     this.addCombatLog('巨獸變身完成！', playerId, 'status');
   }
 
-  revertBeastForm(player, playerId, removeShield = true) {
+  revertBeastForm(player, playerId) {
     if (!player || player.id !== 'beastmaster' || !player.isGolem) return;
 
     player.isGolem = false;
@@ -11380,10 +11389,6 @@
     player.golemScale = 1;
     player.golemDrainInterval = 0;
     player.nextBeastDrainTime = 0;
-    if (removeShield) {
-      player.golemShield = 0;
-    }
-
     player.attackDamage = player.baseFormStats?.attackDamage || 7;
     player.attackSpeed = player.baseFormStats?.attackSpeed || 750;
     player.moveSpeed = player.baseFormStats?.moveSpeed || 280;
@@ -11432,12 +11437,7 @@
     player.effects.superArmor = now + 500;
 
     if (player.beastStacks <= 0) {
-      this.revertBeastForm(player, playerId, true);
-      return;
-    }
-
-    if (player.golemShield <= 0) {
-      this.revertBeastForm(player, playerId, true);
+      this.revertBeastForm(player, playerId);
       return;
     }
 
@@ -11446,7 +11446,7 @@
       player.nextBeastDrainTime = now + (player.golemDrainInterval || 5000);
 
       if (player.beastStacks <= 0) {
-        this.revertBeastForm(player, playerId, true);
+        this.revertBeastForm(player, playerId);
         return;
       }
     }
@@ -11554,11 +11554,19 @@
     const now = Date.now();
     const player = this.players[playerId];
     const opponent = this.players[playerId === 'player1' ? 'player2' : 'player1'];
-    if (!player || !opponent || opponent.hp <= 0) return;
+    if (!player || !opponent || opponent.hp <= 0 || player.windSlashRecastTarget !== opponent) return;
 
     const skill = player.skills.ultimate;
     const playerSide = playerId === 'player1' ? 'player1' : 'player2';
     player.windSlashRecastUntil = 0;
+    player.windSlashRecastTarget = null;
+    const distanceBeforePull = Math.hypot(
+      opponent.position.x - player.position.x,
+      opponent.position.y - player.position.y
+    );
+    const distanceRatio = Math.max(0, Math.min(1, distanceBeforePull / (skill.recastMaxDistance || 1000)));
+    const recastDamage = (skill.recastMinDamage ?? 4) +
+      ((skill.recastMaxDamage ?? 10) - (skill.recastMinDamage ?? 4)) * distanceRatio;
 
     this.startAbyssTentaclePull(
       opponent,
@@ -11578,12 +11586,12 @@
       duration: skill.recastPullDuration || 300
     });
 
-    this.dealDamage(opponent, skill.recastDamage || 8, playerId);
+    this.dealDamage(opponent, recastDamage, playerId);
     if (skill.recastStun) {
       opponent.effects.stunned = Math.max(opponent.effects.stunned || 0, now + skill.recastStun);
       this.addVisualEffect(opponent.position.x, opponent.position.y, 'stun', '💫');
     }
-    this.addCombatLog(`風追擊命中！額外造成${skill.recastDamage || 8}傷害`, playerSide, 'skill');
+    this.addCombatLog(`風追擊命中！距離${Math.round(distanceBeforePull)}px，追加${Math.round(recastDamage)}傷害`, playerSide, 'skill');
     this.addVisualEffect(opponent.position.x, opponent.position.y, 'wind_recast', '🌀');
   }
 
@@ -11652,6 +11660,7 @@
         this.players.player1.effects[key] = 0;
       });
       this.players.player1.windSlashRecastUntil = 0;
+      this.players.player1.windSlashRecastTarget = null;
       if (this.players.player1.spiritChargeTimer) { clearTimeout(this.players.player1.spiritChargeTimer); this.players.player1.spiritChargeTimer = null; }
       this.players.player1.spiritChargeStart = null;
       if (this.players.player1.id === 'ranger') { this.players.player1.rangerAmmo = this.players.player1.ammoMax || 7; this.players.player1.rangerReloadUntil = 0; this.players.player1.rangerLastShotTime = 0; }
@@ -11674,6 +11683,7 @@
         this.players.player2.effects[key] = 0;
       });
       this.players.player2.windSlashRecastUntil = 0;
+      this.players.player2.windSlashRecastTarget = null;
       if (this.players.player2.spiritChargeTimer) { clearTimeout(this.players.player2.spiritChargeTimer); this.players.player2.spiritChargeTimer = null; }
       this.players.player2.spiritChargeStart = null;
       if (this.players.player2.id === 'ranger') { this.players.player2.rangerAmmo = this.players.player2.ammoMax || 7; this.players.player2.rangerReloadUntil = 0; this.players.player2.rangerLastShotTime = 0; }
@@ -13094,18 +13104,18 @@
         }, delay);
 
         if (player.beastStacks <= 0) {
-          this.revertBeastForm(player, playerId, true);
+          this.revertBeastForm(player, playerId);
         }
         break;
       }
 
       case SKILL_CODES.BEAST_REVERT:
-        this.revertBeastForm(player, playerId, true);
+        this.revertBeastForm(player, playerId);
         break;
 
       case SKILL_CODES.BEAST_LIBERATION: {
         if (player.isGolem) {
-          this.revertBeastForm(player, playerId, true);
+          this.revertBeastForm(player, playerId);
           break;
         }
 
@@ -13193,15 +13203,16 @@
         
         const slashDistance = Math.abs(player.position.x - opponent.position.x);
         
+        player.windSlashRecastTarget = null;
         if (slashDistance <= skill.range) {
           
           // ? ???瑕拿
           const damageResult = this.dealDamage(opponent, skill.damage, playerId);
           
-          if (damageResult.hit) {
+          if (damageResult.hit && !damageResult.blocked && !damageResult.immune) {
             // ? 閮????孵?
             const knockbackDirection = opponent.position.x > player.position.x ? 1 : -1;
-            const targetX = opponent.position.x + (300 * knockbackDirection);
+            const targetX = opponent.position.x + ((skill.knockback || 300) * knockbackDirection);
             
             
             // ? 瑼Ｘ葫?臬????
@@ -13233,6 +13244,7 @@
             }
             
             // ?儭??鈭挾餈賣?蝒
+            player.windSlashRecastTarget = opponent;
             player.windSlashRecastUntil = now + (skill.recastWindow || 3000);
           }
         } else {
@@ -15599,7 +15611,7 @@
     const parryAttacker = this.getAttackerFromSource(source);
     // Objection Parry counters discrete hits, not damage ticks already applied
     // by poison, burning, or lingering damage zones.
-    if (!options.isDamageOverTime && target.effects.parryActive > now && parryAttacker && parryAttacker !== target) {
+    if (!options.trueDamage && !options.isDamageOverTime && target.effects.parryActive > now && parryAttacker && parryAttacker !== target) {
       target.effects.parryActive = 0;
       if (target.effects.casting > now) {
         target.effects.casting = 0;
@@ -15651,7 +15663,7 @@
     const targetId = target === this.players.player1 ? 'player1' : 'player2';
     const attackerId = target === this.players.player1 ? 'player2' : 'player1';
     
-    const blockResult = options.isDamageOverTime || options.ignoreDefense ? null : this.isAttackBlocked(attackerId, targetId);
+    const blockResult = options.trueDamage || options.isDamageOverTime || options.ignoreDefense ? null : this.isAttackBlocked(attackerId, targetId);
     
     if (blockResult === 'perfect') {
       // ??蝘?摰??脩戌嚗??典??怠摰喳??批
@@ -15688,7 +15700,7 @@
     }
     
     // ?潭?瑼Ｘ (撗拙?霅琿?)
-    if (!options.isDamageOverTime && target.effects.blocking > now) {
+    if (!options.trueDamage && !options.isDamageOverTime && target.effects.blocking > now) {
       target.effects.blocking = 0;
       target.effects.counterAttack = now + 10000;
       
@@ -15709,12 +15721,12 @@
       return result;
     }
 
-    if (target.effects.fanDamageReductionUntil > now) {
+    if (!options.trueDamage && target.effects.fanDamageReductionUntil > now) {
       damage = Math.max(1, Math.round(damage * 0.8));
     }
 
     // ??瑼Ｘ嚗蔣?澈嚗?
-    if (target.effects.counterWindow > now) {
+    if (!options.trueDamage && target.effects.counterWindow > now) {
       target.effects.counterWindow = 0;
       const attacker = this.getAttackerFromSource(source);
       if (attacker && attacker !== target) {
@@ -15728,11 +15740,16 @@
     }
 
     // ?爸 敺∠敹?霈澈銝剜???50%
-    if (target.id === 'beastmaster' && target.golemTransforming) {
+    if (!options.trueDamage && target.id === 'beastmaster' && target.golemTransforming) {
       damage = Math.round(damage * 0.5);
     }
 
-    if (target.id === 'gladiator' && target.effects.gladiatorWillUntil > now) {
+    if (!options.trueDamage && target.id === 'beastmaster' && target.isGolem) {
+      const reduction = target.skills?.ultimate?.golemDamageReduction ?? 0.4;
+      damage = Math.max(1, Math.round(damage * (1 - reduction)));
+    }
+
+    if (!options.trueDamage && target.id === 'gladiator' && target.effects.gladiatorWillUntil > now) {
       const originalDamage = damage;
       damage = Math.max(1, Math.round(damage * (1 - target.skills.normal.damageReduction)));
       if (damage < originalDamage) {
@@ -15741,28 +15758,8 @@
     }
 
     // ?爸 敺∠敹楊?貉??莎???摰喳?????
-    if (target.id === 'beastmaster' && target.isGolem && target.golemShield > 0) {
-      const absorbed = Math.min(target.golemShield, damage);
-      target.golemShield -= absorbed;
-      damage -= absorbed;
-
-      if (absorbed > 0) {
-        this.addVisualEffect(target.position.x, target.position.y, 'golem_armor_hit', '🐉');
-      }
-
-      if (target.golemShield <= 0) {
-        const targetSide = target === this.players.player1 ? 'player1' : 'player2';
-        this.revertBeastForm(target, targetSide, true);
-      }
-
-      if (damage <= 0) {
-        result.hit = true;
-        return result;
-      }
-    }
-    
     // 霅瑞皜
-    if (target.effects.shielded > now) {
+    if (!options.trueDamage && target.effects.shielded > now) {
       // ?? ?脣??芣??瑞????瑕拿 (?冽瘞游??曉?敺?
       const originalDamage = damage;
       
@@ -15782,7 +15779,7 @@
     }
     
     // ? 撗拍敹◤????
-    if (target.passive && target.passive.damageReduction) {
+    if (!options.trueDamage && target.passive && target.passive.damageReduction) {
       const originalDamage = damage;
       damage = Math.max(1, damage - target.passive.damageReduction);
       
@@ -15798,7 +15795,7 @@
     }
     
     // ? 擃?敹擃???(20%)
-    if (target.effects.superArmor > now) {
+    if (!options.trueDamage && target.effects.superArmor > now) {
       const originalDamage = damage;
       damage = Math.max(1, damage - Math.round(damage * 0.2));
       if (damage < originalDamage) {
@@ -15807,7 +15804,7 @@
     }
     
     // ???琿摰風? + ?箏?皜
-    if (target.effects.lightningGuard > now) {
+    if (!options.trueDamage && target.effects.lightningGuard > now) {
       // ?箏?皜
       const dr = target.effects.lightningGuardFlatDR || 0;
       damage = Math.max(1, damage - dr);
@@ -15925,8 +15922,11 @@
         const targetRef = target;
         setTimeout(() => {
           if (gameRef.gameState.winner) return;
-          targetRef.hp = Math.max(0, targetRef.hp - snowDmg);
-          gameRef.addDamageNumber(targetRef.position.x, targetRef.position.y, snowDmg, 'skill');
+          const effectiveSnowballDamage = targetRef.id === 'beastmaster' && targetRef.isGolem
+            ? Math.max(1, Math.round(snowDmg * (1 - (targetRef.skills.ultimate.golemDamageReduction ?? 0.4))))
+            : snowDmg;
+          targetRef.hp = Math.max(0, targetRef.hp - effectiveSnowballDamage);
+          gameRef.addDamageNumber(targetRef.position.x, targetRef.position.y, effectiveSnowballDamage, 'skill');
           gameRef.addVisualEffect(targetRef.position.x, targetRef.position.y, 'snowball_hit', '❄️');
           gameRef.addCombatLog(`冰雪擊中敵人！造成${snowDmg}傷害！`, atkSide, 'damage');
           
@@ -16654,14 +16654,12 @@
              player.effects.burnTickTime <= now && player.effects.burnTickTime <= player.effects.burning) {
         const burnDamage = 1;
         player.effects.burnTickTime += 1000;
-        if (player.id === 'beastmaster' && player.isGolem && player.golemShield > 0) {
-          player.golemShield = Math.max(0, player.golemShield - burnDamage);
-          if (player.golemShield <= 0) this.revertBeastForm(player, playerId, true);
-        } else {
-          player.hp = Math.max(0, player.hp - burnDamage);
-        }
+        const effectiveBurn = player.isGolem
+          ? Math.max(1, Math.round(burnDamage * (1 - (player.skills.ultimate.golemDamageReduction ?? 0.4))))
+          : burnDamage;
+        player.hp = Math.max(0, player.hp - effectiveBurn);
 
-        this.addDamageNumber(player.position.x, player.position.y, burnDamage);
+        this.addDamageNumber(player.position.x, player.position.y, effectiveBurn);
         this.addVisualEffect(player.position.x, player.position.y, 'burn_tick', '🔥');
         this.createBurningEffect(player.position.x, player.position.y);
 
@@ -16674,17 +16672,13 @@
       // ?? ??瘥?DoT?瑕拿
       if (player.effects.poisonStacks > 0 && player.effects.poisonDotEnd > now && player.effects.poisonTickTime <= now) {
         const poisonDmg = player.effects.poisonStacks; // 瘥惜1暺?蝘?
-        if (player.id === 'beastmaster' && player.isGolem && player.golemShield > 0) {
-          player.golemShield = Math.max(0, player.golemShield - poisonDmg);
-          if (player.golemShield <= 0) {
-            this.revertBeastForm(player, playerId, true);
-          }
-        } else {
-          player.hp = Math.max(0, player.hp - poisonDmg);
-        }
+        const effectivePoison = player.isGolem
+          ? Math.max(1, Math.round(poisonDmg * (1 - (player.skills.ultimate.golemDamageReduction ?? 0.4))))
+          : poisonDmg;
+        player.hp = Math.max(0, player.hp - effectivePoison);
         player.effects.poisonTickTime = now + 1000;
 
-        this.addDamageNumber(player.position.x, player.position.y, poisonDmg);
+        this.addDamageNumber(player.position.x, player.position.y, effectivePoison);
         this.addVisualEffect(player.position.x, player.position.y, 'poison_tick', '☠️');
 
         if (typeof particleSystem !== 'undefined' && particleSystem) {

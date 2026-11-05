@@ -1,15 +1,15 @@
 // NinjaPlay balance tuning lives here so it can be adjusted without touching the combat engine.
 // Values are deliberately small and are reviewed as a single balance patch.
-const BALANCE_VERSION = '0.3.4';
+const BALANCE_VERSION = '0.3.5';
 
 const BALANCE_PATCH = {
   fujin: {
     attackDamage: 7,
-    skills: { normal: { invulnerable: 1000 }, ultimate: { cooldown: 11000 } }
+    skills: { normal: { invulnerable: 600 }, ultimate: { cooldown: 11000 } }
   },
-  stephen: { attackDamage: 7 },
   yanghong: {
-    skills: { normal: { maxHits: 10 }, ultimate: { cooldown: 10000 } }
+    passive: { hitsPerDrop: 3, coinsPerDrop: 10, walletCap: 80 },
+    skills: { normal: { cooldown: 6000, maxHits: 10 }, ultimate: { cooldown: 6000, damagePerSecond: 10 } }
   },
   katon: {
     skills: { normal: { cooldown: 8000, distance: 300 }, ultimate: { speed: 600 } }
@@ -27,26 +27,26 @@ const BALANCE_PATCH = {
     }
   },
   suijin: {
-    skills: { normal: { baseHeal: 5, healPercent: 0.6 } }
+    skills: { normal: { baseHeal: 5, healPercent: 0.7 } }
   },
-  raijin: { moveSpeed: 320, skills: { ultimate: { range: 230 } } },
+  raijin: { moveSpeed: 320, skills: { ultimate: { range: 220 } } },
   doton: { maxHp: 130, hp: 130 },
   kage: {
     skills: { ultimate: { cloneCount: 6, cloneDamage: 2 } }
   },
   rei: {
-    skills: { ultimate: { range: 350 } }
+    skills: { ultimate: { range: 360 } }
   },
   ranger: { attackSpeed: 350, skills: { normal: { cooldown: 9000 } }
   },
   warlock: { maxHp: 95, hp: 95, attackDamage: 4, attackSpeed: 700, attackHeal: 2, skills: { ultimate: { damagePerTick: 12, healPerTick: 7 } } },
-  ronin: { attackDamage: 8 },
+  ronin: { attackDamage: 9, attackSpeed: 700 },
   beastmaster: {
     skills: {
       normal: { damage: 3 },
       ultimate: {
         minStacksToCast: 5,
-        golemShield: 10,
+        golemDamageReduction: 0.4,
         transformRootRange: 200,
         golemSkillDelay: 300,
         revertCooldown: 3000
@@ -63,7 +63,7 @@ const BALANCE_PATCH = {
   shamisen: { attackDamage: 5, passive: { perfectWindow: [450, 600] }, skills: { normal: { range: 200 } } },
   scorpion: { passive: { hazardWidth: 130 } },
   puppeteer: { passive: { storedDamageRatio: 0.5 } },
-  stephen: { attackDamage: 7, skills: { normal: { unlimitedRange: true, chargeCooldownThreshold: 3000, chargeCooldownReduction: 3000 } } },
+  stephen: { attackDamage: 7, skills: { normal: { cooldown: 7000, unlimitedRange: true, chargeCooldownThreshold: 3000, chargeCooldownReduction: 3000 }, ultimate: { cooldown: 14000 } } },
   forgefire: {
     maxHp: 110,
     hp: 110,

@@ -94,12 +94,12 @@ const SKILL_CODES = {
 };
 
 const STEPHEN_STEAK_SKILLS = {
-  normal: { code: SKILL_CODES.STEPHEN_STEAK, name: '大口牛排', type: '回復／蓄力投擲', cooldown: 8000, heal: 7, eatDuration: 1000, chargeThreshold: 300, maxCharge: 4000, minDamage: 7, maxDamage: 15, minSlow: 0.5, maxSlow: 0.99, slowDuration: 2000, stunChargeThreshold: 3000, stunDuration: 2000, range: 250 },
-  ultimate: { code: SKILL_CODES.STEPHEN_GRILL, name: '炙烤鐵板', type: '跟隨／範圍', cooldown: 22000, radius: 140, damagePerTick: 5, tickRate: 1000, slowMultiplier: 0.7, duration: 5000 }
+  normal: { code: SKILL_CODES.STEPHEN_STEAK, name: '大口牛排', type: '回復／蓄力投擲', cooldown: 7000, heal: 7, eatDuration: 1000, chargeThreshold: 300, maxCharge: 4000, minDamage: 7, maxDamage: 15, minSlow: 0.5, maxSlow: 0.99, slowDuration: 2000, stunChargeThreshold: 3000, stunDuration: 2000, range: 250 },
+  ultimate: { code: SKILL_CODES.STEPHEN_GRILL, name: '炙烤鐵板', type: '跟隨／範圍', cooldown: 14000, radius: 140, damagePerTick: 5, tickRate: 1000, slowMultiplier: 0.7, duration: 5000 }
 };
 const STEPHEN_SMOKE_SKILLS = {
   normal: { code: SKILL_CODES.STEPHEN_SMOKE, name: '化煙', type: '無敵／持續傷害', cooldown: 8000, duration: 4000, invisibleDuration: 2000, damagePerTick: 3, tickRate: 1000, radius: 55 },
-  ultimate: { code: SKILL_CODES.STEPHEN_BREATH, name: '迎面煙幕', type: '定向／引導', cooldown: 22000, duration: 3000, range: 300, width: 120, damagePerTick: 2, frontDamagePerTick: 3, tickRate: 200, slowMultiplier: 0.4, slowDuration: 3000 }
+  ultimate: { code: SKILL_CODES.STEPHEN_BREATH, name: '迎面煙幕', type: '定向／引導', cooldown: 14000, duration: 3000, range: 300, width: 120, damagePerTick: 2, frontDamagePerTick: 3, tickRate: 200, slowMultiplier: 0.4, slowDuration: 3000 }
 };
 
 const characters = {
@@ -121,7 +121,7 @@ const characters = {
         type: '閃避+位移',
         cooldown: 3000,
         damage: 3,
-        invulnerable: 500,
+        invulnerable: 600,
         distance: 120
       },
       ultimate: {
@@ -133,7 +133,9 @@ const characters = {
         range: 150,        // 🌪️ 增強：60px → 150px (2.5倍範圍)
         knockback: 300,    // 🔧 新增：明確擊飛距離
         recastWindow: 3000,
-        recastDamage: 8,
+        recastMaxDistance: 1000,
+        recastMinDamage: 4,
+        recastMaxDamage: 10,
         recastPullDuration: 300
       }
     }
@@ -222,7 +224,7 @@ const characters = {
         cooldown: 18000,
         range: 400,
         damage: 22,
-        knockback: 150,
+        knockback: 300,
         chargeTime: 700,
         trailDuration: 3000,
         trailDamage: 2,
@@ -292,6 +294,7 @@ const characters = {
         name: '雷電拳',
         type: '連擊近戰',
         cooldown: 8000,
+        range: 220,
         damage: 9,
         hits: 2,
         stun: 1000, // 🆕 0.2秒 → 1秒暈眩
@@ -418,7 +421,7 @@ const characters = {
         maxChargeTime: 2000,   // 最長蓄力2.0秒自動發動
         baseDamage: 7,         // 最低蓄力傷害
         tickInterval: 200,     // 每0.2秒+1傷害
-        range: 320,
+        range: 360,
         baseHeal: 10,
         healPercent: 0.45
       }
@@ -630,8 +633,8 @@ const characters = {
     organization: '劍心流',
     maxHp: 90,
     hp: 90,
-    attackDamage: 4,
-    attackSpeed: 600,
+    attackDamage: 9,
+    attackSpeed: 700,
     moveSpeed: 320,
     isRanged: false,
     position: { x: 100, y: 300 },
@@ -704,7 +707,7 @@ const characters = {
         minStacksToCast: 5,
         stacksCost: 2,
         rootDuration: 2000,
-        golemShield: 30,
+        golemDamageReduction: 0.4,
         golemScale: 1.25,
         golemAttackDamage: 9,
         golemAttackSpeed: 1000,
@@ -726,7 +729,7 @@ const characters = {
     organization: '鞭蠍門',
     maxHp: 85,
     hp: 85,
-    attackDamage: 3,
+    attackDamage: 4,
     attackSpeed: 800,
     moveSpeed: 290,
     attackRange: 240,
@@ -779,7 +782,7 @@ const characters = {
     organization: '制裁廳',
     maxHp: 110,
     hp: 110,
-    attackDamage: 12,
+    attackDamage: 11,
     attackSpeed: 1100,
     attackRange: 120,
     moveSpeed: 220,
@@ -844,7 +847,7 @@ const characters = {
         code: SKILL_CODES.STORM_EXECUTION,
         name: '秘奧義・狂風百裂',
         type: '投射物+處決',
-        cooldown: 18000,
+        cooldown: 15000,
         kunaiSpeed: 25,
         kunaiMaxRange: 400,
         kunaiDamage: 2,
@@ -883,7 +886,7 @@ const characters = {
         name: '傀儡・召喚/收回',
         type: '切換/召喚',
         cooldown: 4000,
-        puppetHp: 20,
+        puppetHp: 50,
         // 顯示速度 24（引擎內速度單位為 240）。傀儡只會朝敵人推進。
         puppetSpeed: 240,
         puppetSpawnDistance: 150,
@@ -1029,7 +1032,7 @@ const characters = {
     position: { x: 100, y: 300 },
     facing: 1,
     isRanged: false,
-    passive: { name: '零錢滿地', description: '每造成3次有效傷害，固定掉落7枚硬幣；技能的每段傷害都會計數。只有揚紘本人能撿取；錢包上限80元。', hitsPerDrop: 3, coinsPerDrop: 7, walletCap: 80 },
+    passive: { name: '零錢滿地', description: '每造成3次有效傷害，固定掉落10枚硬幣；技能的每段傷害都會計數。只有揚紘本人能撿取；錢包上限80元。', hitsPerDrop: 3, coinsPerDrop: 10, walletCap: 80 },
     skills: {
       normal: {
         code: SKILL_CODES.YANGHONG_COFFEE,
@@ -1039,6 +1042,7 @@ const characters = {
         maxDuration: 2000,
         tickRate: 200,
         tickDamage: 2,
+        cooldown: 6000,
         maxHits: 10,
         range: 210,
         width: 64,
@@ -1050,12 +1054,12 @@ const characters = {
         code: SKILL_CODES.YANGHONG_TONGUE,
         name: '舌頭吞噬',
         type: '範圍抓取／吞噬',
-        cooldown: 15000,
+        cooldown: 6000,
         range: 200,
         width: 86,
         windup: 300,
         costPerSecond: 20,
-        damagePerSecond: 7,
+        damagePerSecond: 10,
         maxSeconds: 2,
         swallowedMoveMultiplier: 0.3
       }
@@ -1091,7 +1095,7 @@ const characters = {
         code: SKILL_CODES.GLADIATOR_WILL,
         name: '鬥士意志',
         type: '防禦／加速',
-        cooldown: 15000,
+        cooldown: 13000,
         duration: 3000,
         damageReduction: 0.6,
         moveMultiplier: 1.1

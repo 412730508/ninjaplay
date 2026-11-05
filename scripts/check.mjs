@@ -95,13 +95,24 @@ try {
     ['katon', 'skills.normal.cooldown', 8000],
     ['dokusei', 'skills.normal.damage', 5],
     ['fujin', 'attackDamage', 7],
+    ['fujin', 'skills.normal.invulnerable', 600],
+    ['fujin', 'skills.ultimate.range', 150],
+    ['fujin', 'skills.ultimate.damage', 15],
+    ['fujin', 'skills.ultimate.knockback', 300],
     ['fujin', 'skills.ultimate.cooldown', 11000],
     ['suijin', 'skills.normal.baseHeal', 5],
-    ['suijin', 'skills.normal.healPercent', 0.6],
+    ['suijin', 'skills.normal.healPercent', 0.7],
+    ['raijin', 'skills.ultimate.range', 220],
     ['doton', 'maxHp', 130],
     ['kage', 'skills.ultimate.cloneCount', 6],
     ['kage', 'skills.ultimate.cloneDamage', 2],
-    ['rei', 'skills.ultimate.range', 350],
+    ['rei', 'skills.ultimate.range', 360],
+    ['ronin', 'attackDamage', 9],
+    ['ronin', 'attackSpeed', 700],
+    ['scorpion', 'attackDamage', 4],
+    ['adjudicator', 'attackDamage', 11],
+    ['exileblade', 'skills.ultimate.cooldown', 15000],
+    ['puppeteer', 'skills.normal.puppetHp', 50],
     ['taijutsu', 'skills.normal.cooldown', 8000],
     ['taijutsu', 'skills.ultimate.damage', 17],
     ['ranger', 'skills.normal.cooldown', 9000],
@@ -110,7 +121,7 @@ try {
     ['warlock', 'attackSpeed', 700],
     ['warlock', 'attackHeal', 2],
     ['beastmaster', 'skills.ultimate.minStacksToCast', 5],
-    ['beastmaster', 'skills.ultimate.golemShield', 10],
+    ['beastmaster', 'skills.ultimate.golemDamageReduction', 0.4],
     ['beastmaster', 'skills.ultimate.transformRootRange', 200],
     ['beastmaster', 'skills.ultimate.golemSkillDelay', 300],
     ['beastmaster', 'skills.ultimate.revertCooldown', 3000],
@@ -136,13 +147,15 @@ try {
     ['forgefire', 'skills.ultimate.chargeTime', 700],
     ['forgefire', 'skills.ultimate.trailDuration', 3000],
     ['yanghong', 'passive.hitsPerDrop', 3],
-    ['yanghong', 'passive.coinsPerDrop', 7],
-    ['yanghong', 'skills.ultimate.cooldown', 10000],
+    ['yanghong', 'passive.coinsPerDrop', 10],
+    ['yanghong', 'skills.normal.cooldown', 6000],
+    ['yanghong', 'skills.ultimate.cooldown', 6000],
+    ['yanghong', 'skills.ultimate.damagePerSecond', 10],
     ['gladiator', 'maxHp', 100],
     ['gladiator', 'attackDamage', 3],
     ['gladiator', 'attackSpeed', 900],
     ['gladiator', 'moveSpeed', 270],
-    ['gladiator', 'skills.normal.cooldown', 15000],
+    ['gladiator', 'skills.normal.cooldown', 13000],
     ['gladiator', 'skills.normal.duration', 3000],
     ['gladiator', 'skills.normal.damageReduction', 0.6],
     ['gladiator', 'skills.ultimate.cooldown', 15000],
@@ -345,6 +358,124 @@ try {
   engineContext.Date = class extends Date { static now() { return simulatedNow; } };
   engineContext.requestAnimationFrame = () => 0;
 
+  // Fujin's ultimate has a target-locked second press: verify its first hit,
+  // distance interpolation, expiry reset, and miss boundary end to end.
+  {
+    const game = new NinjaGame();
+    game.selectCharacters('fujin', 'katon');
+    for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake', 'spawnCombatFlourish']) game[method] = () => {};
+    const attacker = game.players.player1;
+    const target = game.players.player2;
+    attacker.position = { x: 300, y: 300 };
+    target.position = { x: 450, y: 300 };
+    target.hp = target.maxHp;
+    let pullArgs = null;
+    game.startAbyssTentaclePull = (...args) => { pullArgs = args; };
+    game.useSkill('player1', 'ultimate');
+    if (target.hp !== target.maxHp - 15 || target.position.x !== 750 || attacker.windSlashRecastTarget !== target || attacker.windSlashRecastUntil !== simulatedNow + 3000) {
+      throw new Error(`Fujin Wind Slash first hit state mismatch (hp=${target.hp}/${target.maxHp}, x=${target.position.x}, targetLocked=${attacker.windSlashRecastTarget === target}, until=${attacker.windSlashRecastUntil}, cd=${game.cooldowns.player1.ultimate})`);
+    }
+    target.position.x = 800;
+    const beforeRecastHp = target.hp;
+    game.useSkill('player1', 'ultimate');
+    if (Math.abs((beforeRecastHp - target.hp) - 7) > 0.01 || pullArgs?.[0] !== target || attacker.windSlashRecastTarget !== null || attacker.windSlashRecastUntil !== 0) {
+      throw new Error(`Fujin follow-up did not pull the original target and deal distance-scaled damage (actual=${beforeRecastHp - target.hp})`);
+    }
+
+    const missed = new NinjaGame();
+    missed.selectCharacters('fujin', 'katon');
+    for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog']) missed[method] = () => {};
+    missed.players.player1.position = { x: 300, y: 300 };
+    missed.players.player2.position = { x: 701, y: 300 };
+    const missedHp = missed.players.player2.hp;
+    missed.useSkill('player1', 'ultimate');
+    if (missed.players.player2.hp !== missedHp || missed.players.player1.windSlashRecastTarget || missed.players.player1.windSlashRecastUntil) {
+      throw new Error('Fujin ultimate armed a follow-up after missing its 150px range');
+    }
+
+    for (const [distance, expectedDamage] of [[0, 4], [1500, 10]]) {
+      const boundary = new NinjaGame();
+      boundary.selectCharacters('fujin', 'katon');
+      for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog']) boundary[method] = () => {};
+      const wind = boundary.players.player1;
+      const foe = boundary.players.player2;
+      wind.position = { x: 300, y: 300 };
+      foe.position = { x: 300 + distance, y: 300 };
+      wind.windSlashRecastTarget = foe;
+      wind.windSlashRecastUntil = simulatedNow + 1;
+      boundary.startAbyssTentaclePull = () => {};
+      const hp = foe.hp;
+      boundary.useSkill('player1', 'ultimate');
+      if (hp - foe.hp !== expectedDamage) throw new Error(`Fujin follow-up distance boundary ${distance}px expected ${expectedDamage} damage, received ${hp - foe.hp}`);
+    }
+
+    const atExpiry = new NinjaGame();
+    atExpiry.selectCharacters('fujin', 'katon');
+    for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog']) atExpiry[method] = () => {};
+    atExpiry.players.player1.windSlashRecastTarget = atExpiry.players.player2;
+    atExpiry.players.player1.windSlashRecastUntil = simulatedNow;
+    atExpiry.players.player2.position.x = 900;
+    atExpiry.cooldowns.player1.ultimate = simulatedNow - atExpiry.players.player1.skills.ultimate.cooldown;
+    const expiryHp = atExpiry.players.player2.hp;
+    atExpiry.useSkill('player1', 'ultimate');
+    if (atExpiry.players.player2.hp !== expiryHp || atExpiry.players.player1.windSlashRecastTarget !== null) {
+      throw new Error('Fujin follow-up remained available at or after the three-second expiry');
+    }
+
+    const expired = new NinjaGame();
+    expired.selectCharacters('fujin', 'katon');
+    expired.players.player1.windSlashRecastTarget = expired.players.player2;
+    expired.players.player1.windSlashRecastUntil = simulatedNow;
+    expired.resetGame();
+    if (expired.players.player1.windSlashRecastTarget !== null || expired.players.player2.windSlashRecastTarget !== null) {
+      throw new Error('Round reset left a stale Fujin follow-up target');
+    }
+  }
+
+  // Minion damage ignores active mitigation only during Chain of Pain.
+  {
+    const game = new NinjaGame();
+    game.selectCharacters('scorpion', 'gladiator');
+    for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog']) game[method] = () => {};
+    const owner = game.players.player1;
+    const target = game.players.player2;
+    target.position = { x: 400, y: 300 };
+    target.effects.gladiatorWillUntil = simulatedNow + 5000;
+    const minion = { x: 400, y: 300, hp: 10, owner, ownerSide: 'player1', damage: 3, meleeRange: 50, attackSpeed: 500, lastAttackTime: simulatedNow - 500, spawnTime: simulatedNow, lifespan: 5000, speed: 0 };
+    game.gameState.minions = [minion];
+    game.gameState.chainOfPain = { scorpion: owner, enemy: target, startTime: simulatedNow, endTime: simulatedNow + 1000 };
+    let before = target.hp;
+    game.updateScorpionSystems(16);
+    if (target.hp !== before - 3) throw new Error('Scorpion minion chain attack did not bypass active Gladiator mitigation');
+    minion.lastAttackTime = simulatedNow - 500;
+    game.gameState.chainOfPain.endTime = simulatedNow;
+    before = target.hp;
+    game.updateScorpionSystems(16);
+    if (target.hp !== before - 1) throw new Error('Scorpion minion damage stayed true damage after Chain of Pain expired');
+  }
+
+  // Golem damage reduction applies during transformation and ends on reversion.
+  {
+    const game = new NinjaGame();
+    game.selectCharacters('beastmaster', 'katon');
+    for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog', 'triggerCameraShake']) game[method] = () => {};
+    const beast = game.players.player1;
+    beast.isGolem = true;
+    beast.skills.ultimate.golemDamageReduction = 0.4;
+    let before = beast.hp;
+    game.dealDamage(beast, 10, 'player2');
+    if (beast.hp !== before - 6) throw new Error('Golem transformation did not reduce incoming hit damage by 40%');
+    game.gameState.hazards = [{ type: 'poison', x: beast.position.x, width: 100, targetRef: beast,
+      createdAt: simulatedNow - 1, duration: 5000, damagePerTick: 5, tickRate: 1000, lastTickTime: simulatedNow - 1000 }];
+    before = beast.hp;
+    game.updateScorpionSystems(16);
+    if (beast.hp !== before - 3) throw new Error('Golem damage reduction did not apply to a lingering damage zone');
+    game.revertBeastForm(beast, 'player1');
+    before = beast.hp;
+    game.dealDamage(beast, 10, 'player2');
+    if (beast.hp !== before - 10 || beast.isGolem) throw new Error('Golem damage reduction persisted after returning to normal form');
+  }
+
   // Fan Xiangyu: hit-confirm insight, unique five-card selection, staged form,
   // form HP/energy, one copied ultimate, preserved base HP/CD, and break return.
   if (roster.fanxiangyu?.maxHp !== 100 || roster.fanxiangyu?.attackDamage !== 5 || roster.fanxiangyu?.attackSpeed !== 650 || roster.fanxiangyu?.skills.normal.cooldown !== 7000) {
@@ -479,7 +610,7 @@ try {
   }
   timeoutFanGame.resetGame();
 
-  // Water Shield refunds 60% of damage actually received during its three-second window.
+  // Water Shield refunds 70% of damage actually received during its three-second window.
   const waterGame = new NinjaGame();
   waterGame.selectCharacters('suijin', 'katon');
   for (const method of ['addVisualEffect', 'addDamageNumber', 'addCombatLog']) waterGame[method] = () => {};
@@ -997,7 +1128,7 @@ try {
     const hpBefore = target.hp;
     simulatedNow += 1000;
     game.updateYangHongSystems();
-    if (attacker.yangWallet !== 20 || target.hp !== hpBefore - 7 || target.yangSwallowedBy !== 'player1') throw new Error('Yang Hong swallow tick did not charge 20 coins and deal 7 damage');
+    if (attacker.yangWallet !== 20 || target.hp !== hpBefore - 10 || target.yangSwallowedBy !== 'player1') throw new Error('Yang Hong swallow tick did not charge 20 coins and deal 10 damage');
     simulatedNow += 1000;
     game.updateYangHongSystems();
     if (attacker.yangUltimate !== null || target.yangSwallowedBy || game.cooldowns.player1.normal !== 0) throw new Error('Yang Hong did not spit the target out and reset Coffee Art cooldown');
@@ -1057,7 +1188,7 @@ try {
     }
     engineContext.Math.random = originalRandom;
     const coffeeCoinValue = attacker.yangWallet + game.gameState.yangHongCoins.length;
-    if (attacker.yangCoinDamageCount !== 1 || coffeeCoinValue !== 21) throw new Error(`Coffee Art damage ticks did not count individually: counter=${attacker.yangCoinDamageCount}, wallet=${attacker.yangWallet}, coins=${game.gameState.yangHongCoins.length}`);
+    if (attacker.yangCoinDamageCount !== 1 || coffeeCoinValue !== 30) throw new Error(`Coffee Art damage ticks did not count individually: counter=${attacker.yangCoinDamageCount}, wallet=${attacker.yangWallet}, coins=${game.gameState.yangHongCoins.length}`);
     if (!emittedYangHongEffects.some(([code]) => code === 'YH_001')) throw new Error('Coffee Art did not dispatch its authored particles in a real skill activation');
     attacker.yangWallet = 40;
     game.useSkill('player1', 'ultimate');
@@ -1065,7 +1196,7 @@ try {
   }
 
   // The passive is deterministic: no drop for the first two successful hits,
-  // exactly seven coins on the third, and only the owning Yang Hong can collect.
+  // exactly ten coins on the third, and only the owning Yang Hong can collect.
   {
     const game = new NinjaGame();
     game.selectCharacters('yanghong', 'katon');
@@ -1082,22 +1213,22 @@ try {
     game.dropYangCoin(attacker, target);
     if (game.gameState.yangHongCoins.length !== 0 || attacker.yangCoinDamageCount !== 2) throw new Error('Yang Hong dropped coins before the third damage instance');
     game.dropYangCoin(attacker, target);
-    if (game.gameState.yangHongCoins.length !== 7 || game.gameState.yangHongCoins.some(coin => coin.value !== 1) || attacker.yangCoinDamageCount !== 0) {
-      throw new Error('Yang Hong did not drop exactly seven coins on each third damage instance');
+    if (game.gameState.yangHongCoins.length !== 10 || game.gameState.yangHongCoins.some(coin => coin.value !== 1) || attacker.yangCoinDamageCount !== 0) {
+      throw new Error('Yang Hong did not drop exactly ten coins on each third damage instance');
     }
     const coin = game.gameState.yangHongCoins[0];
     for (const dropped of game.gameState.yangHongCoins) { dropped.x = target.position.x; dropped.y = target.position.y; }
     game.updateYangHongSystems();
-    if (attacker.yangWallet !== 0 || game.gameState.yangHongCoins.length !== 7) throw new Error('Opponent collected a coin that belongs to Yang Hong');
+    if (attacker.yangWallet !== 0 || game.gameState.yangHongCoins.length !== 10) throw new Error('Opponent collected a coin that belongs to Yang Hong');
     attacker.position.x = coin.x;
     attacker.position.y = coin.y;
     game.updateYangHongSystems();
-    if (attacker.yangWallet !== 7 || game.gameState.yangHongCoins.length !== 0) throw new Error('Yang Hong did not collect the seven-coin drop into his wallet');
+    if (attacker.yangWallet !== 10 || game.gameState.yangHongCoins.length !== 0) throw new Error('Yang Hong did not collect the ten-coin drop into his wallet');
     game.dropYangCoin(attacker, target);
     game.dropYangCoin(attacker, target);
     if (game.gameState.yangHongCoins.length !== 0) throw new Error('Yang Hong passive counter did not restart after a drop');
     game.dropYangCoin(attacker, target);
-    if (game.gameState.yangHongCoins.length !== 7 || game.gameState.yangHongCoins.some(dropped => dropped.value !== 1)) throw new Error('Yang Hong did not generate the next deterministic drop');
+    if (game.gameState.yangHongCoins.length !== 10 || game.gameState.yangHongCoins.some(dropped => dropped.value !== 1)) throw new Error('Yang Hong did not generate the next deterministic drop');
 
     const talented = new NinjaGame();
     talented.selectCharacters('yanghong', 'katon', { player1: { primary: 'yanghong_tip_bonus' } });
@@ -1106,7 +1237,7 @@ try {
     if (talentedAttacker.passive.hitsPerDrop !== 2) throw new Error('Yang Hong Quick Change talent no longer adjusts the deterministic drop interval');
     talented.dropYangCoin(talentedAttacker, talentedTarget);
     talented.dropYangCoin(talentedAttacker, talentedTarget);
-    if (talented.gameState.yangHongCoins.length !== 7 || talented.gameState.yangHongCoins.some(dropped => dropped.value !== 1)) throw new Error('Yang Hong talent altered the fixed seven-coin drop value');
+    if (talented.gameState.yangHongCoins.length !== 10 || talented.gameState.yangHongCoins.some(dropped => dropped.value !== 1)) throw new Error('Yang Hong talent altered the fixed ten-coin drop value');
   }
 } catch (error) {
   console.error(`Skill integration check failed: ${error.message}`);
