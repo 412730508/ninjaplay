@@ -99,6 +99,8 @@
       player1: { normal: false, ultimate: false, attack: false, defend: false },
       player2: { normal: false, ultimate: false, attack: false, defend: false }
     };
+    // A tap shortly before the attack is ready still counts as one attack.
+    this.attackBufferUntil = { player1: 0, player2: 0 };
 
     this.aiController = null;
     this.eventListenersAttached = false;
@@ -130,6 +132,7 @@
       state.attack = false;
       state.defend = false;
     });
+    this.attackBufferUntil = { player1: 0, player2: 0 };
     return this.controlMode;
   }
 
@@ -11631,6 +11634,9 @@
     this.gameState.winner = null;
     this.gameState.victoryAnimation = null;
     this.gameState.paused = false;
+    this.attackBufferUntil = { player1: 0, player2: 0 };
+    this.skillPressed.player1.attack = false;
+    this.skillPressed.player2.attack = false;
     this.gameState.combatLog = [];
     
     // 皜蝎?蝟餌絞畾?
@@ -11781,6 +11787,14 @@
       }
       
       if (this.keys.hasOwnProperty(key)) {
+        if (!this.keys[key] && key === 'w') {
+          this.skillPressed.player1.attack = false;
+          this.attackBufferUntil.player1 = Date.now() + 160;
+        }
+        if (!this.keys[key] && key === 'arrowup') {
+          this.skillPressed.player2.attack = false;
+          this.attackBufferUntil.player2 = Date.now() + 160;
+        }
         this.keys[key] = true;
         e.preventDefault();
       }
@@ -11843,7 +11857,7 @@
   }
 
   handleInput() {
-    if (this.isCountdownBeforeGo()) return;
+    if (this.gameState.paused || this.gameState.winner || this.isCountdownBeforeGo()) return;
 
     const player2CpuControlled = this.isCpuControlled('player2');
     const bindings = this.getControlBindings();
@@ -11855,9 +11869,11 @@
     if (!player2CpuControlled && this.keys['arrowright'] && !this.isPlayerDefending('player2')) this.movePlayer('player2', 1);
     
     // ?餅?????- ?芸擐活???孛?潘??脩戌???賭蝙??
-    if (this.keys['w'] && !this.skillPressed.player1.attack && !this.isPlayerDefending('player1')) {
-      this.attack('player1');
-      this.skillPressed.player1.attack = true;
+    if (!this.skillPressed.player1.attack && (this.keys['w'] || this.attackBufferUntil.player1 > Date.now()) && !this.isPlayerDefending('player1')) {
+      if (this.attack('player1') !== false) {
+        this.skillPressed.player1.attack = true;
+        this.attackBufferUntil.player1 = 0;
+      }
     }
     if (this.keys[bindings.player1.normal] && !this.skillPressed.player1.normal && !this.isPlayerDefending('player1')) {
       this.useSkill('player1', 'normal');
@@ -11868,9 +11884,11 @@
       this.skillPressed.player1.ultimate = true;
     }
     
-    if (!player2CpuControlled && this.keys['arrowup'] && !this.skillPressed.player2.attack && !this.isPlayerDefending('player2')) {
-      this.attack('player2');
-      this.skillPressed.player2.attack = true;
+    if (!player2CpuControlled && !this.skillPressed.player2.attack && (this.keys['arrowup'] || this.attackBufferUntil.player2 > Date.now()) && !this.isPlayerDefending('player2')) {
+      if (this.attack('player2') !== false) {
+        this.skillPressed.player2.attack = true;
+        this.attackBufferUntil.player2 = 0;
+      }
     }
     if (!player2CpuControlled && this.keys[bindings.player2.normal] && !this.skillPressed.player2.normal && !this.isPlayerDefending('player2')) {
       this.useSkill('player2', 'normal');
@@ -12016,11 +12034,11 @@
       player.attackSpeed = 900;
     }
     
-    if (!player || player.yangSwallowedBy || player.yangUltimate || player.gladiatorLeap || player.effects.stunned > now || player.effects.casting > now || player.effects.chainDisabled > now || player.effects.chainCasting > now || player.stephenChargeStart || player.stephenEatingUntil > now || player.stephenSmokeUntil > now || this.isPlayerDefending(playerId)) return;
-    if (player.fanForm && ['ascending', 'descending', 'landing', 'finishing'].includes(player.fanForm.phase)) return;
+    if (!player || player.yangSwallowedBy || player.yangUltimate || player.gladiatorLeap || player.effects.stunned > now || player.effects.casting > now || player.effects.chainDisabled > now || player.effects.chainCasting > now || player.stephenChargeStart || player.stephenEatingUntil > now || player.stephenSmokeUntil > now || this.isPlayerDefending(playerId)) return false;
+    if (player.fanForm && ['ascending', 'descending', 'landing', 'finishing'].includes(player.fanForm.phase)) return false;
     
     // ?儭?Exile Blade: block attacks during execution
-    if (player.isExecuting) return;
+    if (player.isExecuting) return false;
     
     // ? 蝎暸????恍銵????
     let effectiveAttackSpeed = player.id === 'gladiator' && player.gladiatorBerserkUntil > now
@@ -12030,7 +12048,17 @@
       effectiveAttackSpeed = player.skills.ultimate.boostedAttackSpeed;
     }
     if (player.gladiatorArenaBuffUntil > now) effectiveAttackSpeed *= (player.gladiatorArenaAttackSpeedMultiplier || 0.8);
-    if (now - this.cooldowns[playerId].attack < effectiveAttackSpeed) return;
+    if (now - this.cooldowns[playerId].attack < effectiveAttackSpeed) return false;
+
+    // Reloading must not consume the attack cooldown or play an empty swing.
+    if (player.id === 'ranger') {
+      if (player.rangerAmmo === undefined) player.rangerAmmo = player.ammoMax || 7;
+      if (player.rangerLastShotTime && now - player.rangerLastShotTime >= (player.ammoIdleRefill || 2100)) {
+        player.rangerAmmo = player.ammoMax || 7;
+        player.rangerReloadUntil = 0;
+      }
+      if (player.rangerReloadUntil > now) return false;
+    }
     
     this.cooldowns[playerId].attack = now;
     
@@ -12092,12 +12120,6 @@
 
       // ? 蝎暸???嚗悌?Ｘ?撠
       // ?? 敶蝟餌絞 - ????/ ?蔭?? / 鋆‵銝剜???
-      if (player.rangerAmmo === undefined) player.rangerAmmo = player.ammoMax || 7;
-      if (player.rangerLastShotTime && (now - player.rangerLastShotTime) >= (player.ammoIdleRefill || 2100)) {
-        player.rangerAmmo = player.ammoMax || 7;
-        player.rangerReloadUntil = 0;
-      }
-      if (player.rangerReloadUntil && player.rangerReloadUntil > now) return;
       let arrowDamage = player.attackDamage;
       let isEmpowered = false;
       
