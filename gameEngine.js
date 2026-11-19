@@ -10961,9 +10961,10 @@
       target.effects.casting = 0;
       if (interruptedUltimate.form === 'smoke') {
         const now = Date.now();
-        const cooldown = interruptedUltimate.skill.cooldown || 14000;
-        const elapsed = Math.max(0, now - interruptedUltimate.startedAt);
-        const remaining = Math.max(interruptedUltimate.skill.interruptMinCooldown || 7000, cooldown - elapsed);
+        const cooldown = interruptedUltimate.skill?.cooldown || 14000;
+        const startedAt = interruptedUltimate.startedAt || now - (interruptedUltimate.skill?.duration || 0);
+        const elapsed = Math.max(0, now - startedAt);
+        const remaining = Math.max(interruptedUltimate.skill?.interruptMinCooldown || 7000, cooldown - elapsed);
         this.cooldowns[targetSide].ultimate = now - cooldown + remaining;
         this.clearSkillReady(targetSide, 'ultimate');
         this.addCombatLog(`迎面煙幕被打斷，奧義冷卻剩${(remaining / 1000).toFixed(1)}秒。`, targetSide, 'status');
