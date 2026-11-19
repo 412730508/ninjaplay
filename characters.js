@@ -99,7 +99,7 @@ const STEPHEN_STEAK_SKILLS = {
 };
 const STEPHEN_SMOKE_SKILLS = {
   normal: { code: SKILL_CODES.STEPHEN_SMOKE, name: '化煙', type: '無敵／持續傷害', cooldown: 8000, duration: 4000, invisibleDuration: 2000, damagePerTick: 3, tickRate: 1000, radius: 55 },
-  ultimate: { code: SKILL_CODES.STEPHEN_BREATH, name: '迎面煙幕', type: '定向／引導', cooldown: 14000, duration: 3000, range: 300, width: 120, damagePerTick: 2, frontDamagePerTick: 3, tickRate: 200, slowMultiplier: 0.4, slowDuration: 3000 }
+  ultimate: { code: SKILL_CODES.STEPHEN_BREATH, name: '迎面煙幕', type: '定向／引導', cooldown: 14000, duration: 3000, range: 300, width: 120, damagePerTick: 2, frontDamagePerTick: 3, tickRate: 200, slowMultiplier: 0.4, slowDuration: 3000, interruptMinCooldown: 7000 }
 };
 
 const characters = {
@@ -508,7 +508,7 @@ const characters = {
         cooldown: 18000,
         range: 200,
         damage: 15,
-        executeThreshold: 0.15
+        executeThreshold: 0.10
       }
     }
   },
@@ -682,7 +682,7 @@ const characters = {
     facing: 1,
     passive: {
       name: '御獸疊層',
-      description: '初始0層。人型態技能命中可獲得疊層，巨獸型態每秒自動消耗1層。',
+      description: '初始0層。人型態技能命中可獲得疊層；巨獸型態每2秒消耗1層。',
       initialStacks: 0,
       maxStacks: 99
     },
@@ -704,8 +704,8 @@ const characters = {
         name: '巨獸解放',
         type: '變身/定身',
         cooldown: 1000,
-        minStacksToCast: 5,
-        stacksCost: 2,
+        minStacksToCast: 7,
+        stacksCost: 0,
         rootDuration: 2000,
         golemDamageReduction: 0.4,
         golemScale: 1.25,
@@ -718,8 +718,8 @@ const characters = {
         golemSkillDelay: 700,
         golemSkillAoE: 120,
         golemSkillDamage: 13,
-        stackDrainInterval: 5000,
-        tagText: '需5層疊層 耗2層變身巨獸 定身敵人2秒'
+        stackDrainInterval: 2000,
+        tagText: '需7層變身巨獸 定身敵人2秒 巨獸型態每2秒消耗1層'
       }
     }
   },
@@ -1044,7 +1044,7 @@ const characters = {
         tickDamage: 2,
         cooldown: 6000,
         maxHits: 10,
-        range: 210,
+        range: 400,
         width: 64,
         moveMultiplier: 0.55,
         slowMultiplier: 0.9,

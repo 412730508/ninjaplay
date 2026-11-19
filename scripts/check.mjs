@@ -120,7 +120,7 @@ try {
     ['warlock', 'attackDamage', 4],
     ['warlock', 'attackSpeed', 700],
     ['warlock', 'attackHeal', 2],
-    ['beastmaster', 'skills.ultimate.minStacksToCast', 5],
+    ['beastmaster', 'skills.ultimate.minStacksToCast', 7],
     ['beastmaster', 'skills.ultimate.golemDamageReduction', 0.4],
     ['beastmaster', 'skills.ultimate.transformRootRange', 200],
     ['beastmaster', 'skills.ultimate.golemSkillDelay', 300],

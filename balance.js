@@ -45,7 +45,9 @@ const BALANCE_PATCH = {
     skills: {
       normal: { damage: 3 },
       ultimate: {
-        minStacksToCast: 5,
+        minStacksToCast: 7,
+        stacksCost: 0,
+        stackDrainInterval: 2000,
         golemDamageReduction: 0.4,
         transformRootRange: 200,
         golemSkillDelay: 300,

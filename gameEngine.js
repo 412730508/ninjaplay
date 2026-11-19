@@ -10427,7 +10427,8 @@
     const dy = opponent ? Math.abs(opponent.position.y - player.position.y) : Infinity;
     const inStream = opponent?.hp > 0 && dx >= 0 && dx <= coffee.skill.range && dy <= coffee.skill.width / 2;
     if (inStream) {
-      const hit = this.dealDamage(opponent, coffee.skill.tickDamage, playerId, { isDamageOverTime: true });
+      // Coffee ticks are repeated direct hits and must still respect guard and defense.
+      const hit = this.dealDamage(opponent, coffee.skill.tickDamage, playerId);
       if (hit.hit) this.applyStephenSlow(opponent, coffee.skill.slowMultiplier, coffee.skill.slowDuration, now);
     }
   }
@@ -10955,8 +10956,18 @@
       target.effects.casting = 0;
     }
     if (target.id === 'stephen' && target.stephenUltimate) {
+      const interruptedUltimate = target.stephenUltimate;
       target.stephenUltimate = null;
       target.effects.casting = 0;
+      if (interruptedUltimate.form === 'smoke') {
+        const now = Date.now();
+        const cooldown = interruptedUltimate.skill.cooldown || 14000;
+        const elapsed = Math.max(0, now - interruptedUltimate.startedAt);
+        const remaining = Math.max(interruptedUltimate.skill.interruptMinCooldown || 7000, cooldown - elapsed);
+        this.cooldowns[targetSide].ultimate = now - cooldown + remaining;
+        this.clearSkillReady(targetSide, 'ultimate');
+        this.addCombatLog(`迎面煙幕被打斷，奧義冷卻剩${(remaining / 1000).toFixed(1)}秒。`, targetSide, 'status');
+      }
     }
 
     // Blood-devour tethers are owned by the caster, so clear either side of
@@ -13048,7 +13059,7 @@
       case SKILL_CODES.STEPHEN_GRILL:
       case SKILL_CODES.STEPHEN_BREATH: {
         const form = skill.code === SKILL_CODES.STEPHEN_GRILL ? 'steak' : 'smoke';
-        player.stephenUltimate = { form, skill, facing: player.facing, endsAt: now + skill.duration, nextTick: now };
+        player.stephenUltimate = { form, skill, facing: player.facing, startedAt: now, endsAt: now + skill.duration, nextTick: now };
         if (form === 'smoke') player.effects.casting = now + skill.duration;
         this.addCombatLog(`${player.name} 使用${skill.name}！`, playerId, 'skill');
         break;

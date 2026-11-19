@@ -363,13 +363,13 @@
         <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
     </footer>
 
-    <script src="characters.js?v=nov-06-fan-update-1"></script>
-    <script src="balance.js?v=nov-06-fan-update-1"></script>
+    <script src="characters.js?v=nov-20-skill-tuning-1"></script>
+    <script src="balance.js?v=nov-20-skill-tuning-1"></script>
     <script src="talents.js?v=nov-05-balance-035-1"></script>
     <script src="particleSystem.js?v=gladiator-beast-vfx-1"></script>
     <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
     <script src="stickmanAnimator.js?v=nov-06-fan-update-1"></script>
-    <script src="gameEngine.js?v=nov-19-attack-buffer-1"></script>
+    <script src="gameEngine.js?v=nov-20-skill-tuning-1"></script>
     <script src="aiController.js?v=oct-27-kage-cpu-1"></script>
     <script>
         // 全局遊戲引擎實例
@@ -2301,12 +2301,12 @@
                     effects: ['持續4秒', '完全隱形2秒', '接觸每秒3傷害', '冷卻8秒']
                 },
                 [SKILL_CODES.STEPHEN_BREATH]: {
-                    description: '固定面向噴出煙幕，期間不能移動；煙內敵人緩速。面向小周時每段3傷害，背向時每段2傷害。效果結束後切換為牛排周。',
-                    effects: ['距離300px', '持續3秒', '緩速60%／3秒', '正面每0.2秒3傷害、背面每0.2秒2傷害']
+                    description: '固定面向引導煙幕，期間不能移動；若施放被打斷，奧義冷卻依已引導時間返還，最低仍需冷卻7秒。面向小周時每段3傷害，背向時每段2傷害。',
+                    effects: ['距離300px', '最多持續3秒', '被打斷後冷卻至少7秒', '正面每0.2秒3傷害、背面每0.2秒2傷害']
                 },
                 [SKILL_CODES.YANGHONG_COFFEE]: {
-                    description: '按住紙杯持續潑出熱咖啡，奶泡流沿前方掃過；按越久越多段，受控或放開按鍵就會停止。',
-                    effects: ['每段2傷害', '每200ms一段，最多10段', '命中緩速10%／380ms', '最長2秒', '施放時移速降低45%']
+                    description: '按住紙杯持續潑出熱咖啡，奶泡流沿前方掃過；按越久越多段，受控或放開按鍵就會停止。攻擊仍會受防禦與格擋影響。',
+                    effects: ['距離400px', '每段2傷害', '每200ms一段，最多10段', '命中緩速10%／380ms', '最長2秒', '施放時移速降低45%']
                 },
                 [SKILL_CODES.YANGHONG_TONGUE]: {
                     description: '抓取200px內符合條件的敵人，0.3秒後吞入；吞噬期間每秒消耗20元並造成10傷害，最多2秒。吐出敵人400px並緩速60%持續2秒；獲得10點護盾3秒，剩餘護盾轉為回復生命，並重置咖啡拉花。',
@@ -2452,10 +2452,11 @@
                     ]
                 },
                 [SKILL_CODES.BEAST_LIBERATION]: {
-                    description: '需至少5層御獸疊層才能施放，消耗2層並經過變身動作後進入巨獸型態。變身時200px內敵人定身2秒；巨獸型態期間減傷40%，持續至御獸疊層耗盡或主動恢復人型。',
+                    description: '需至少7層御獸疊層才能施放；變身時不消耗層數。變身時200px內敵人定身2秒；巨獸型態每2秒消耗1層，減傷40%，持續至疊層耗盡或主動恢復人型。',
                     effects: [
-                        '施放需求≥5層',
-                        '消耗2層疊層',
+                        '施放需求≥7層',
+                        '變身不消耗層數',
+                        '巨獸型態每2秒消耗1層',
                         '200px內敵人定身2秒',
                         '巨獸型態減傷40%',
                         '體型放大1.25倍',
