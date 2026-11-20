@@ -1577,8 +1577,12 @@
 
       // === Shamisen ambient musical aura ===
       if (player.id === 'shamisen' && this.gameState.phase === 'fighting') {
-        this.renderShamisenAmbient(player, playerId);
-        this.renderShamisenPluck(player);
+        const now = Date.now();
+        if (now - (player.shamisenAmbientRenderAt || 0) >= 33) {
+          player.shamisenAmbientRenderAt = now;
+          this.renderShamisenAmbient(player, playerId);
+          this.renderShamisenPluck(player);
+        }
       }
       
       // ?儭?皜脫??脩戌?孵??內??
@@ -10458,6 +10462,7 @@
     player.gladiatorArenaBuffUntil = 0;
     player.gladiatorArenaMoveSpeedMultiplier = 1;
     player.gladiatorArenaAttackSpeedMultiplier = 1;
+    player.gladiatorArenaAttackBonus = 0;
   }
 
   getGladiatorLeapMotion(leap, now) {
@@ -10576,6 +10581,7 @@
       player.gladiatorArenaBuffUntil = now + leap.skill.arenaDuration;
       player.gladiatorArenaMoveSpeedMultiplier = leap.skill.arenaMoveSpeedMultiplier || 1.2;
       player.gladiatorArenaAttackSpeedMultiplier = leap.skill.arenaAttackSpeedMultiplier || 0.8;
+      player.gladiatorArenaAttackBonus = Math.round(opponent.attackDamage * (leap.skill.arenaOpponentAttackDamageBonus || 0.3));
       this.addCombatLog(`${opponent.name} 被困在角鬥場中！`, playerId, 'skill');
     });
   }
@@ -11550,6 +11556,7 @@
         range = player.attackRange || 60;
       }
     }
+    range += player?.basicAttackRangeBonus || 0;
     return range;
   }
 
@@ -12438,6 +12445,10 @@
     }
     
     let damage = player.attackDamage;
+
+    if (player.id === 'gladiator' && player.gladiatorArenaBuffUntil > now) {
+      damage += player.gladiatorArenaAttackBonus || 0;
+    }
 
     if (isForgeFireThirdStrike) {
       damage = player.passive?.thirdStrikeDamage || 9;
@@ -18551,9 +18562,9 @@
       const stringAlpha = 0.6 * (1 - progress);
       ctx.strokeStyle = `rgba(255, 215, 0, ${stringAlpha})`;
       ctx.beginPath();
-      for (let t = 0; t < 20; t++) {
-        const sx = t - 10;
-        const sy = s * 4 + Math.sin(t * freq * 0.1 + now * 0.05) * amplitude * (1 - Math.abs(t - 10) / 10);
+      for (let t = 0; t < 12; t++) {
+        const sx = t * (20 / 11) - 10;
+        const sy = s * 4 + Math.sin(t * (20 / 11) * freq * 0.1 + now * 0.05) * amplitude * (1 - Math.abs(t - 5.5) / 5.5);
         if (t === 0) ctx.moveTo(sx, sy);
         else ctx.lineTo(sx, sy);
       }

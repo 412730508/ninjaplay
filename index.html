@@ -363,13 +363,13 @@
         <p>關鍵字：火柴人遊戲、魔法格鬥、忍者對戰、線上遊戲</p>
     </footer>
 
-    <script src="characters.js?v=nov-20-skill-tuning-1"></script>
+    <script src="characters.js?v=nov-20-range-shamisen-1"></script>
     <script src="balance.js?v=nov-20-skill-tuning-1"></script>
     <script src="talents.js?v=nov-05-balance-035-1"></script>
     <script src="particleSystem.js?v=gladiator-beast-vfx-1"></script>
     <script src="mapSystem.js?v=dojo-arena-atmosphere-1"></script>
     <script src="stickmanAnimator.js?v=nov-06-fan-update-1"></script>
-    <script src="gameEngine.js?v=nov-20-stephen-cancel-1"></script>
+    <script src="gameEngine.js?v=nov-20-range-shamisen-1"></script>
     <script src="aiController.js?v=oct-27-kage-cpu-1"></script>
     <script>
         // 全局遊戲引擎實例
@@ -2584,8 +2584,8 @@
                     effects: ['持續3秒', '減傷60%', '移速+10%']
                 },
                 [SKILL_CODES.GLADIATOR_CAESAR]: {
-                    description: '落地命中後展開4秒角鬥場；自身最大生命暫增為敵方最大生命的20%，並立即增加等量生命；移速提升20%，攻擊間隔縮短20%（攻速提高）。',
-                    effects: ['落地傷害8', '角鬥場4秒', '最大生命增加敵方最大生命20%', '立即回復等量生命', '移速+20%', '攻擊間隔−20%（攻速提高）', '冷卻15秒']
+                    description: '落地命中後展開4秒角鬥場；自身最大生命暫增為敵方最大生命的20%，並立即增加等量生命；移速提升20%，攻擊間隔縮短20%，普攻傷害額外增加對手普攻傷害的30%。',
+                    effects: ['落地傷害8', '角鬥場4秒', '最大生命增加敵方最大生命20%', '立即回復等量生命', '移速+20%', '攻擊間隔−20%', '普攻額外+對手普攻傷害30%', '冷卻15秒']
                 },
                 [SKILL_CODES.FAN_XIANGYU_NORMAL]: {
                     description: '向前方100px內的敵人造成4點傷害並擊退200px。成功擊退後2秒內可再次施放，向原施放方向的身後後撤160px。使用二段後從後撤時起算8秒冷卻。',

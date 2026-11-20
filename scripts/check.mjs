@@ -112,6 +112,9 @@ try {
     ['scorpion', 'attackDamage', 4],
     ['adjudicator', 'attackDamage', 11],
     ['exileblade', 'skills.ultimate.cooldown', 15000],
+    ['exileblade', 'basicAttackRangeBonus', 25],
+    ['puppeteer', 'basicAttackRangeBonus', 25],
+    ['azure_disciple', 'basicAttackRangeBonus', 25],
     ['puppeteer', 'skills.normal.puppetHp', 50],
     ['taijutsu', 'skills.normal.cooldown', 8000],
     ['taijutsu', 'skills.ultimate.damage', 17],
@@ -154,6 +157,7 @@ try {
     ['gladiator', 'maxHp', 100],
     ['gladiator', 'attackDamage', 3],
     ['gladiator', 'attackSpeed', 900],
+    ['gladiator', 'basicAttackRangeBonus', 25],
     ['gladiator', 'moveSpeed', 270],
     ['gladiator', 'skills.normal.cooldown', 13000],
     ['gladiator', 'skills.normal.duration', 3000],
@@ -163,7 +167,8 @@ try {
     ['gladiator', 'skills.ultimate.leapDuration', 500],
     ['gladiator', 'skills.ultimate.damage', 8],
     ['gladiator', 'skills.ultimate.arenaRadius', 100],
-    ['gladiator', 'skills.ultimate.arenaDuration', 4000]
+    ['gladiator', 'skills.ultimate.arenaDuration', 4000],
+    ['gladiator', 'skills.ultimate.arenaOpponentAttackDamageBonus', 0.3]
   ];
   for (const [characterId, propertyPath, expected] of expectedValues) {
     const actual = propertyPath.split('.').reduce((value, key) => value?.[key], roster[characterId]);
@@ -357,6 +362,20 @@ try {
   let simulatedNow = 100000;
   engineContext.Date = class extends Date { static now() { return simulatedNow; } };
   engineContext.requestAnimationFrame = () => 0;
+
+  // The requested +25px must reach the actual hit check, not just the roster data.
+  for (const [characterId, expectedRange] of [
+    ['exileblade', 100],
+    ['puppeteer', 115],
+    ['azure_disciple', 100],
+    ['gladiator', 100]
+  ]) {
+    const rangeGame = new NinjaGame();
+    rangeGame.selectCharacters(characterId, 'fujin');
+    if (rangeGame.getMeleeRange(rangeGame.players.player1) !== expectedRange) {
+      throw new Error(`${characterId} basic attack hit range did not gain 25px (actual=${rangeGame.getMeleeRange(rangeGame.players.player1)})`);
+    }
+  }
 
   // Fujin's ultimate has a target-locked second press: verify its first hit,
   // distance interpolation, expiry reset, and miss boundary end to end.
@@ -804,6 +823,12 @@ try {
   leapGame.updateGladiatorSystems();
   if (leaper.gladiatorLeap || leapTarget.hp !== 89 || leapGame.gameState.gladiatorArena?.targetId !== 'player2' || leapGame.gameState.gladiatorArena.expiresAt !== simulatedNow + 4750) {
     throw new Error('Caesar Stomp or Central Binding did not apply the 11-damage hit and 4.75-second arena');
+  }
+  leapTarget.position.x = leaper.position.x;
+  simulatedNow += 901;
+  leapGame.attack('player1');
+  if (leapTarget.hp !== 84) {
+    throw new Error(`Caesar arena basic attack did not add 30% of opponent attack damage (expected 5 total, actual=${89 - leapTarget.hp})`);
   }
   leaper.effects.gladiatorWillUntil = simulatedNow + 1000;
   const gladiatorDrawCalls = [];

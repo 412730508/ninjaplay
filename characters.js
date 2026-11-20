@@ -829,6 +829,7 @@ const characters = {
     attackDamage: 6,
     attackSpeed: 400,
     attackRange: 50,
+    basicAttackRangeBonus: 25,
     moveSpeed: 340,
     position: { x: 100, y: 300 },
     facing: 1,
@@ -871,6 +872,7 @@ const characters = {
     attackDamage: 4,
     attackSpeed: 500,
     attackRange: 60,
+    basicAttackRangeBonus: 25,
     moveSpeed: 260,
     position: { x: 100, y: 300 },
     facing: 1,
@@ -918,6 +920,7 @@ const characters = {
     attackDamage: 5,
     attackSpeed: 400,
     attackRange: 50,
+    basicAttackRangeBonus: 25,
     moveSpeed: 340,
     position: { x: 100, y: 300 },
     facing: 1,
@@ -1075,6 +1078,7 @@ const characters = {
     attackDamage: 3,
     attackSpeed: 900,
     attackRange: 65,
+    basicAttackRangeBonus: 25,
     moveSpeed: 270,
     position: { x: 100, y: 300 },
     facing: 1,
@@ -1114,7 +1118,8 @@ const characters = {
         arenaDuration: 4000,
         arenaHpBonusPercent: 0.2,
         arenaMoveSpeedMultiplier: 1.2,
-        arenaAttackSpeedMultiplier: 0.8
+        arenaAttackSpeedMultiplier: 0.8,
+        arenaOpponentAttackDamageBonus: 0.3
       }
     }
   },
