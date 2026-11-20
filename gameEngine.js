@@ -10281,6 +10281,23 @@
     player.stephenImpact = null;
   }
 
+  cancelStephenBreath(playerId, player, reason = '自我中斷') {
+    const ultimate = player?.stephenUltimate;
+    if (!ultimate || ultimate.form !== 'smoke') return false;
+
+    const now = Date.now();
+    const cooldown = ultimate.skill?.cooldown || 14000;
+    const startedAt = ultimate.startedAt || now - (ultimate.skill?.duration || 0);
+    const elapsed = Math.max(0, now - startedAt);
+    const remaining = Math.max(ultimate.skill?.interruptMinCooldown || 7000, cooldown - elapsed);
+    player.stephenUltimate = null;
+    player.effects.casting = 0;
+    this.cooldowns[playerId].ultimate = now - cooldown + remaining;
+    this.clearSkillReady(playerId, 'ultimate');
+    this.addCombatLog(`迎面煙幕${reason}，奧義冷卻剩${(remaining / 1000).toFixed(1)}秒。`, playerId, 'status');
+    return true;
+  }
+
   resetYangHongState(player) {
     if (!player || player.id !== 'yanghong') return;
     player.yangWallet = 0;
@@ -10956,18 +10973,9 @@
       target.effects.casting = 0;
     }
     if (target.id === 'stephen' && target.stephenUltimate) {
-      const interruptedUltimate = target.stephenUltimate;
-      target.stephenUltimate = null;
-      target.effects.casting = 0;
-      if (interruptedUltimate.form === 'smoke') {
-        const now = Date.now();
-        const cooldown = interruptedUltimate.skill?.cooldown || 14000;
-        const startedAt = interruptedUltimate.startedAt || now - (interruptedUltimate.skill?.duration || 0);
-        const elapsed = Math.max(0, now - startedAt);
-        const remaining = Math.max(interruptedUltimate.skill?.interruptMinCooldown || 7000, cooldown - elapsed);
-        this.cooldowns[targetSide].ultimate = now - cooldown + remaining;
-        this.clearSkillReady(targetSide, 'ultimate');
-        this.addCombatLog(`迎面煙幕被打斷，奧義冷卻剩${(remaining / 1000).toFixed(1)}秒。`, targetSide, 'status');
+      if (!this.cancelStephenBreath(targetSide, target, '被打斷')) {
+        target.stephenUltimate = null;
+        target.effects.casting = 0;
       }
     }
 
@@ -12783,6 +12791,7 @@
       }
       delete player.fanNormalRecast;
     }
+    if (player.id === 'stephen' && skillType === 'ultimate' && this.cancelStephenBreath(playerId, player)) return;
     if (player.id === 'stephen' && (player.stephenChargeStart || player.stephenEatingUntil > now || player.stephenSmokeUntil > now || player.stephenUltimate?.form === 'smoke')) return;
 
     // ? 擃?敹?撠???蝛箔葉??銝?交?

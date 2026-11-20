@@ -995,6 +995,32 @@ try {
     throw new Error('A steak charged over three seconds failed to bypass defense, deal damage, slow, and stun for two seconds');
   }
 
+  const smokeCancelGame = new NinjaGame();
+  smokeCancelGame.selectCharacters('stephen', 'katon');
+  smokeCancelGame.spawnCombatFlourish = () => {};
+  smokeCancelGame.addVisualEffect = () => {};
+  smokeCancelGame.addDamageNumber = () => {};
+  const smokeCancelStephen = smokeCancelGame.players.player1;
+  smokeCancelStephen.stephenForm = 'smoke';
+  smokeCancelStephen.skills = smokeCancelStephen.forms.smoke;
+  smokeCancelGame.cooldowns.player1.ultimate = simulatedNow - smokeCancelStephen.skills.ultimate.cooldown;
+  smokeCancelGame.useSkill('player1', 'ultimate');
+  if (smokeCancelStephen.stephenUltimate?.form !== 'smoke') throw new Error('Stephen did not start the smoke ultimate for self-cancel testing');
+  simulatedNow += 1000;
+  smokeCancelGame.useSkill('player1', 'ultimate');
+  const smokeCooldownRemaining = smokeCancelStephen.skills.ultimate.cooldown - (simulatedNow - smokeCancelGame.cooldowns.player1.ultimate);
+  if (smokeCancelStephen.stephenUltimate || smokeCancelStephen.effects.casting || smokeCooldownRemaining !== 13000) {
+    throw new Error(`Stephen self-cancel did not stop breath and refund cooldown by elapsed cast time (remaining=${smokeCooldownRemaining})`);
+  }
+  smokeCancelGame.cooldowns.player1.ultimate = simulatedNow - smokeCancelStephen.skills.ultimate.cooldown;
+  smokeCancelGame.useSkill('player1', 'ultimate');
+  simulatedNow += 8000;
+  smokeCancelGame.useSkill('player1', 'ultimate');
+  const minSmokeCooldownRemaining = smokeCancelStephen.skills.ultimate.cooldown - (simulatedNow - smokeCancelGame.cooldowns.player1.ultimate);
+  if (smokeCancelStephen.stephenUltimate || minSmokeCooldownRemaining !== 7000) {
+    throw new Error(`Stephen self-cancel did not enforce the seven-second minimum cooldown (remaining=${minSmokeCooldownRemaining})`);
+  }
+
   // Exercise Yang Hong's complete ultimate lifecycle against live target states.
   const startYangCapture = (targetId, configure = () => {}) => {
     const game = new NinjaGame();
